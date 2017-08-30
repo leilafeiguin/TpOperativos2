@@ -5,3 +5,5 @@ Enunciado: https://goo.gl/XbtLB5
 How To: https://goo.gl/esgeGz
 
 VideoTutoriales: https://www.utnso.com/recursos/video-tutoriales/
+
+Nuestro TP del cuatri pasado: https://github.com/leilafeiguin/TpOperativos1
