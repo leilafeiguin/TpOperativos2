@@ -14,6 +14,6 @@
 
 
 int main(void) {
-	puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */
+	printf("Inicializando proceso Worker\n");
 	return EXIT_SUCCESS;
 }

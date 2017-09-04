@@ -13,6 +13,6 @@
 #include <commons/config.h>
 
 int main(void) {
-	puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */
+	printf("Inicializando proceso Master\n");
 	return EXIT_SUCCESS;
 }

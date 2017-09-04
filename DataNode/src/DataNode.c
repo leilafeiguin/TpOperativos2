@@ -13,6 +13,6 @@
 #include <commons/config.h>
 
 int main(void) {
-	puts("!!!Marco pt!!!"); /* prints !!!Hello World!!! */
+	printf("Inicializando proceso DataNode\n");
 	return EXIT_SUCCESS;
 }

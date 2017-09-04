@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Yama</name>
+	<name>Libraries</name>
 	<comment></comment>
 	<projects>
-		<project>Libraries</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

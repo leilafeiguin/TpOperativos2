@@ -10,9 +10,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <commons/config.h>
+#include "Yama.h"
 
 int main(void) {
-	puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */
+	printf("Inicializando proceso Yama\n");
+	yama_configuracion configuracion = get_configuracion();
+
+
 	return EXIT_SUCCESS;
 }
