@@ -1,5 +1,7 @@
-# Prerequisites
+#RemoteSystemsTempFiles
+*.metadata
 *.d
+*.cproject
 
 # Object files
 *.o
