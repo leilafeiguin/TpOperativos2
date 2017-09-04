@@ -16,6 +16,5 @@ int main(void) {
 	printf("Inicializando proceso Yama\n");
 	yama_configuracion configuracion = get_configuracion();
 
-
 	return EXIT_SUCCESS;
 }

@@ -10,10 +10,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <commons/config.h>
+#include "Worker.h"
 
 
 int main(void) {
 	printf("Inicializando proceso Worker\n");
+	worker_configuracion configuracion = get_configuracion();
+
 	return EXIT_SUCCESS;
 }
