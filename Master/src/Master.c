@@ -13,8 +13,16 @@
 #include "Master.h"
 
 int main(void) {
+	t_log* logger;
+	char* fileLog;
+	fileLog = "MasterLogs.txt";
+
 	printf("Inicializando proceso Master\n");
+	logger = log_create(fileLog, "Master Logs", 0, 0);
+	log_trace(logger, "Inicializando proceso Master");
+
 	master_configuracion configuracion = get_configuracion();
+	log_trace(logger, "Archivo de configuracion levantado");
 
 	return EXIT_SUCCESS;
 }

@@ -1,4 +1,5 @@
 #include <socketConfig.h>
+#include <commons/log.h>
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct fileSystem_configuracion {

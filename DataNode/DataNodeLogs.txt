@@ -1,0 +1,2 @@
+[TRACE] 09:21:22:407 DataNode Logs/(4334:4334): Inicializando proceso DataNode
+[TRACE] 09:21:22:407 DataNode Logs/(4334:4334): Archivo de configuracion levantado
