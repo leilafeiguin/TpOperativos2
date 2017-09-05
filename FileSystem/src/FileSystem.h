@@ -5,7 +5,7 @@ typedef struct fileSystem_configuracion {
 	char* KAKA;
 } fileSystem_configuracion;
 
-const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/DataNode/configNodo.cfg";
+const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
 
 fileSystem_configuracion get_configuracion() {
 	printf("Levantando archivo de configuracion del proceso FileSystem\n");
