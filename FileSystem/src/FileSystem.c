@@ -10,9 +10,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <commons/config.h>
+#include "FileSystem.h"
 
 int main(void) {
 	printf("Inicializando proceso FileSystem\n");
+	fileSystem_configuracion configuracion = get_configuracion();
+
 	return EXIT_SUCCESS;
 }

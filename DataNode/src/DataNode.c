@@ -10,9 +10,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <commons/config.h>
+#include "DataNode.h"
 
 int main(void) {
 	printf("Inicializando proceso DataNode\n");
+	dataNode_configuracion configuracion = get_configuracion();
+
 	return EXIT_SUCCESS;
 }
