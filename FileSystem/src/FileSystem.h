@@ -3,7 +3,8 @@
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct fileSystem_configuracion {
-	char* KAKA;
+	char* IP_DATANODE;
+	char* PUERTO_DATANODE;
 } fileSystem_configuracion;
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
@@ -13,6 +14,7 @@ fileSystem_configuracion get_configuracion() {
 	fileSystem_configuracion configuracion;
 	// Obtiene el archivo de configuracion
 	t_config* archivo_configuracion = config_create(path);
-	configuracion.KAKA = get_campo_config_string(archivo_configuracion, "KAKA");
+	configuracion.IP_DATANODE = get_campo_config_string(archivo_configuracion, "IP_DATANODE");
+	configuracion.PUERTO_DATANODE = get_campo_config_string(archivo_configuracion, "PUERTO_DATANODE");
 	return configuracion;
 }

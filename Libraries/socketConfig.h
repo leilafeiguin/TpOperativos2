@@ -24,28 +24,8 @@
 
 enum codigos_de_operacion {
 	cop_generico = 0,
-	cop_handshake_consola = 1,
-	cop_handshake_cpu = 2,
-	cop_handshake_memoria = 3,
-	cop_handshake_fileSystem = 4,
-	cop_handshake_kernel = 5,
-	cop_archivo_programa = 6,
-	cop_imprimi = 7,
-	cop_terminar_proceso = 8,
-	cop_handshake_consolaInterfazUsuario = 9,
-	cop_obtener_direccion = 10,
-	cop_memoria_inicializarPrograma = 11,
-	cop_memoria_solicitarBytes = 12,
-	cop_memoria_almacenarBytes = 13,
-	cop_memoria_asignarPaginas = 14,
-	cop_memoria_finalizarPrograma = 15,
-	cop_filesystem_validarArchivo = 16,
-	cop_filesystem_crearArchivo = 17,
-	cop_filesystem_borrar = 18,
-	cop_filesystem_obtenerDatos = 19,
-	cop_filesystem_guardarDatos = 20
-
-//cop_envio_pid = , es necesario o podemos asumir con seguridad que el kernel nos va a mandar el pid?
+	cop_handshake_fileSystem = 1,
+	cop_archivo_programa = 2
 };
 
 typedef int un_socket;

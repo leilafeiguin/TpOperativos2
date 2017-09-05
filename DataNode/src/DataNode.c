@@ -24,5 +24,10 @@ int main(void) {
 	dataNode_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
+	//CONEXIONES
+	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
+	realizar_handshake(fileSystemSocket, cop_handshake_fileSystem);
+
+
 	return EXIT_SUCCESS;
 }
