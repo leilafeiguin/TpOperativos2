@@ -8,6 +8,10 @@ typedef struct fileSystem_configuracion {
 } fileSystem_configuracion;
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
+char* estado = "Estable";
+bool existeYama = false;
+
+
 
 fileSystem_configuracion get_configuracion() {
 	printf("Levantando archivo de configuracion del proceso FileSystem\n");

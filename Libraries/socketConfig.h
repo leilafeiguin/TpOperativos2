@@ -25,7 +25,9 @@
 enum codigos_de_operacion {
 	cop_generico = 0,
 	cop_handshake_fileSystem = 1,
-	cop_archivo_programa = 2
+	cop_archivo_programa = 2,
+	cop_handshake_datanode = 3,
+	cop_handshake_yama = 4
 };
 
 typedef int un_socket;
