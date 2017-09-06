@@ -51,10 +51,10 @@ int main(void) {
 	int error=0;
 	error=bind(socketServer, (struct sockaddr *) &direccionServidor, sizeof(direccionServidor));
 	if(error <0)
-		perror('error en bind');
+		perror("error en bind");
 	error=listen(socketServer, 256);
 	if(error <0)
-		perror('error en listen');
+		perror("error en listen");
 
 	FD_SET(socketServer,&listaOriginal);
 
