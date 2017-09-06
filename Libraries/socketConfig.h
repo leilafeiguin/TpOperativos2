@@ -24,10 +24,10 @@
 
 enum codigos_de_operacion {
 	cop_generico = 0,
-	cop_handshake_fileSystem = 1,
-	cop_archivo_programa = 2,
-	cop_handshake_datanode = 3,
-	cop_handshake_yama = 4
+	cop_archivo_programa = 1,
+	//cop_handshake_quienLoRealiza
+	cop_handshake_datanode = 2,
+	cop_handshake_yama = 3
 };
 
 typedef int un_socket;
@@ -59,7 +59,7 @@ typedef struct{
 	int offset;
 	int numero_pagina;
 	int tamanio;
-	void* buffer
+	void* buffer;
 } t_parametros_memoria_escribir;
 
 typedef struct{

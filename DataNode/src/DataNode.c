@@ -26,7 +26,7 @@ int main(void) {
 
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
-	realizar_handshake(fileSystemSocket, cop_handshake_fileSystem);
+	realizar_handshake(fileSystemSocket, cop_handshake_datanode);
 
 
 	return EXIT_SUCCESS;

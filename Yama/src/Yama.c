@@ -24,5 +24,10 @@ int main(void) {
 	yama_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
+	//Se conecta al FileSystem
+	//CONEXIONES
+	un_socket fileSystemSocket = conectar_a(configuracion.IP_FS,configuracion.PUERTO_FS);
+	realizar_handshake(fileSystemSocket, cop_handshake_yama);
+
 	return EXIT_SUCCESS;
 }
