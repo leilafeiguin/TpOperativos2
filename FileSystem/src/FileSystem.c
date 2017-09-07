@@ -45,7 +45,7 @@ int main(void) {
 	struct sockaddr_in direccionServidor;
 	direccionServidor.sin_family = AF_INET;
 	direccionServidor.sin_addr.s_addr = inet_addr("127.0.0.1");
-	direccionServidor.sin_port = htons("8000");//configuracion.PUERTO_FS);
+	direccionServidor.sin_port = htons("1111");//configuracion.PUERTO_FS);
 	un_socket socketServer = socket(AF_INET, SOCK_STREAM, 0);
 	setsockopt(socketServer, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 	int error=0;
@@ -101,6 +101,9 @@ int main(void) {
 					} else {
 						t_paquete* paqueteRecibido = recibir(socketActual);
 						switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
+						case cop_archivo_programa:
+							printf(paqueteRecibido->data);
+						break;
 						}
 					}
 				}

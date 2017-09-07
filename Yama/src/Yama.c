@@ -24,9 +24,6 @@ int main(void) {
 	yama_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-	//Se conecta al FileSystem
-	un_socket fileSystemSocket = conectar_a(configuracion.IP_FS,configuracion.PUERTO_FS);
-	realizar_handshake(fileSystemSocket, cop_handshake_yama);
 
 	//Estructuras para el Select
 		fd_set listaOriginal;
@@ -45,7 +42,7 @@ int main(void) {
 		struct sockaddr_in direccionServidor;
 		direccionServidor.sin_family = AF_INET;
 		direccionServidor.sin_addr.s_addr = inet_addr("127.0.0.1");
-		direccionServidor.sin_port = htons("8000");//configuracion.PUERTO_FS);
+		direccionServidor.sin_port = htons("6666");//configuracion.PUERTO_FS);
 		un_socket socketServer = socket(AF_INET, SOCK_STREAM, 0);
 		setsockopt(socketServer, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 		int error=0;
@@ -64,6 +61,16 @@ int main(void) {
 		pthread_t hiloFileSystem;
 		//pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola);
 
+		//Se conecta al FileSystem
+		un_socket fileSystemSocket = conectar_a(configuracion.IP_FS,configuracion.PUERTO_FS);
+		FD_SET(fileSystemSocket, &listaOriginal);
+		if(fileSystemSocket > socketServer){
+			fd_max = fileSystemSocket;
+		}else{
+			fd_max = socketServer;
+		}
+		realizar_handshake(fileSystemSocket, cop_handshake_yama);
+		//Que pasa si le rechazan la conexion.
 
 		//CONEXIONES
 		while(1){
@@ -85,7 +92,7 @@ int main(void) {
 							t_paquete* paqueteRecibido = recibir(socketActual);
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_archivo_programa:
-								log_trace(logger, paqueteRecibido->data);
+								enviar(fileSystemSocket, cop_archivo_programa,sizeof(paqueteRecibido->data) ,paqueteRecibido->data);
 								//recibir un archivo
 							break;
 							}
