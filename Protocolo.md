@@ -36,7 +36,7 @@ Master -> Worker : archivo de ejecucion
 
 **Formato**
 
-   |archivo|
+    |archivo|
 
 ### Orden de reduccion global
 Cop:
