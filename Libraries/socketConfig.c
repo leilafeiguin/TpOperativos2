@@ -15,15 +15,15 @@
 
 struct addrinfo* _configurar_addrinfo(char *IP, char* Port) {
 	struct addrinfo hints;
-	struct addrinfo* serverInfo;
+	struct addrinfo* serverInfo = malloc(sizeof(struct addrinfo));
 	int16_t error;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	if (!strcmp(IP, "localhost")) {
-		hints.ai_flags = AI_PASSIVE;
-		error = getaddrinfo(NULL, Port, &hints, &serverInfo);
-	} else
+	//if (!strcmp(IP, "localhost")) {
+	//	hints.ai_flags = AI_PASSIVE;
+	//	error = getaddrinfo(NULL, Port, &hints, &serverInfo);
+	//} else
 		error = getaddrinfo(IP, Port, &hints, &serverInfo);
 	if (error) {
 		error_show("Problema con el getaddrinfo()!: %s\n", gai_strerror(error));
