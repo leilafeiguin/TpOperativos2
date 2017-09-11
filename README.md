@@ -1,6 +1,6 @@
 # tp-2017-2c-Todo-ATR
 
-Enunciado: https://goo.gl/XbtLB5
+Enunciado: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/componente-nodo.html
 
 How To: https://goo.gl/esgeGz
 
