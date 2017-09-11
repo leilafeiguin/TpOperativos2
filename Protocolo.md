@@ -78,7 +78,7 @@ Cop:
 
 **Formato**
 
-    |rutaCompleta|nombreArchivo|tipo(texto o binario)|contenindo|
+    |tamañoRuta|rutaCompleta/nombreArchivo|tipo(texto o binario)|contenindo|
 
 **Respuesta**
 
@@ -90,7 +90,8 @@ Consola -> FileSystem : Lee un archivo
 
 **Formato**
 
-    |rutaCompleta|nombreArchivo|
+    |rutaCompleta/nombreArchivo|
+
 **Respuesta**
 
   + Caso: no se pudo acceder al archivo pedido
