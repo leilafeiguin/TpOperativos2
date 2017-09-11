@@ -110,36 +110,22 @@ int main(void) {
 				if (FD_ISSET(socketActual, &read_fds)) {
 					if (socketActual == listener) { //es una conexion nueva
 						newfd = aceptar_conexion(socketActual);
-						t_paquete* handshake = recibir(newfd);
-						if(esperar_handshake(newfd, handshake, cop_handshake_datanode)){
-							FD_SET(newfd, &master); //Agregar al master SET
-							if (newfd > fdmax) {    //Update el Maximo
-								fdmax = newfd;
-							}
-							log_trace(logger, "FileSystem recibio un nuevo Nodo");
-						} else if (esperar_handshake(newfd, handshake, cop_handshake_yama)){
-							//Comprobar estado
-							if(estado != "Estable"){
-								log_trace(logger, "Conexion de Yama rechazada, estado NO estable");
-							}else if(existeYama == true){
-								log_trace(logger, "Conecion de Yama rechazada, ya existe otro Yama");
-							}else{
-								//Acepto a Yama
-								FD_SET(newfd, &master); //Agregar al master SET
-								if (newfd > fdmax) {    //Update el Maximo
-									fdmax = newfd;
-								}
-								existeYama = true;
-								log_trace(logger, "FileSystem se conecto con Yama");
-								}
+						t_paquete* handshake = recibir(socketActual);
+						FD_SET(newfd, &master); //Agregar al master SET
+						if (newfd > fdmax) {    //Update el Maximo
+							fdmax = newfd;
 						}
+						log_trace(logger, "FileSystem recibio una nueva conexion");
 						free(handshake);
 					//No es una nueva conexion -> Recibo el paquete
 					} else {
 						t_paquete* paqueteRecibido = recibir(socketActual);
 						switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
+						case cop_handshake_yama:
+							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_yama);
+						break;
 						case cop_archivo_programa:
-							printf(paqueteRecibido->data);
+							log_trace(logger, paqueteRecibido->data);
 						break;
 						}
 					}

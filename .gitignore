@@ -1,4 +1,5 @@
 #RemoteSystemsTempFiles
+*.txt
 *.metadata
 *.d
 *.cproject

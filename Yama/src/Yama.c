@@ -129,6 +129,9 @@ int main(void) {
 						} else {
 							t_paquete* paqueteRecibido = recibir(socketActual);
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
+							case cop_handshake_master:
+								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
+							break;
 							case cop_archivo_programa:
 								enviar(fileSystemSocket, cop_archivo_programa,sizeof(paqueteRecibido->data) ,paqueteRecibido->data);
 								//recibir un archivo
