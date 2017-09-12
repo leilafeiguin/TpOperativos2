@@ -1,6 +1,7 @@
 #include <socketConfig.h>
 #include <commons/log.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct fileSystem_configuracion {

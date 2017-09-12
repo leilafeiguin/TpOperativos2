@@ -11,8 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "FileSystem.h"
-//#include <readline/readline.h>
-//#include <readline/history.h>
 
 int main(void) {
 	//Logger
@@ -137,20 +135,11 @@ int main(void) {
 }
 
 
-//void hiloFileSystem_Consola(){
-//	char * linea;
-//	  while(1) {
-//		  linea = readline(">");
-//		  if(linea)
-//			  add_history(linea);
-//		  if(!strncmp(linea, "exit", 4)) {
-//			  free(linea);
-//			  break;
-//		  }
-//		  printf("%s\n", linea);
-//		  free(linea);
-//	  }
-//}
+void hiloFileSystem_Consola(){
+	char * linea;
+	linea = readline(">");
+
+}
 
 
 
