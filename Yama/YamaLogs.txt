@@ -1,2 +1,0 @@
-[TRACE] 09:19:20:60 Yama Logs/(4227:4227): Inicializando proceso Yama
-[TRACE] 09:19:20:60 Yama Logs/(4227:4227): Archivo de configuracion levantado

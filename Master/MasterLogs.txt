@@ -1,6 +1,0 @@
-[TRACE] 09:24:44:2 Master Logs/(4585:4585): Inicializando proceso Master
-[TRACE] 09:24:44:4 Master Logs/(4585:4585): Archivo de configuracion levantado
-[TRACE] 10:58:59:689 Master Logs/(2819:2819): Inicializando proceso Master
-[TRACE] 10:58:59:689 Master Logs/(2819:2819): Archivo de configuracion levantado
-[TRACE] 10:59:40:301 Master Logs/(2837:2837): Inicializando proceso Master
-[TRACE] 10:59:40:301 Master Logs/(2837:2837): Archivo de configuracion levantado

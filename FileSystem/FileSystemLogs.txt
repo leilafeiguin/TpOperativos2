@@ -1,2 +1,0 @@
-[TRACE] 10:06:10:342 FileSystem Logs/(9580:9580): Inicializando proceso FileSystem
-[TRACE] 10:06:10:342 FileSystem Logs/(9580:9580): Archivo de configuracion levantado

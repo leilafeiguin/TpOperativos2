@@ -1,2 +1,0 @@
-[TRACE] 09:28:27:310 Worker Logs/(4752:4752): Inicializando proceso Worker
-[TRACE] 09:28:27:310 Worker Logs/(4752:4752): Archivo de configuracion levantado
