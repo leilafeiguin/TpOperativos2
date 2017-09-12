@@ -96,7 +96,7 @@ int main(void) {
 	    fdmax = listener; // so far, it's this one
 
 	pthread_t hiloFileSystem;
-	//pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola);
+	pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola,NULL);
 
 	int socketActual;
 
@@ -135,7 +135,7 @@ int main(void) {
 }
 
 
-void hiloFileSystem_Consola(){
+void hiloFileSystem_Consola(void * unused){
 	char * linea;
 	linea = readline(">");
 
