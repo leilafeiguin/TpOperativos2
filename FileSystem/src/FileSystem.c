@@ -179,6 +179,9 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(linea, "info [path_archivo]") == 0){
 				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
 				free(linea);
+			}else {
+				printf("Opcion no valida.\n");
+				free(linea);
 			}
 		}
 	}
