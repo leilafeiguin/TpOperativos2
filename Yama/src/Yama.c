@@ -18,7 +18,7 @@
 
 
 int main(void) {
-	t_log* logger;
+	//t_log* logger;
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
 
