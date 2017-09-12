@@ -128,7 +128,6 @@ int main(void) {
 						}
 					}
 				}
-
 		}
 	}
 	return EXIT_SUCCESS;
@@ -181,9 +180,6 @@ void hiloFileSystem_Consola(void * unused){
 				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
 				free(linea);
 			}
-
-
-
 		}
 	}
 }
