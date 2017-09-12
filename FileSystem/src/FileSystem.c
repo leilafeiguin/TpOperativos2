@@ -143,6 +143,7 @@ void hiloFileSystem_Consola(void * unused){
 		if (!linea) {
 			break;
 		}else{
+			add_history(linea);
 			if (strcmp(linea, "format") == 0){
 				printf("Formatear el Filesystem\n");
 				free(linea);
