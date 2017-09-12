@@ -16,15 +16,6 @@
 #include <unistd.h>
 #include "Yama.h"
 
-void sig_handler(int signo)
-{
-    if (signo == SIGUSR1)
-        printf("Se recibio SIGUSR1\n");
-    	//log_trace(logger, "Se recibio SIGUSR1");
-    	yama_configuracion configuracion = get_configuracion();
-    	printf("Se cargo nuevamente el archivo de configuracion\n");
-    	//log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
-}
 
 int main(void) {
 	t_log* logger;
