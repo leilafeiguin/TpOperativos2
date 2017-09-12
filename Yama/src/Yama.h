@@ -9,6 +9,7 @@ typedef struct yama_configuracion {
 	char* ALGORITMO_BALANCEO;
 } yama_configuracion;
 
+
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
 
 yama_configuracion get_configuracion() {
