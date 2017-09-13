@@ -143,10 +143,11 @@ void hiloFileSystem_Consola(void * unused){
 			break;
 		}else{
 			add_history(linea);
+			char* linea2 = strdup(linea);
 			if (strcmp(linea, "format") == 0){
 				printf("Formatear el Filesystem\n");
 				free(linea);
-			}else if (strcmp(linea, "rm [path_archivo]") == 0){
+			}else if (strcmp(strsep(&linea2, " "), "rm") == 0){
 				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
 				char *parametro = linea;
 				strsep(&parametro, " ");
