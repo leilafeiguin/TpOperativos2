@@ -96,7 +96,7 @@ int main(void) {
 	    fdmax = listener; // so far, it's this one
 
 	pthread_t hiloFileSystem;
-	pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola,NULL);
+	//pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola,NULL);
 
 	int socketActual;
 
@@ -134,76 +134,76 @@ int main(void) {
 }
 
 
-void hiloFileSystem_Consola(void * unused){
-	printf("Consola Iniciada. Ingrese una opcion \n");
-	char * linea;
-	while(1) {
-		linea = readline(">");
-		if (!linea) {
-			break;
-		}else{
-			add_history(linea);
-			char* linea2 = strdup(linea);
-			if (strcmp(linea, "format") == 0){
-				printf("Formatear el Filesystem\n");
-				free(linea);
-			}else if (strcmp(strsep(&linea2, " "), "rm") == 0){
-				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
-				char *parametro = linea;
-				strsep(&parametro, " ");
-				printf(parametro);
-				free(linea);
-			}else if (strcmp(linea, "rename [path_original] [nombre_final]") == 0){
-				printf("Renombra un Archivo o Directorio\n");
-
-				 char *linea2, *found;
-				 char*parametros[2];
-				 int i;
-				 linea2 = strdup(linea);
-				 found = strsep(&linea2," ");
-				 found = strsep(&linea2," ");
-
-				 for(i=0;found != NULL;i++){
-					 printf("%s\n",found);
-					 parametros[i] = found;
-					 found = strsep(&linea2," ");
-				 }
-
-				free(linea);
-			}else if (strcmp(linea, "mv [path_original] [path_final]") == 0){
-				printf("Mueve un Archivo o Directorio\n");
-				free(linea);
-			}else if (strcmp(linea, "cat [path_archivo]") == 0){
-				printf("Muestra el contenido del archivo como texto plano.\n");
-				free(linea);
-			}else if (strcmp(linea, "mkdir [path_dir]") == 0){
-				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
-				free(linea);
-			}else if (strcmp(linea, "cpfrom [path_archivo_origen] [directorio_yamafs]") == 0){
-				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
-				free(linea);
-			}else if (strcmp(linea, "cpto [path_archivo_yamafs] [directorio_filesystem]") == 0){
-				printf("Copiar un archivo local al yamafs\n");
-				free(linea);
-			}else if (strcmp(linea, "cpblock [path_archivo] [nro_bloque] [id_nodo]") == 0){
-				printf("Crea una copia de un bloque de un archivo en el nodo dado.\n");
-				free(linea);
-			}else if (strcmp(linea, "md5 [path_archivo_yamafs]") == 0){
-				printf("Solicitar el MD5 de un archivo en yamafs\n");
-				free(linea);
-			}else if (strcmp(linea, "ls [path_directorio]") == 0){
-				printf("Lista los archivos de un directorio\n");
-				free(linea);
-			}else if (strcmp(linea, "info [path_archivo]") == 0){
-				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
-				free(linea);
-			}else {
-				printf("Opcion no valida.\n");
-				free(linea);
-			}
-		}
-	}
-}
+//void hiloFileSystem_Consola(void * unused){
+//	printf("Consola Iniciada. Ingrese una opcion \n");
+//	char * linea;
+//	while(1) {
+//		linea = readline(">");
+//		if (!linea) {
+//			break;
+//		}else{
+//			add_history(linea);
+//			char* linea2 = strdup(linea);
+//			if (strcmp(linea, "format") == 0){
+//				printf("Formatear el Filesystem\n");
+//				free(linea);
+//			}else if (strcmp(strsep(&linea2, " "), "rm") == 0){
+//				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
+//				char *parametro = linea;
+//				strsep(&parametro, " ");
+//				printf(parametro);
+//				free(linea);
+//			}else if (strcmp(linea, "rename [path_original] [nombre_final]") == 0){
+//				printf("Renombra un Archivo o Directorio\n");
+//
+//				 char *linea2, *found;
+//				 char*parametros[2];
+//				 int i;
+//				 linea2 = strdup(linea);
+//				 found = strsep(&linea2," ");
+//				 found = strsep(&linea2," ");
+//
+//				 for(i=0;found != NULL;i++){
+//					 printf("%s\n",found);
+//					 parametros[i] = found;
+//					 found = strsep(&linea2," ");
+//				 }
+//
+//				free(linea);
+//			}else if (strcmp(linea, "mv [path_original] [path_final]") == 0){
+//				printf("Mueve un Archivo o Directorio\n");
+//				free(linea);
+//			}else if (strcmp(linea, "cat [path_archivo]") == 0){
+//				printf("Muestra el contenido del archivo como texto plano.\n");
+//				free(linea);
+//			}else if (strcmp(linea, "mkdir [path_dir]") == 0){
+//				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
+//				free(linea);
+//			}else if (strcmp(linea, "cpfrom [path_archivo_origen] [directorio_yamafs]") == 0){
+//				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
+//				free(linea);
+//			}else if (strcmp(linea, "cpto [path_archivo_yamafs] [directorio_filesystem]") == 0){
+//				printf("Copiar un archivo local al yamafs\n");
+//				free(linea);
+//			}else if (strcmp(linea, "cpblock [path_archivo] [nro_bloque] [id_nodo]") == 0){
+//				printf("Crea una copia de un bloque de un archivo en el nodo dado.\n");
+//				free(linea);
+//			}else if (strcmp(linea, "md5 [path_archivo_yamafs]") == 0){
+//				printf("Solicitar el MD5 de un archivo en yamafs\n");
+//				free(linea);
+//			}else if (strcmp(linea, "ls [path_directorio]") == 0){
+//				printf("Lista los archivos de un directorio\n");
+//				free(linea);
+//			}else if (strcmp(linea, "info [path_archivo]") == 0){
+//				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
+//				free(linea);
+//			}else {
+//				printf("Opcion no valida.\n");
+//				free(linea);
+//			}
+//		}
+//	}
+//}
 
 
 

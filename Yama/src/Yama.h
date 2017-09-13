@@ -23,3 +23,6 @@ yama_configuracion get_configuracion() {
 	configuracion.ALGORITMO_BALANCEO = get_campo_config_string(archivo_configuracion, "ALGORITMO_BALANCEO");
 	return configuracion;
 }
+
+
+void sig_handler(int);
