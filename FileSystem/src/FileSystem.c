@@ -148,9 +148,26 @@ void hiloFileSystem_Consola(void * unused){
 				free(linea);
 			}else if (strcmp(linea, "rm [path_archivo]") == 0){
 				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
+				char *parametro = linea;
+				strsep(&parametro, " ");
+				printf(parametro);
 				free(linea);
 			}else if (strcmp(linea, "rename [path_original] [nombre_final]") == 0){
 				printf("Renombra un Archivo o Directorio\n");
+
+				 char *linea2, *found;
+				 char*parametros[2];
+				 int i;
+				 linea2 = strdup(linea);
+				 found = strsep(&linea2," ");
+				 found = strsep(&linea2," ");
+
+				 for(i=0;found != NULL;i++){
+					 printf("%s\n",found);
+					 parametros[i] = found;
+					 found = strsep(&linea2," ");
+				 }
+
 				free(linea);
 			}else if (strcmp(linea, "mv [path_original] [path_final]") == 0){
 				printf("Mueve un Archivo o Directorio\n");
