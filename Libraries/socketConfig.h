@@ -28,7 +28,8 @@ enum codigos_de_operacion {
 	//cop_handshake_quienLoRealiza
 	cop_handshake_datanode = 2,
 	cop_handshake_yama = 3,
-	cop_handshake_master = 4
+	cop_handshake_master = 4,
+	cop_handshake_worker = 5
 };
 
 typedef int un_socket;
