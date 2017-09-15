@@ -230,8 +230,8 @@ void enviar_archivo(un_socket socket, char* path){
 	int tamanioArchivo = sizeof(char) * ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	char* archivo = malloc(tamanioArchivo+1);
-	fread(archivo, tamanioArchivo, 1, fp);
-	enviar(socket, cop_archivo_programa, tamanioArchivo+1, archivo);
+	fread(archivo, tamanioArchivo+1, 1, fp);
+	enviar(socket, cop_archivo_programa, tamanioArchivo, archivo);
 	fclose (fp);
 	free(archivo);
 }

@@ -133,7 +133,7 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-
+//
 //void hiloFileSystem_Consola(void * unused){
 //	printf("Consola Iniciada. Ingrese una opcion \n");
 //	char * linea;
@@ -204,6 +204,6 @@ int main(void) {
 //		}
 //	}
 //}
-
+//
 
 

@@ -133,7 +133,7 @@ int main(void) {
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
 							break;
 							case cop_archivo_programa:
-								enviar(fileSystemSocket, cop_archivo_programa,sizeof(paqueteRecibido->data) ,paqueteRecibido->data);
+								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
 								//recibir un archivo
 							break;
 							}
