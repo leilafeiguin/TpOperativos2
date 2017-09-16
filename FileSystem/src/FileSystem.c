@@ -13,6 +13,19 @@
 #include "FileSystem.h"
 
 int main(void) {
+
+//	void asignarNombre(char list[], char* asignar){
+//		int i = 0;
+//		while(i<strlen(asignar)){
+//			list[i] = asignar[i];
+//			i++;
+//		}
+//	};
+//
+//	tablaDeDirectorios[0].index = 0;
+//	asignarNombre(tablaDeDirectorios[0].nombre,"root");
+//	tablaDeDirectorios[0].padre = -1;
+
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -133,7 +146,7 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-//
+
 //void hiloFileSystem_Consola(void * unused){
 //	printf("Consola Iniciada. Ingrese una opcion \n");
 //	char * linea;
@@ -204,6 +217,28 @@ int main(void) {
 //		}
 //	}
 //}
-//
+
+// SIN TERMINAR
+
+//t_bitmap leerBitmap(char* unPath){
+//	t_bitmap bitmap;
+//	t_bitmap* siguiente;
+//	bitmap.siguiente = NULL;
+//	FILE *fp = fopen (unPath, "rb");
+//	int i=0;
+//	fseek(fp, 0, SEEK_END);
+//	int tamanio = sizeof(char) * ftell(fp);
+//	fseek(fp, 0, SEEK_SET);
+//	char* bytes = malloc(tamanio);
+//	fread(bytes, tamanio, 1, fp);
+//	fclose (fp);
+//	while(i<tamanio){
+//		bitmap.estado = bytes[i];
+//		bitmap.siguiente;
+//		i++;
+//	};
+//	free(bytes);
+//	return bitmap;
+//};
 
 

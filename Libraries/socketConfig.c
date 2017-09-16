@@ -225,7 +225,7 @@ char** get_campo_config_array(t_config* archivo_configuracion, char* nombre_camp
 }
 
 void enviar_archivo(un_socket socket, char* path){
-	FILE *fp = fopen (path, "r");
+	FILE *fp = fopen (path, "rb");
 	fseek(fp, 0, SEEK_END);
 	int tamanioArchivo = sizeof(char) * ftell(fp);
 	fseek(fp, 0, SEEK_SET);
