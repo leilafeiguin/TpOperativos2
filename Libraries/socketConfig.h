@@ -22,6 +22,13 @@
 #include <commons/config.h>
 #include <unistd.h>
 
+//0 - 9 Handhsake
+//10 - 29 Master
+//30- 49 YAMA
+//50 - 69 FS
+//70 - 79 DataNode
+//80 - 99 Worker
+
 enum codigos_de_operacion {
 	cop_generico = 0,
 	cop_archivo_programa = 1,
@@ -29,8 +36,25 @@ enum codigos_de_operacion {
 	cop_handshake_datanode = 2,
 	cop_handshake_yama = 3,
 	cop_handshake_master = 4,
-	cop_handshake_worker = 5
+	cop_handshake_worker = 5,
+
+	cop_datanode_get_bloque = 70,
+	cop_datanode_get_bloque_respuesta = 71,
+	cop_datanode_setbloque = 72
+
 };
+typedef struct {
+	int numero_bloque;
+
+}t_getbloque;
+
+typedef struct {
+	int numero_bloque;
+	void *datos_bloque;
+}t_setbloque;
+
+
+
 
 typedef int un_socket;
 typedef struct {
