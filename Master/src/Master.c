@@ -23,7 +23,17 @@ int main(void) {
 
 	master_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
+/*  NO BORRAR SIRVE PARA PROBAR CONEXIONES AL WORKER
+	un_socket w1 = conectar_a("127.0.0.1","5050");
 
+	un_socket w2 = conectar_a("127.0.0.1","5050");
+
+	un_socket w3 = conectar_a("127.0.0.1","5050");
+
+	realizar_handshake(w1, cop_handshake_master);
+	realizar_handshake(w2, cop_handshake_master);
+	realizar_handshake(w3, cop_handshake_master);
+	*/
 	//Se conecta al YAMA
 	un_socket yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);

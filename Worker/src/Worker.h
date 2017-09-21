@@ -21,7 +21,7 @@ worker_configuracion get_configuracion() {
 	configuracion.IP_FILESYSTEM = get_campo_config_string(archivo_configuracion, "IP_FILESYSTEM");
 	configuracion.PUERTO_FILESYSTEM = get_campo_config_string(archivo_configuracion, "PUERTO_FILESYSTEM");
 	configuracion.NOMBRE_NODO = get_campo_config_string(archivo_configuracion, "NOMBRE_NODO");
-	configuracion.PUERTO_DATANODE = get_campo_config_string(archivo_configuracion, "PUERTO_DATANODE");
+	configuracion.PUERTO_WORKER = get_campo_config_string(archivo_configuracion, "PUERTO_WORKER");
 	configuracion.RUTA_DATABIN = get_campo_config_string(archivo_configuracion, "RUTA_DATABIN");
 	return configuracion;
 }
