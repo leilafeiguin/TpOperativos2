@@ -22,6 +22,11 @@
 #include <commons/config.h>
 #include <unistd.h>
 
+
+
+
+
+
 //0 - 9 Handhsake
 //10 - 29 Master
 //30- 49 YAMA
@@ -65,6 +70,11 @@ typedef struct {
 	int tamanio;
 	void * data;
 } t_paquete;
+
+
+
+
+char* archivo;
 
 /**	@NAME: conectar_a
  * 	@DESC: Intenta conectarse.
@@ -135,5 +145,15 @@ char* get_campo_config_string(t_config* archivo_configuracion,
 void enviar_archivo(un_socket socket, char* path);
 
 bool comprobar_archivo(char* path);
+
+/** @NAME: leer_bloque
+ *
+ */
+
+
+
+void leer_bloque (int, char*);
+
+
 
 #endif /* SOCKETCONFIG_H_ */

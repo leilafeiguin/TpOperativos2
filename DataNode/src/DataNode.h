@@ -9,6 +9,7 @@ typedef struct dataNode_configuracion {
 	char* PUERTO_WORKER;
 	char* PUERTO_DATANODE;
 	char* RUTA_DATABIN;
+
 } dataNode_configuracion;
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/DataNode/configNodo.cfg";

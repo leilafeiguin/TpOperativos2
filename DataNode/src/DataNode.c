@@ -39,7 +39,7 @@ int main(void) {
 	fstat(fd, &sb);
 
 
-	void* archivo=mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
 	//mmap
 
 	//CONEXIONES
@@ -50,20 +50,20 @@ int main(void) {
 		t_paquete* paquete=recibir(fileSystemSocket);
 
 		switch (paquete-> codigo_operacion){
-			//case cop_datanode_get_bloque:
-			{
-				//int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
-				//void* bloque = leer_bloque(archivo, numeroBloque);//
+		case cop_datanode_get_bloque:{
+			int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
+			char* bloqueAenviar = malloc(1024*1024);
+			leer_bloque(numeroBloque, bloqueAenviar);
 
-				//enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024 /*1MB*/, bloque);//
-				//free(bloque);//
-				//free(paquete);//
-			}//
+			enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
+
+			free(bloqueAenviar);
+			free(paquete);}
 			break;
 			case cop_datanode_setbloque:
-						{
 
-						}
+
+
 						break;
 
 
