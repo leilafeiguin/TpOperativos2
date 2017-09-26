@@ -55,14 +55,15 @@ void sortfile(char **array, int linecount)
 }
 
 
-/*char* ordenarLineasArchivos (char* paths []){
-	int cantPaths = sizeof(paths) / sizeof(paths[0]);
+char* ordenarLineasArchivos (char* paths []){
+	int cantPaths = sizeof(paths) / sizeof(paths[0]) + 1;
+
 	int i = 0;
 	int j = 0;
 	unsigned long int linecountGlobal;
 
 	for(i=0;i<cantPaths;i++){
-		linecountGlobal = linecountGlobal + lineCountFile(paths[i]);
+		linecountGlobal = linecountGlobal + lineCountFile(paths[i]) + 1;
 	}
 	char **arrayGlobal = (char**)malloc(linecountGlobal * sizeof(char*));
 
@@ -128,9 +129,8 @@ void sortfile(char **array, int linecount)
 		free(arrayGlobal[i]);
 	}
 
-
 	return "fileTestOrdenado";
-}*/
+}
 
 char* ordenarArchivo(char* path){
 	char *out = "fileTestOrdenado";
@@ -198,7 +198,8 @@ int main(void) {
 	paths[0] = "fileTest";
 	paths[1] = "fileTest2";
 
-	char* pathFinal = ordenarArchivo("fileTest");
+	//char* pathFinal = ordenarArchivo("fileTest");
+	char* pathFinal = ordenarLineasArchivos(paths);
 
 	printf("Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
