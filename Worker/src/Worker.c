@@ -14,44 +14,178 @@
 #include "Worker.h"
 #include "socketConfig.h"
 
-enum { MAXLINES = 30 };
+#define MAX_LINE 4096
 
-int StringCompare( const void* a, const void* b)
+unsigned long int lineCountFile(const char *filename)
 {
-	const char *ia = (const char *)a;
-	const char *ib = (const char *)b;
-	return strcmp(ia, ib);
-	/* strcmp functions works exactly as expected from
-	comparison function */
+    FILE *fp = fopen(filename, "r");
+    unsigned long int linecount = 0;
+    int c;
+    if(fp == NULL){
+    	printf("No se puede abrir el archivo.\n");
+        fclose(fp);
+        return 0;
+    }
+    while((c=fgetc(fp)) != EOF )
+    {
+        if(c == '\n')
+            linecount++;
+    }
+    fclose(fp);
+    return linecount;
+}
+
+void sortfile(char **array, int linecount)
+{
+    int i, j;
+    char t[MAX_LINE];
+
+    for(i=1;i<linecount;i++)
+    {
+        for(j=1;j<linecount;j++)
+        {
+            if(strcmp(array[j-1], array[j]) > 0)
+            {
+                strcpy(t, array[j-1]);
+                strcpy(array[j-1], array[j]);
+                strcpy(array[j], t);
+            }
+        }
+    }
 }
 
 
-char* apareo (char* paths [4]){
-	int cantArchivos = sizeof(paths);
-	char* pathFinal;
-	char line [128];
-	char file [10][128];
+/*char* ordenarLineasArchivos (char* paths []){
+	int cantPaths = sizeof(paths) / sizeof(paths[0]);
 	int i = 0;
-	FILE *fp = fopen(paths[0], "r");
-	if (fp == 0)
-	{
-		fprintf(stderr, "failed to open the file.\n");
-		exit(1);
+	int j = 0;
+	unsigned long int linecountGlobal;
+
+	for(i=0;i<cantPaths;i++){
+		linecountGlobal = linecountGlobal + lineCountFile(paths[i]);
+	}
+	char **arrayGlobal = (char**)malloc(linecountGlobal * sizeof(char*));
+
+	for(i=0; i<cantPaths; i++){
+		FILE *fileIN;
+		fileIN = fopen(paths[i], "rb");
+		if(!fileIN)
+		{
+			printf("No se puede abrir el archivo.\n");
+			exit(-1);
+		}
+
+		unsigned long int linecount = lineCountFile(paths[i]);
+		linecount += 1;
+
+		char **array = (char**)malloc(linecount * sizeof(char*));
+		char singleline[MAX_LINE];
+
+		int i = 0;
+		while(fgets(singleline, MAX_LINE, fileIN) != NULL)
+		{
+			array[i] = (char*) malloc (MAX_LINE * sizeof(char));
+			singleline[MAX_LINE] = '\0';
+			strcpy(array[i], singleline);
+			i++;
+		}
+
+		memcpy(arrayGlobal, array, linecount * sizeof(char*));
+
+		sortfile(array, linecount);
+
+			for(i=0; i<linecount; i++)
+			{
+				printf("%s\n", array[i]);
+			}
+
+			fclose(fileIN);
 	}
 
-	while (fgets(file[i], sizeof(file[i]), fp)){
+	sortfile(arrayGlobal, linecountGlobal);
+	for(i=0; i<linecountGlobal; i++)
+	{
+		printf("%s\n", arrayGlobal[i]);
+	};
+
+
+	FILE *archivoOrdenado = fopen("fileTestOrdenado", "wb");
+	if(!archivoOrdenado)
+		{
+			printf("No se puede abrir el archivo.\n");
+			exit(-1);
+		}
+
+	for(i=0; i<linecountGlobal; i++)
+	{
+		fprintf(archivoOrdenado,"%s \n", arrayGlobal[i]);
+	}
+
+	fclose(archivoOrdenado);
+
+	for(i=0; i<linecountGlobal; i++)
+	{
+		free(arrayGlobal[i]);
+	}
+
+
+	return "fileTestOrdenado";
+}*/
+
+char* ordenarArchivo(char* path){
+	char *out = "fileTestOrdenado";
+
+	FILE *fileIN, *fileOUT;
+
+	fileIN = fopen(path, "rb");
+	if(!fileIN)
+	{
+		exit(-1);
+	}
+
+	unsigned long int linecount = lineCountFile(path);
+	linecount += 1;
+
+	char **array = (char**)malloc(linecount * sizeof(char*));
+	char singleline[MAX_LINE];
+
+	int i = 0;
+	while(fgets(singleline, MAX_LINE, fileIN) != NULL)
+	{
+		array[i] = (char*) malloc (MAX_LINE * sizeof(char));
+		singleline[MAX_LINE] = '\0';
+		strcpy(array[i], singleline);
 		i++;
 	}
 
-	qsort(file, 4, sizeof(char*), StringCompare);
-	int n;
+	sortfile(array, linecount);
 
-	for (n=0; n<4; n++)
-		   printf ("%s ", file[n]);
+	for(i=0; i<linecount; i++)
+	{
+		printf("%s\n", array[i]);
+	}
 
-	fclose(fp);
+	fileOUT = fopen(out, "wb");
+	if(!fileOUT)
+	{
+		exit(-1);
+	}
 
-	return pathFinal;
+	for(i=0; i<linecount; i++)
+	{
+		fprintf(fileOUT, "%s", array[i]);
+	}
+
+	fclose(fileIN);
+	fclose(fileOUT);
+
+	for(i=0; i<linecount; i++)
+	{
+		free(array[i]);
+	}
+	free(array);
+
+	return 0;
 }
 
 
@@ -60,10 +194,11 @@ int main(void) {
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
 
-	char* paths [1];
+	char* paths [2];
 	paths[0] = "fileTest";
+	paths[1] = "fileTest2";
 
-	char* pathFinal = apareo(paths);
+	char* pathFinal = ordenarArchivo("fileTest");
 
 	printf("Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
