@@ -91,16 +91,14 @@ char* ordenarLineasArchivos (char* paths []){
 			i++;
 		}
 
-		memcpy(arrayGlobal, array, linecount * sizeof(char*));
+		if(arrayGlobal[0] == NULL){
+			memcpy(arrayGlobal, array, linecount * sizeof(char*));
+		}else{
+			memcpy(arrayGlobal+linecount, array, linecount * sizeof(char*));
+		}
 
 		sortfile(array, linecount);
-
-			for(i=0; i<linecount; i++)
-			{
-				printf("%s\n", array[i]);
-			}
-
-			fclose(fileIN);
+		fclose(fileIN);
 	}
 
 	sortfile(arrayGlobal, linecountGlobal);
@@ -108,7 +106,6 @@ char* ordenarLineasArchivos (char* paths []){
 	{
 		printf("%s\n", arrayGlobal[i]);
 	};
-
 
 	FILE *archivoOrdenado = fopen("fileTestOrdenado", "wb");
 	if(!archivoOrdenado)
