@@ -55,11 +55,10 @@ void sortfile(char **array, int linecount)
 }
 
 
-char* ordenarLineasArchivos (char* paths []){
+char* apareo (char* paths []){
 	int cantPaths = sizeof(paths) / sizeof(paths[0]) + 1;
 
 	int i = 0;
-	int j = 0;
 	unsigned long int linecountGlobal;
 
 	for(i=0;i<cantPaths;i++){
@@ -90,6 +89,7 @@ char* ordenarLineasArchivos (char* paths []){
 			strcpy(array[i], singleline);
 			i++;
 		}
+		strcat(array[linecount - 1], "\n");
 
 		if(arrayGlobal[0] == NULL){
 			memcpy(arrayGlobal, array, linecount * sizeof(char*));
@@ -97,15 +97,10 @@ char* ordenarLineasArchivos (char* paths []){
 			memcpy(arrayGlobal+linecount, array, linecount * sizeof(char*));
 		}
 
-		sortfile(array, linecount);
 		fclose(fileIN);
 	}
 
 	sortfile(arrayGlobal, linecountGlobal);
-	for(i=0; i<linecountGlobal; i++)
-	{
-		printf("%s\n", arrayGlobal[i]);
-	};
 
 	FILE *archivoOrdenado = fopen("fileTestOrdenado", "wb");
 	if(!archivoOrdenado)
@@ -116,7 +111,7 @@ char* ordenarLineasArchivos (char* paths []){
 
 	for(i=0; i<linecountGlobal; i++)
 	{
-		fprintf(archivoOrdenado,"%s \n", arrayGlobal[i]);
+		fprintf(archivoOrdenado,"%s", arrayGlobal[i]);
 	}
 
 	fclose(archivoOrdenado);
@@ -196,7 +191,7 @@ int main(void) {
 	paths[1] = "fileTest2";
 
 	//char* pathFinal = ordenarArchivo("fileTest");
-	char* pathFinal = ordenarLineasArchivos(paths);
+	char* pathFinal = apareo(paths);
 
 	printf("Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
