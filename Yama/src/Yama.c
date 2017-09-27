@@ -136,6 +136,25 @@ int main(void) {
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
 								//recibir un archivo
 							break;
+							case cop_master_archivo_a_transaformar:
+							{
+								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master");
+
+								//Evalua y planifica en base al archivo que tiene que transaformar
+
+								//Devuelve lista con los workers
+								char* listaWorkers;
+								listaWorkers = "127.0.0.1|3000";
+								enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
+							break;
+							}
+							case cop_master_estados_workers:
+								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
+
+								//hacer lo que corresponda
+								//si esta todo ok avanza el proceso de forma normal y sino debe replanificar
+								//y mandar nuevos sockets
+							break;
 							}
 						}
 					}

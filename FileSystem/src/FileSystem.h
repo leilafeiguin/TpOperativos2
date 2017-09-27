@@ -46,13 +46,13 @@ typedef struct t_bloques{
 	struct t_bloques* siguiente;
 }t_bloques;
 
-typedef struct archivo{
+typedef struct t_archivo{
 	char* nombre;
 	char* path;
 	unsigned long int tamanio;
 	bool estado; //Disponible o no - true o false
 	t_bloques bloques;
-}archivo;
+}t_archivo;
 
 typedef struct t_bitmap{
 	int estado;

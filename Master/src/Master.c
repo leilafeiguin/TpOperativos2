@@ -37,11 +37,23 @@ int main(void) {
 	//Se conecta al YAMA
 	un_socket yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);
-	if(true){//comprobar_archivo(configuracion.PATH_ARCHIVO)){
-		enviar_archivo(yamaSocket, configuracion.PATH_ARCHIVO);
-		//desarrollo una vez que se envia el archivo ejecutable ..
-	}else{
-		log_trace(logger, "El archivo no existe o no puede ser leido");
-	}
+	//Master avisa a yama sobre que archivo del FS necesita ejecutar
+	char* archivoParaTransaformar;
+	enviar(yamaSocket,cop_master_archivo_a_transaformar,sizeof(char*)*strlen(archivoParaTransaformar),archivoParaTransaformar);
+	log_trace(logger, "Recibi datos de workers de Yama");
+	t_paquete* paqueteRecibido = recibir(yamaSocket);
+
+	//parsearYConectarse(paqueteRecibido.data); //deberia devolver una lista de sockets
+
+	//agregandolos a las estructuras correspondientes
+
+	//realizar_handshake(worker1, cop_handshake_master);
+
+	//si falla hay que capturarlo y mandarlo a YAMA
+	log_trace(logger, "Respondo a Yama estado de conexiones con workers");
+	char* estado_worker1 = "Ok";
+	enviar(yamaSocket, cop_master_estados_workers, sizeof(char*)*strlen(estado_worker1), estado_worker1);
+
+	//hacer un if para saber si pasa a etapa de transformacion o si hubo error esperar nuevos workers
 	return EXIT_SUCCESS;
 }

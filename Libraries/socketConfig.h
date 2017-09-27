@@ -43,6 +43,11 @@ enum codigos_de_operacion {
 	cop_handshake_master = 4,
 	cop_handshake_worker = 5,
 
+	cop_master_archivo_a_transaformar = 10,
+	cop_master_estados_workers = 11,
+
+	cop_yama_lista_de_workers = 50,
+
 	cop_datanode_get_bloque = 70,
 	cop_datanode_get_bloque_respuesta = 71,
 	cop_datanode_setbloque = 72,
@@ -62,17 +67,12 @@ typedef struct {
 }t_setbloque;
 
 
-
-
 typedef int un_socket;
 typedef struct {
 	int codigo_operacion;
 	int tamanio;
 	void * data;
 } t_paquete;
-
-
-
 
 char* archivo;
 
