@@ -16,6 +16,7 @@
 
 #define MAX_LINE 4096
 
+//---------------------------------FUNCIONES---------------------------------------------
 unsigned long int lineCountFile(const char *filename)
 {
     FILE *fp = fopen(filename, "r");
@@ -124,62 +125,7 @@ char* apareo (char* paths []){
 	return "fileTestOrdenado";
 }
 
-char* ordenarArchivo(char* path){
-	char *out = "fileTestOrdenado";
-
-	FILE *fileIN, *fileOUT;
-
-	fileIN = fopen(path, "rb");
-	if(!fileIN)
-	{
-		exit(-1);
-	}
-
-	unsigned long int linecount = lineCountFile(path);
-	linecount += 1;
-
-	char **array = (char**)malloc(linecount * sizeof(char*));
-	char singleline[MAX_LINE];
-
-	int i = 0;
-	while(fgets(singleline, MAX_LINE, fileIN) != NULL)
-	{
-		array[i] = (char*) malloc (MAX_LINE * sizeof(char));
-		singleline[MAX_LINE] = '\0';
-		strcpy(array[i], singleline);
-		i++;
-	}
-
-	sortfile(array, linecount);
-
-	for(i=0; i<linecount; i++)
-	{
-		printf("%s\n", array[i]);
-	}
-
-	fileOUT = fopen(out, "wb");
-	if(!fileOUT)
-	{
-		exit(-1);
-	}
-
-	for(i=0; i<linecount; i++)
-	{
-		fprintf(fileOUT, "%s", array[i]);
-	}
-
-	fclose(fileIN);
-	fclose(fileOUT);
-
-	for(i=0; i<linecount; i++)
-	{
-		free(array[i]);
-	}
-	free(array);
-
-	return 0;
-}
-
+//-----------------------------------------MAIN-----------------------------------------------
 
 int main(void) {
 	t_log* logger;
