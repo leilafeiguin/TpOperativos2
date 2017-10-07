@@ -3,6 +3,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <stdbool.h>
+#include <commons/bitarray.h>
+#include <commons/collections/list.h>
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct fileSystem_configuracion {
@@ -37,48 +39,54 @@ typedef struct ubicacionBloque{
 	int nroBloque; //en nodo
 }ubicacionBloque;
 
-typedef struct t_bloques{
+typedef struct t_bloque{
 	int nroBloque;
 	unsigned long int tamanioBloque;
 	ubicacionBloque copia1;
 	ubicacionBloque copia2;
 	unsigned long int finBloque;
-	struct t_bloques* siguiente;
-}t_bloques;
+}t_bloque;
 
 typedef struct t_archivo{
 	char* nombre;
 	char* path;
 	unsigned long int tamanio;
 	bool estado; //Disponible o no - true o false
-	t_bloques bloques;
+	t_list bloques; // se le deben agregar struct t_bloque
 }t_archivo;
-
-typedef struct t_bitmap{
-	int estado;
-	struct t_bitmap* siguiente;
-}t_bitmap;
 
 typedef struct t_nodo{
 	int nroNodo;
-	int libre;
-	int ocupado;
-	t_bitmap bitmap;
-	struct t_nodo* nodo;
+	bool ocupado;
+	t_bitarray* bitmap;
 }t_nodo;
 
-typedef struct t_nodos{
-	t_nodo nodo;
+typedef struct t_fs{
+	t_list* ListaNodos; //se le deben agregar struct t_nodo
 	int tamanio;
 	int libre;
-}t_nodos;
-t_nodos nodos;
+}t_fs;
+
+static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap){
+	t_nodo *new = malloc(sizeof(t_nodo));
+	new->bitmap = bitmap;
+	new->nroNodo = nroNodo;
+	new->ocupado = ocupado;
+	return new;
+}
+
+static void nodo_destroy(t_nodo* nodo){
+	free(nodo->bitmap);//checkear que sea asi
+	free(nodo->nroNodo);
+	//free(nodo->ocupado);
+}
 
 //inicializacion de estructuras
 t_directory tablaDeDirectorios[99];
 
+t_fs fileSystem;
+t_list* nodos;
 
 void hiloFileSystem_Consola();
-t_bitmap leerBitmap(char*);
 
 

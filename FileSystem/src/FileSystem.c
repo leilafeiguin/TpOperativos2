@@ -41,28 +41,25 @@ int main(void) {
 	fileSystem_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
+	// ----------------------------------------------
+	// ----------------------------------------------
+	// ----------------------------------------------
+	// ----------------------------------------------
 	fd_set master;    // master file descriptor list
 	fd_set read_fds;  // temp file descriptor list for select()
 	int fdmax;        // maximum file descriptor number
-
 	int listener;     // listening socket descriptor
 	int newfd;        // newly accept()ed socket descriptor
 	struct sockaddr_storage remoteaddr; // client address
 	socklen_t addrlen;
-
 	char buf[256];    // buffer for client data
 	int nbytes;
-
 	char remoteIP[INET6_ADDRSTRLEN];
-
 	int yes=1;        // for setsockopt() SO_REUSEADDR, below
 	int i, j, rv;
-
 	struct addrinfo hints, *ai, *p;
-
 	FD_ZERO(&master);    // clear the master and temp sets
 	FD_ZERO(&read_fds);
-
 	// get us a socket and bind it
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -72,48 +69,45 @@ int main(void) {
 		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
 		exit(1);
 	}
-
 	for(p = ai; p != NULL; p = p->ai_next) {
 		listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 		if (listener < 0) {
 			continue;
 		}
-
 		// lose the pesky "address already in use" error message
 		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
 		if (bind(listener, p->ai_addr, p->ai_addrlen) < 0) {
 			close(listener);
 			continue;
 		}
-
 		break;
 	}
-
 	// if we got here, it means we didn't get bound
 	if (p == NULL) {
 		fprintf(stderr, "selectserver: failed to bind\n");
 		exit(2);
 	}
-
 	freeaddrinfo(ai); // all done with this
-
 	// listen
 	if (listen(listener, 10) == -1) {
 		perror("listen");
 		exit(3);
 	}
-
 	// add the listener to the master set
 	FD_SET(listener, &master);
-
 	// keep track of the biggest file descriptor
 	fdmax = listener; // so far, it's this one
 
+
+	// ----------------------------------------------
+	// ----------------------------------------------
+	// ----------------------------------------------
+	// ----------------------------------------------
 	pthread_t hiloFileSystem;
 	pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola,NULL);
-
 	int socketActual;
+	nodos = list_create();
+	fileSystem.ListaNodos = nodos;
 
 	//CONEXIONES
 	while(1){
@@ -139,6 +133,19 @@ int main(void) {
 						break;
 						case cop_archivo_programa:
 							log_trace(logger, paqueteRecibido->data);
+						break;
+						case cop_handshake_datanode:
+							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_datanode);
+							//Falta la consideracion si se levanta de un estado anterior
+						{
+							int nroNodo; //como lo defino para que sea unico
+							t_bitarray* unBitmap;
+							char* data[] = {00000000000000000000};
+							unBitmap = bitarray_create(data, 3);
+							t_nodo* unNodo = nodo_create(nroNodo, false, unBitmap);
+							list_add(fileSystem.ListaNodos, unNodo);
+						}
+							//falta agregar otras estructuras administrativas
 						break;
 						}
 					}
@@ -287,28 +294,5 @@ void hiloFileSystem_Consola(void * unused){
 		}
 	}
 }
-
-// SIN TERMINAR
-
-//t_bitmap leerBitmap(char* unPath){
-//	t_bitmap bitmap;
-//	t_bitmap* siguiente;
-//	bitmap.siguiente = NULL;
-//	FILE *fp = fopen (unPath, "rb");
-//	int i=0;
-//	fseek(fp, 0, SEEK_END);
-//	int tamanio = sizeof(char) * ftell(fp);
-//	fseek(fp, 0, SEEK_SET);
-//	char* bytes = malloc(tamanio);
-//	fread(bytes, tamanio, 1, fp);
-//	fclose (fp);
-//	while(i<tamanio){
-//		bitmap.estado = bytes[i];
-//		bitmap.siguiente;
-//		i++;
-//	};
-//	free(bytes);
-//	return bitmap;
-//};
 
 
