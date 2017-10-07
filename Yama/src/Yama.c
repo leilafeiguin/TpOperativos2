@@ -211,7 +211,7 @@ int main(void) {
 							break;
 							case cop_master_archivo_a_transaformar:
 							{
-								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master");
+								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
 
 								//Evalua y planifica en base al archivo que tiene que transaformar
 

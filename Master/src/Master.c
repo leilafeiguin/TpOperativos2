@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include "Master.h"
 
-int main(void) {
+int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archivoDestino) {
 	t_log* logger;
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
@@ -23,28 +23,29 @@ int main(void) {
 
 	master_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
-/*  NO BORRAR SIRVE PARA PROBAR CONEXIONES AL WORKER
-	un_socket w1 = conectar_a("127.0.0.1","5050");
 
-	un_socket w2 = conectar_a("127.0.0.1","5050");
-
-	un_socket w3 = conectar_a("127.0.0.1","5050");
-
-	realizar_handshake(w1, cop_handshake_master);
-	realizar_handshake(w2, cop_handshake_master);
-	realizar_handshake(w3, cop_handshake_master);
-	*/
 	//Se conecta al YAMA
 	un_socket yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);
 	//Master avisa a yama sobre que archivo del FS necesita ejecutar
-	char* archivoParaTransaformar;
-	enviar(yamaSocket,cop_master_archivo_a_transaformar,sizeof(char*)*strlen(archivoParaTransaformar),archivoParaTransaformar);
+
+	enviar(yamaSocket,cop_master_archivo_a_transaformar,sizeof(char*)*strlen(archivoOrigen),archivoOrigen);
+
 	log_trace(logger, "Recibi datos de workers de Yama");
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
 
-	//parsearYConectarse(paqueteRecibido.data); //deberia devolver una lista de sockets
+	//	NO BORRAR SIRVE PARA PROBAR CONEXIONES AL WORKER
+	//	un_socket w1 = conectar_a("127.0.0.1","5050");
+	//
+	//	un_socket w2 = conectar_a("127.0.0.1","5050");
+	//
+	//	un_socket w3 = conectar_a("127.0.0.1","5050");
+	//
+	//	realizar_handshake(w1, cop_handshake_master);
+	//	realizar_handshake(w2, cop_handshake_master);
+	//	realizar_handshake(w3, cop_handshake_master);
 
+	//list_map(workers, );
 	//agregandolos a las estructuras correspondientes
 
 	//realizar_handshake(worker1, cop_handshake_master);
@@ -55,5 +56,8 @@ int main(void) {
 	enviar(yamaSocket, cop_master_estados_workers, sizeof(char*)*strlen(estado_worker1), estado_worker1);
 
 	//hacer un if para saber si pasa a etapa de transformacion o si hubo error esperar nuevos workers
+
+
+
 	return EXIT_SUCCESS;
 }
