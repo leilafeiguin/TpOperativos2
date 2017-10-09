@@ -222,6 +222,18 @@ char** validaCantParametrosComando(char* comando, int cantParametros){
 	return 0;
 }
 
+void formatearFileSystem(){
+	int i;
+	list_destroy(fileSystem.ListaNodos);
+	nodos = list_create();
+	fileSystem.ListaNodos = nodos;
+
+	for(i=0;i<sizeof(tablaDeDirectorios)/sizeof(t_directory);i++){
+		tablaDeDirectorios[i].padre = -1;
+	}
+	printf("Filesystem formateado.\n");
+}
+
 void hiloFileSystem_Consola(void * unused){
 	printf("Consola Iniciada. Ingrese una opcion \n");
 	char * linea;
@@ -242,6 +254,7 @@ void hiloFileSystem_Consola(void * unused){
 
 			if (strcmp(linea, "format") == 0){
 				printf("Formatear el Filesystem\n");
+				formatearFileSystem();
 				free(linea);
 			}else if (strcmp(primeraPalabra, "rm") == 0){
 				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
