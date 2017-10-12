@@ -50,17 +50,30 @@ int main(void) {
 		t_paquete* paquete=recibir(fileSystemSocket);
 
 		switch (paquete-> codigo_operacion){
-		case cop_datanode_get_bloque:{
-			int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
-			char* bloqueAenviar = malloc(1024*1024);
-			leer_bloque(numeroBloque, bloqueAenviar);
+			case cop_datanode_get_bloque:
+			{
+				int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
+				void* bloqueAenviar = malloc(1024*1024);
+				leer_bloque(numeroBloque, bloqueAenviar);
 
-			enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
+				enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
 
-			free(bloqueAenviar);
-			free(paquete);}
+				free(bloqueAenviar);
+				free(paquete);
+			}
 			break;
 			case cop_datanode_setbloque:
+			{
+				int numeroBloque = ((t_setbloque*)paquete->data)->numero_bloque;
+				void* bloqueArecibir = ((t_setbloque*)paquete->data) -> datos_bloque;
+				escribir_bloque (numeroBloque, bloqueArecibir);
+				free(bloqueArecibir);
+				free(paquete);
+
+
+			}
+			break;
+
 
 
 

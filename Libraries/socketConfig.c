@@ -6,6 +6,11 @@
  */
 
 #include "socketConfig.h"
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 /**  @NAME: _configurar_addrinfo
  *	 @DESC: Retorna un puntero a una addrInfo totalmente lista para usar,
@@ -224,25 +229,30 @@ char** get_campo_config_array(t_config* archivo_configuracion, char* nombre_camp
 	return NULL;
 }
 
+//mmap master a yama
 void enviar_archivo(un_socket socket, char* path){
-	FILE *fp = fopen (path, "rb");
-	fseek(fp, 0, SEEK_END);
-	int tamanioArchivo = sizeof(char) * ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	char* archivo = malloc(tamanioArchivo+1);
-	fread(archivo, tamanioArchivo+1, 1, fp);
-	enviar(socket, cop_archivo_programa, tamanioArchivo, archivo);
-	fclose (fp);
+	struct stat sb;
+	int fd=open(path, O_RDWR);
+	fstat(fd, &sb);
+	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	enviar(socket, cop_archivo_programa, sb.st_size, archivo);
+	close (fd);
 	free(archivo);
 }
 
-void leer_bloque(int numeroBloque, char* bloqueAleer) {
+void leer_bloque(int numeroBloque, void* bloqueAleer) {
 	int posicion = (numeroBloque *1024*1024);
 	memcpy (bloqueAleer, archivo[numeroBloque*1024*1024], 1024*1024);
 	return;
 }
 
+void escribir_bloque(int numeroBloque, void* bloqueAescribir) {
+	int posicion= (numeroBloque *1024*1024);
+	memcpy (archivo[numeroBloque*1024*1024],bloqueAescribir,1024*1024)
+	return;
+}
 
+}
 
 
 bool comprobar_archivo(char* path){

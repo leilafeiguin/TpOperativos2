@@ -152,7 +152,7 @@ bool comprobar_archivo(char* path);
 
 
 
-void leer_bloque (int, char*);
+
 
 
 

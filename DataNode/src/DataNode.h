@@ -26,3 +26,6 @@ dataNode_configuracion get_configuracion() {
 	configuracion.RUTA_DATABIN = get_campo_config_string(archivo_configuracion, "RUTA_DATABIN");
 	return configuracion;
 }
+
+void leer_bloque (int, void*);
+void escribir_bloque (int, void*);

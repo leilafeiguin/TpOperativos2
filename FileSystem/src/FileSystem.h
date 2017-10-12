@@ -57,6 +57,7 @@ typedef struct t_archivo{
 
 typedef struct t_nodo{
 	int nroNodo;
+	un_socket socket;
 	bool ocupado;
 	t_bitarray* bitmap;
 }t_nodo;
@@ -67,11 +68,12 @@ typedef struct t_fs{
 	int libre;
 }t_fs;
 
-static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap){
+static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap, un_socket socket){
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
 	new->nroNodo = nroNodo;
 	new->ocupado = ocupado;
+	new->socket = socket;
 	return new;
 }
 
@@ -90,3 +92,10 @@ t_list* nodos;
 void hiloFileSystem_Consola();
 
 
+t_nodo* buscar_nodo_libre (int nodoAnterior);
+
+int buscarBloque (t_nodo*);
+
+void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
+
+void escribir_bloque (void* bloque);

@@ -142,7 +142,7 @@ int main(void) {
 							t_bitarray* unBitmap;
 							char* data[] = {00000000000000000000};
 							unBitmap = bitarray_create(data, 3);
-							t_nodo* unNodo = nodo_create(nroNodo, false, unBitmap);
+							t_nodo* unNodo = nodo_create(nroNodo, false, unBitmap, socketActual );
 							list_add(fileSystem.ListaNodos, unNodo);
 						}
 							//falta agregar otras estructuras administrativas
@@ -308,4 +308,53 @@ void hiloFileSystem_Consola(void * unused){
 	}
 }
 
+t_nodo* buscar_nodo_libre (int nodoAnterior){
+	bool buscarLibre(void* elemento){
+		return !((t_nodo*)elemento)->ocupado && (nodoAnterior ==0 || ((t_nodo*)elemento)->nroNodo!=nodoAnterior);
 
+
+	}
+	return list_find(fileSystem.ListaNodos, buscarLibre);
+
+
+}
+
+
+int buscarBloque(t_nodo* nodo){
+	int tamanio= bitarray_get_max_bit (nodo->bitmap);
+	int i = 0;
+	for (; i< tamanio; i++){
+		bool ocupado = bitarray_test_bit (nodo->bitmap, i);
+		if (!ocupado)
+			return i;
+
+	}
+
+
+}
+
+void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
+
+	t_setbloque* bloque = malloc(sizeof(t_setbloque));
+	bloque->numero_bloque = numBloque;
+	bloque->datos_bloque = malloc(1024*1024);
+	memcpy(bloque->datos_bloque, contenido, 1024*1024);
+	enviar(nodo->socket, cop_datanode_setbloque,sizeof(int)+1024*1024, bloque);
+
+}
+
+
+
+void escribir_bloque (void* bloque){
+t_nodo* nodolibre =	buscar_nodo_libre (0);
+int numBloque = buscarBloque(nodolibre);
+enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+
+
+nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
+numBloque = buscarBloque(nodolibre);
+enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+
+
+
+}
