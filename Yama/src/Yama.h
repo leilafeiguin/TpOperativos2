@@ -8,6 +8,7 @@ typedef struct yama_configuracion {
 	char* PUERTO_FS;
 	int RETARDO_PLANIFICACION;
 	char* ALGORITMO_BALANCEO;
+	int DISPONIBILIDAD_BASE;
 } yama_configuracion;
 
 typedef enum t_etapa {
@@ -38,6 +39,19 @@ typedef struct t_estados{
 	t_list* contenido;
 } t_estados;
 
+typedef struct t_clock{
+	int disponibilidad;
+	int worker_id;
+	char* ip;
+	char* puerto;
+	t_list* bloques; //(int)
+} t_clock;
+
+typedef struct t_tabla_planificacion{
+	t_clock* clock_actual;
+	t_list* workers; //(t_clock)*
+}t_tabla_planificacion;
+
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
 
 yama_configuracion get_configuracion() {
@@ -49,6 +63,7 @@ yama_configuracion get_configuracion() {
 	configuracion.PUERTO_FS = get_campo_config_string(archivo_configuracion, "PUERTO_FS");
 	configuracion.RETARDO_PLANIFICACION = get_campo_config_int(archivo_configuracion, "RETARDO_PLANIFICACION");
 	configuracion.ALGORITMO_BALANCEO = get_campo_config_string(archivo_configuracion, "ALGORITMO_BALANCEO");
+	configuracion.DISPONIBILIDAD_BASE = get_campo_config_int(archivo_configuracion, "DISPONIBILIDAD_BASE");
 	return configuracion;
 }
 

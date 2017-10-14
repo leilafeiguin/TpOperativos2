@@ -56,11 +56,15 @@ typedef struct t_archivo{
 }t_archivo;
 
 typedef struct t_nodo{
-	int nroNodo;
+	char* nroNodo;
 	un_socket socket;
 	bool ocupado;
 	t_bitarray* bitmap;
+	char* ip;
+	int puertoWorker;
 }t_nodo;
+
+
 
 typedef struct t_fs{
 	t_list* ListaNodos; //se le deben agregar struct t_nodo

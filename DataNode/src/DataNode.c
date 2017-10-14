@@ -45,7 +45,7 @@ int main(void) {
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
 	realizar_handshake(fileSystemSocket, cop_handshake_datanode);
-
+	//todo mati e, aca hacer enviar
 	while(1){
 		t_paquete* paquete=recibir(fileSystemSocket);
 
@@ -69,24 +69,10 @@ int main(void) {
 				escribir_bloque (numeroBloque, bloqueArecibir);
 				free(bloqueArecibir);
 				free(paquete);
-
-
 			}
 			break;
-
-
-
-
-						break;
-
-
-
-
-
-
+		break;
 		}
-
-
 	}
 
 	return EXIT_SUCCESS;

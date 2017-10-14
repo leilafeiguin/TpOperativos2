@@ -180,6 +180,7 @@ int main(void) {
 			fd_max = listener;
 		}
 		realizar_handshake(fileSystemSocket, cop_handshake_yama);
+		//Falta pedir la info de los workers conectados todo mati e aca hay que hacer un recibir
 		//Que pasa si le rechazan la conexion.
 		int socketActual;
 		//CONEXIONES

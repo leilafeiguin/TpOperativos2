@@ -47,10 +47,12 @@ enum codigos_de_operacion {
 	cop_master_estados_workers = 11,
 
 	cop_yama_lista_de_workers = 50,
+	cop_yama_info_fs = 51,
 
 	cop_datanode_get_bloque = 70,
 	cop_datanode_get_bloque_respuesta = 71,
 	cop_datanode_setbloque = 72,
+	cop_datanode_info = 73,
 
 	cop_worker_tranformacion = 80,
 	cop_worker_reduccionLocal = 81,
@@ -73,6 +75,11 @@ typedef struct {
 	int tamanio;
 	void * data;
 } t_paquete;
+
+typedef struct {
+	char* ip;
+	int puertoWorker;
+} t_paquete_datanode_info_list;
 
 char* archivo;
 

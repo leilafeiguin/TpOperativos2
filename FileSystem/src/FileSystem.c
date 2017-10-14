@@ -130,6 +130,8 @@ int main(void) {
 						switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 						case cop_handshake_yama:
 							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_yama);
+							enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, )
+							//todo mati e armar un paquete con t_datanode_info_list lista de t_nodos y enviarlo
 						break;
 						case cop_archivo_programa:
 							log_trace(logger, paqueteRecibido->data);
@@ -137,8 +139,10 @@ int main(void) {
 						case cop_handshake_datanode:
 							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_datanode);
 							//Falta la consideracion si se levanta de un estado anterior
+							break;
+						case cop_datanode_info:
 						{
-							int nroNodo; //como lo defino para que sea unico
+							char* nroNodo; //cambiarlo a char*
 							t_bitarray* unBitmap;
 							char* data[] = {00000000000000000000};
 							unBitmap = bitarray_create(data, 3);
@@ -311,12 +315,8 @@ void hiloFileSystem_Consola(void * unused){
 t_nodo* buscar_nodo_libre (int nodoAnterior){
 	bool buscarLibre(void* elemento){
 		return !((t_nodo*)elemento)->ocupado && (nodoAnterior ==0 || ((t_nodo*)elemento)->nroNodo!=nodoAnterior);
-
-
 	}
 	return list_find(fileSystem.ListaNodos, buscarLibre);
-
-
 }
 
 
@@ -329,18 +329,24 @@ int buscarBloque(t_nodo* nodo){
 			return i;
 
 	}
-
-
+	return -1;
 }
 
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
-
 	t_setbloque* bloque = malloc(sizeof(t_setbloque));
 	bloque->numero_bloque = numBloque;
 	bloque->datos_bloque = malloc(1024*1024);
 	memcpy(bloque->datos_bloque, contenido, 1024*1024);
-	enviar(nodo->socket, cop_datanode_setbloque,sizeof(int)+1024*1024, bloque);
 
+
+	void* buffer = malloc(sizeof(int) + 1024*1024);//numero bloque
+
+	int desplazamiento=0;
+	memcpy(buffer, &bloque->numero_bloque, sizeof(int));
+	desplazamiento+= sizeof(int);
+	memcpy(buffer + desplazamiento,  bloque->datos_bloque, 1024*1024);//datos->bloque
+	desplazamiento+= 1024*1024;
+	enviar(nodo->socket, cop_datanode_setbloque,desplazamiento, bloque);
 }
 
 
@@ -350,11 +356,7 @@ t_nodo* nodolibre =	buscar_nodo_libre (0);
 int numBloque = buscarBloque(nodolibre);
 enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
 
-
 nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
 numBloque = buscarBloque(nodolibre);
 enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
-
-
-
 }
