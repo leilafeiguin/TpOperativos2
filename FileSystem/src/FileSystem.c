@@ -11,6 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "FileSystem.h"
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 int main(void) {
 
@@ -146,6 +150,37 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+void CP_FROM(char* origen, char* destino)
+{
+	char** bloques = LeerArchivo(origen);
+}
+
+char** LeerArchivo(char* archivo){
+	struct stat sb;
+	int fd = open(archivo, O_RDONLY);
+	fstat(fd, &sb);
+	void* archivoMapeado = mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	int cantidadBloques = sb.st_size / 1024*1024;
+	if(sb.st_size % (1024 *1024) != 0)
+		cantidadBloques++;
+
+	char** listaBloques = malloc(cantidadBloques);
+	int tamanio=0;
+	int i=0;
+	for(; i< cantidadBloques ; i++) //falta completar casos de archivos de texto
+	{
+		int tamanioBloque = 1024*1024;
+		if(sb.st_size - tamanio < tamanioBloque)
+			tamanioBloque = sb.st_size-tamanio;
+
+		(*listaBloques[i]) = malloc(tamanioBloque);
+		memcpy((*listaBloques[i]), archivoMapeado+tamanio, tamanioBloque);
+		tamanio+=(tamanioBloque);
+
+	}
+
+	return listaBloques;
+}
 
 //void hiloFileSystem_Consola(void * unused){
 //	printf("Consola Iniciada. Ingrese una opcion \n");

@@ -80,5 +80,5 @@ t_directory tablaDeDirectorios[99];
 
 void hiloFileSystem_Consola();
 t_bitmap leerBitmap(char*);
-
-
+void CP_FROM(char* origen, char* destino);
+char** LeerArchivo(char* archivo);

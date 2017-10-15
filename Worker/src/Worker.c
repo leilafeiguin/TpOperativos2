@@ -51,8 +51,31 @@ int main(void) {
 											case cop_handshake_worker:
 
 											break;
-											case cop_worker_tranformacion:
-													//procesar tr paquete_recibido->data
+											case cop_worker_transformacion:
+											{
+												t_transf* paquete_transformacion = malloc(sizeof(t_transf));
+												int desplazamiento = 0;
+
+												//memcpy(origen, destino, cuantoQuieroCopiar)
+												memcpy(&paquete_transformacion->cant_script, paquete_recibido->data, sizeof(int));
+												desplazamiento += sizeof(int);
+												paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
+												memcpy(paquete_transformacion->script, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_script);
+												desplazamiento += paquete_transformacion->cant_script;
+												paquete_transformacion->bloq = malloc(1024*1024);
+												memcpy(paquete_transformacion->bloq, paquete_recibido->data + desplazamiento, 1024*1024);
+												desplazamiento += 1024*1024;
+												paquete_transformacion->archivo_temporal = malloc(paquete_transformacion->cant_archivo_temporal);
+												memcpy(paquete_transformacion->archivo_temporal, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_archivo_temporal);
+
+												//paquete_transformacion->cant_script = *contenido (falta terminar)
+
+
+
+
+
+
+											}
 											break;
 											case cop_worker_reduccionLocal:
 

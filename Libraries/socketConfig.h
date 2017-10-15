@@ -42,7 +42,7 @@ enum codigos_de_operacion {
 	cop_datanode_get_bloque_respuesta = 71,
 	cop_datanode_setbloque = 72,
 
-	cop_worker_tranformacion = 80,
+	cop_worker_transformacion = 80,
 	cop_worker_reduccionLocal = 81,
 	cop_worker_reduccionGlobal = 82
 };
@@ -57,9 +57,17 @@ typedef struct {
 }t_setbloque;
 
 
-
+typedef struct {
+	int cant_script; //long script
+	char* script;
+	char* bloq;
+	int cant_ocupada_bloque;
+	int cant_archivo_temporal;//long nombre
+	char* archivo_temporal; //nombre archivo
+} t_transf;
 
 typedef int un_socket;
+
 typedef struct {
 	int codigo_operacion;
 	int tamanio;
@@ -71,6 +79,8 @@ typedef struct {
  * 	@RETURN: Devuelve el socket o te avisa si hubo un error al conectarse.
  *
  */
+
+
 
 un_socket conectar_a(char *IP, char* Port);
 
