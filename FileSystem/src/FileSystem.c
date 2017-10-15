@@ -20,18 +20,6 @@
 
 int main(void) {
 
-//	void asignarNombre(char list[], char* asignar){
-//		int i = 0;
-//		while(i<strlen(asignar)){
-//			list[i] = asignar[i];
-//			i++;
-//		}
-//	};
-//
-//	tablaDeDirectorios[0].index = 0;
-//	asignarNombre(tablaDeDirectorios[0].nombre,"root");
-//	tablaDeDirectorios[0].padre = -1;
-
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -44,6 +32,21 @@ int main(void) {
 
 	fileSystem_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
+
+	//Inciializacion de estructuras
+	int x;
+	for(x=0; x<100;x++){
+		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
+		tablaDeDirectorios[x]->index = 0;
+		sprintf(tablaDeDirectorios[x]->nombre, "");
+		tablaDeDirectorios[x]->padre = 0;
+	}
+	if( access("directorios.txt", F_OK) != -1 ){
+	    // El archivo existe, recupero la informacion
+	} else {
+	    // El archivo no existe
+	}
+	actualizarArchivoDeDirectorios();
 
 	// ----------------------------------------------
 	// ----------------------------------------------
@@ -251,7 +254,7 @@ void formatearFileSystem(){
 	fileSystem.ListaNodos = nodos;
 
 	for(i=0;i<sizeof(tablaDeDirectorios)/sizeof(t_directory);i++){
-		tablaDeDirectorios[i].padre = -1;
+		tablaDeDirectorios[i]->padre = -1;
 	}
 	printf("Filesystem formateado.\n");
 }
@@ -277,6 +280,7 @@ void hiloFileSystem_Consola(void * unused){
 			if (strcmp(linea, "format") == 0){
 				printf("Formatear el Filesystem\n");
 				formatearFileSystem();
+				actualizarArchivoDeDirectorios();
 				free(linea);
 			}else if (strcmp(primeraPalabra, "rm") == 0){
 				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
@@ -372,4 +376,18 @@ void escribir_bloque (void* bloque){
 	numBloque = buscarBloque(nodolibre);
 	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
 	return;
+}
+
+void actualizarArchivoDeDirectorios(){
+	FILE * file= fopen("directorios.txt", "w");
+	int i;
+	if (file != NULL) {
+		fprintf(file, "%i,%s,%i" ,tablaDeDirectorios[0]->index,tablaDeDirectorios[0]->nombre,tablaDeDirectorios[0]->padre);
+		for(i=1;i<100;i++){
+			if(tablaDeDirectorios[i]->index != 0){
+				fprintf(file, "/%i,%s,%i" ,tablaDeDirectorios[i]->index,tablaDeDirectorios[i]->nombre,tablaDeDirectorios[i]->padre);
+			}
+		}
+		fclose(file);
+		}
 }

@@ -86,7 +86,7 @@ static void nodo_destroy(t_nodo* nodo){
 }
 
 //inicializacion de estructuras
-t_directory tablaDeDirectorios[99];
+t_directory* tablaDeDirectorios[99];
 
 t_fs fileSystem;
 t_list* nodos;
@@ -104,3 +104,5 @@ int buscarBloque (t_nodo*);
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
 
 void escribir_bloque (void* bloque);
+
+void actualizarArchivoDeDirectorios();
