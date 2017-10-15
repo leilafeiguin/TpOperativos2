@@ -25,3 +25,5 @@ worker_configuracion get_configuracion() {
 	configuracion.RUTA_DATABIN = get_campo_config_string(archivo_configuracion, "RUTA_DATABIN");
 	return configuracion;
 }
+
+char* apareo (char* paths [4]);

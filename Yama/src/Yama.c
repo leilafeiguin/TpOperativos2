@@ -16,17 +16,90 @@
 #include <unistd.h>
 #include "Yama.h"
 
+t_list* tabla_estados;
+
 int main(void) {
 	t_log* logger;
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
-
+	tabla_estados= list_create();
 	printf("Inicializando proceso Yama\n");
 	logger = log_create(fileLog, "Yama Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Yama");
 
 	yama_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
+
+
+	t_job job;
+	job.master = 1;
+	job.nodo = 1;
+	job.bloque = 8;
+	job.etapa = transformacion;
+	job.cantidadTemporal = 5;
+	job.temporal = "temp1";
+	job.estado = enProceso;
+	procesar_job(1, job);
+	job.nodo = 3;
+	job.bloque = 2;
+	job.temporal = "temp2";
+	procesar_job(1, job);
+	job.nodo = 2;
+	job.bloque = 9;
+	job.temporal = "temp3";
+	procesar_job(1, job);
+	job.master = 3;
+	job.nodo = 4;
+	job.bloque = 11;
+	job.etapa = transformacion;
+	job.temporal = "temp4";
+	job.estado = enProceso;
+	procesar_job(2, job);
+	job.nodo = 5;
+	job.bloque = 10;
+	job.etapa = reduccionLocal;
+	job.temporal = "temp5";
+	procesar_job(2, job);
+	job.nodo = 6;
+	job.bloque = 14;
+	job.etapa = reduccionGlobal;
+	job.temporal = "temp6";
+	job.estado = finalizado;
+	procesar_job(2, job);
+	job.nodo = 7;
+	job.bloque = 15;
+	job.etapa = reduccionLocal;
+	job.temporal = "temp7";
+	job.estado = error;
+	procesar_job(2, job);
+	job.nodo = 8;
+	job.bloque = 12;
+	job.etapa = transformacion;
+	job.temporal = "temp8";
+	job.estado = enProceso;
+	procesar_job(2, job);
+
+	t_job job2;
+	job2.master = 1;
+	job2.nodo = 1;
+	job2.bloque = 8;
+	job2.etapa = reduccionLocal;
+	job2.cantidadTemporal = 6;
+	job2.temporal = "temp20";
+	job2.estado = enProceso;
+	procesar_job(1, job2);
+
+	t_job job3;
+	job3.master = 3;
+	job3.nodo = 4;
+	job3.bloque = 11;
+	job3.etapa = reduccionLocal;
+	job3.cantidadTemporal = 6;
+	job3.temporal = "temp30";
+	job3.estado = error;
+	procesar_job(2, job3);
+
+
 	fd_set master;    // master file descriptor list
 	fd_set read_fds;  // temp file descriptor list for select()
 	int fd_max;        // maximum file descriptor number
@@ -107,6 +180,7 @@ int main(void) {
 			fd_max = listener;
 		}
 		realizar_handshake(fileSystemSocket, cop_handshake_yama);
+		//Falta pedir la info de los workers conectados todo mati e aca hay que hacer un recibir
 		//Que pasa si le rechazan la conexion.
 		int socketActual;
 		//CONEXIONES
@@ -136,6 +210,25 @@ int main(void) {
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
 								//recibir un archivo
 							break;
+							case cop_master_archivo_a_transaformar:
+							{
+								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
+
+								//Evalua y planifica en base al archivo que tiene que transaformar
+
+								//Devuelve lista con los workers
+								char* listaWorkers;
+								listaWorkers = "127.0.0.1|3000";
+								enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
+							break;
+							}
+							case cop_master_estados_workers:
+								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
+
+								//hacer lo que corresponda
+								//si esta todo ok avanza el proceso de forma normal y sino debe replanificar
+								//y mandar nuevos sockets
+							break;
 							}
 						}
 					}
@@ -156,4 +249,61 @@ void sig_handler(int signo){
     	printf("Se cargo nuevamente el archivo de configuracion\n");
     	//log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
     }
+}
+
+void procesar_job(int jobId, t_job datos){
+	t_estados* registro=(t_estados*) buscar_por_jobid(jobId);
+	if(registro == NULL){
+		t_estados* job= malloc(sizeof(t_estados));
+		job->job=jobId;
+		job->contenido = list_create();
+		t_job* nuevoJob= crearJob(datos);
+		list_add(job->contenido, nuevoJob);
+		list_add(tabla_estados, job);
+	}
+	else
+		{
+			t_job* nodo = buscar_por_nodo(datos.nodo, registro->contenido);
+			if (nodo == NULL){
+				t_job* nuevoJob= crearJob(datos);
+				list_add(registro->contenido, nuevoJob);
+			}
+			else
+			{
+				setearJob(nodo, datos);
+			}
+		}
+}
+
+t_job* crearJob(t_job datos){
+	t_job* nuevoJob= malloc(sizeof(t_job));
+	setearJob(nuevoJob, datos);
+	return nuevoJob;
+}
+
+void setearJob(t_job* nuevoJob, t_job datos){
+	nuevoJob->bloque=datos.bloque;
+	nuevoJob->master = datos.master;
+	nuevoJob->nodo = datos.nodo;
+	nuevoJob->cantidadTemporal = datos.cantidadTemporal;
+	nuevoJob->estado=datos.estado;
+	nuevoJob->etapa =datos.etapa;
+	nuevoJob->temporal = malloc(strlen(datos.temporal) +1);
+	strcpy(nuevoJob->temporal, datos.temporal);
+	//asignar el resto de los campos
+
+}
+void* buscar_por_nodo (int nodo, t_list* listaNodos){
+	int es_el_nodo(t_job* job){
+		return job->nodo == nodo;
+	}
+	return list_find(listaNodos, (void*) es_el_nodo);
+}
+
+void* buscar_por_jobid(int jobId){
+	int _is_the_one(t_estados *p) {
+	            			return p->job == jobId;
+	            		}
+
+	return list_find(tabla_estados, (void*) _is_the_one);
 }

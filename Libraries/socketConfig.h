@@ -22,6 +22,11 @@
 #include <commons/config.h>
 #include <unistd.h>
 
+
+
+
+
+
 //0 - 9 Handhsake
 //10 - 29 Master
 //30- 49 YAMA
@@ -38,9 +43,16 @@ enum codigos_de_operacion {
 	cop_handshake_master = 4,
 	cop_handshake_worker = 5,
 
+	cop_master_archivo_a_transaformar = 10,
+	cop_master_estados_workers = 11,
+
+	cop_yama_lista_de_workers = 50,
+	cop_yama_info_fs = 51,
+
 	cop_datanode_get_bloque = 70,
 	cop_datanode_get_bloque_respuesta = 71,
 	cop_datanode_setbloque = 72,
+	cop_datanode_info = 73,
 
 	cop_worker_transformacion = 80,
 	cop_worker_reduccionLocal = 81,
@@ -73,6 +85,13 @@ typedef struct {
 	int tamanio;
 	void * data;
 } t_paquete;
+
+typedef struct {
+	char* ip;
+	int puertoWorker;
+} t_paquete_datanode_info_list;
+
+char* archivo;
 
 /**	@NAME: conectar_a
  * 	@DESC: Intenta conectarse.
@@ -145,5 +164,15 @@ char* get_campo_config_string(t_config* archivo_configuracion,
 void enviar_archivo(un_socket socket, char* path);
 
 bool comprobar_archivo(char* path);
+
+/** @NAME: leer_bloque
+ *
+ */
+
+
+
+
+
+
 
 #endif /* SOCKETCONFIG_H_ */

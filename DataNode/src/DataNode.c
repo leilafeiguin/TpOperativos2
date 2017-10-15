@@ -39,41 +39,40 @@ int main(void) {
 	fstat(fd, &sb);
 
 
-	void* archivo=mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
 	//mmap
 
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
 	realizar_handshake(fileSystemSocket, cop_handshake_datanode);
-
+	//todo mati e, aca hacer enviar
 	while(1){
 		t_paquete* paquete=recibir(fileSystemSocket);
 
 		switch (paquete-> codigo_operacion){
-			//case cop_datanode_get_bloque:
+			case cop_datanode_get_bloque:
 			{
-				//int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
-				//void* bloque = leer_bloque(archivo, numeroBloque);//
+				int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
+				void* bloqueAenviar = malloc(1024*1024);
+				leer_bloque(numeroBloque, bloqueAenviar);
 
-				//enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024 /*1MB*/, bloque);//
-				//free(bloque);//
-				//free(paquete);//
-			}//
+				enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
+
+				free(bloqueAenviar);
+				free(paquete);
+			}
 			break;
 			case cop_datanode_setbloque:
-						{
-
-						}
-						break;
-
-
-
-
-
-
+			{
+				int numeroBloque = ((t_setbloque*)paquete->data)->numero_bloque;
+				void* bloqueArecibir = ((t_setbloque*)paquete->data) -> datos_bloque;
+				escribir_bloque (numeroBloque, bloqueArecibir);
+				free(bloqueArecibir);
+				free(paquete);
+			}
+			break;
+		break;
 		}
-
-
 	}
 
 	return EXIT_SUCCESS;

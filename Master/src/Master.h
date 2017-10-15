@@ -1,5 +1,6 @@
 #include <socketConfig.h>
 #include <commons/log.h>
+#include <commons/collections/list.h>
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct master_configuracion {
@@ -20,3 +21,17 @@ master_configuracion get_configuracion() {
 	configuracion.PATH_ARCHIVO = get_campo_config_string(archivo_configuracion, "PATH_ARCHIVO");
 	return configuracion;
 }
+
+typedef enum t_estado {
+	conectado = 1,
+	error = 2
+} t_estado;
+
+typedef struct t_worker{
+	t_estado estado;
+	int puerto;
+	char* IP;
+	int socket;
+}t_worker;
+
+t_list* workers;
