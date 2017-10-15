@@ -64,8 +64,6 @@ typedef struct t_nodo{
 	int puertoWorker;
 }t_nodo;
 
-
-
 typedef struct t_fs{
 	t_list* ListaNodos; //se le deben agregar struct t_nodo
 	int tamanio;
@@ -94,7 +92,7 @@ t_fs fileSystem;
 t_list* nodos;
 
 void hiloFileSystem_Consola();
-t_bitmap leerBitmap(char*);
+t_bitarray leerBitmap(char*);
 void CP_FROM(char* origen, char* destino);
 char** LeerArchivo(char* archivo);
 

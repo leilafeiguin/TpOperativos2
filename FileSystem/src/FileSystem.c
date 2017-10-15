@@ -73,21 +73,21 @@ int main(void) {
 		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
 		exit(1);
 	}
-	for(p = ai; p != NULL; p = p->ai_next) {
+	for(p = ai; p != NULL; p = p->ai_next){
 		listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-		if (listener < 0) {
+		if (listener < 0){
 			continue;
 		}
 		// lose the pesky "address already in use" error message
 		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-		if (bind(listener, p->ai_addr, p->ai_addrlen) < 0) {
+		if (bind(listener, p->ai_addr, p->ai_addrlen) < 0){
 			close(listener);
 			continue;
 		}
 		break;
 	}
 	// if we got here, it means we didn't get bound
-	if (p == NULL) {
+	if (p == NULL){
 		fprintf(stderr, "selectserver: failed to bind\n");
 		exit(2);
 	}
@@ -101,7 +101,6 @@ int main(void) {
 	FD_SET(listener, &master);
 	// keep track of the biggest file descriptor
 	fdmax = listener; // so far, it's this one
-
 
 	// ----------------------------------------------
 	// ----------------------------------------------
@@ -134,7 +133,7 @@ int main(void) {
 						switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 						case cop_handshake_yama:
 							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_yama);
-							enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
+							//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
 							//todo mati e armar un paquete con t_datanode_info_list lista de t_nodos y enviarlo
 						break;
 						case cop_archivo_programa:
@@ -164,8 +163,7 @@ int main(void) {
 }
 
 
-void CP_FROM(char* origen, char* destino)
-{
+void CP_FROM(char* origen, char* destino){
 	char** bloques = LeerArchivo(origen);
 }
 
@@ -177,7 +175,6 @@ char** LeerArchivo(char* archivo){
 	int cantidadBloques = sb.st_size / 1024*1024;
 	if(sb.st_size % (1024 *1024) != 0)
 		cantidadBloques++;
-
 	char** listaBloques = malloc(cantidadBloques);
 	int tamanio=0;
 	int i=0;
@@ -186,17 +183,14 @@ char** LeerArchivo(char* archivo){
 		int tamanioBloque = 1024*1024;
 		if(sb.st_size - tamanio < tamanioBloque)
 			tamanioBloque = sb.st_size-tamanio;
-
 		(*listaBloques[i]) = malloc(tamanioBloque);
 		memcpy((*listaBloques[i]), archivoMapeado+tamanio, tamanioBloque);
 		tamanio+=(tamanioBloque);
-
 	}
-
 	return listaBloques;
+}
 
-char** str_split(char* a_str, const char a_delim)
-{
+char** str_split(char* a_str, const char a_delim){
     char** result    = 0;
     size_t count     = 0;
     char* tmp        = a_str;
@@ -204,34 +198,24 @@ char** str_split(char* a_str, const char a_delim)
     char delim[2];
     delim[0] = a_delim;
     delim[1] = 0;
-
     /* Count how many elements will be extracted. */
-    while (*tmp)
-    {
-        if (a_delim == *tmp)
-        {
+    while (*tmp){
+        if (a_delim == *tmp){
             count++;
             last_comma = tmp;
         }
         tmp++;
     }
-
     /* Add space for trailing token. */
     count += last_comma < (a_str + strlen(a_str) - 1);
-
     /* Add space for terminating null string so caller
        knows where the list of returned strings ends. */
     count++;
-
     result = malloc(sizeof(char*) * count);
-
-    if (result)
-    {
+    if (result){
         size_t idx  = 0;
         char* token = strtok(a_str, delim);
-
-        while (token)
-        {
+        while (token){
             assert(idx < count);
             *(result + idx++) = strdup(token);
             token = strtok(0, delim);
@@ -239,7 +223,6 @@ char** str_split(char* a_str, const char a_delim)
         assert(idx == count - 1);
         *(result + idx) = 0;
     }
-
     return result;
 }
 
@@ -247,8 +230,7 @@ char** validaCantParametrosComando(char* comando, int cantParametros){
 	int i = 0;
 	char** parametros;
 	parametros = str_split(comando, ' ');
-	for (i = 1; *(parametros + i); i++)
-	{
+	for (i = 1; *(parametros + i); i++){
 		printf("parametros= %s \n", *(parametros + i));
 	}
 	free(parametros);
@@ -363,7 +345,6 @@ int buscarBloque(t_nodo* nodo){
 		bool ocupado = bitarray_test_bit (nodo->bitmap, i);
 		if (!ocupado)
 			return i;
-
 	}
 	return -1;
 }
@@ -373,10 +354,7 @@ void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
 	bloque->numero_bloque = numBloque;
 	bloque->datos_bloque = malloc(1024*1024);
 	memcpy(bloque->datos_bloque, contenido, 1024*1024);
-
-
 	void* buffer = malloc(sizeof(int) + 1024*1024);//numero bloque
-
 	int desplazamiento=0;
 	memcpy(buffer, &bloque->numero_bloque, sizeof(int));
 	desplazamiento+= sizeof(int);
@@ -385,14 +363,13 @@ void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
 	enviar(nodo->socket, cop_datanode_setbloque,desplazamiento, bloque);
 }
 
-
-
 void escribir_bloque (void* bloque){
-t_nodo* nodolibre =	buscar_nodo_libre (0);
-int numBloque = buscarBloque(nodolibre);
-enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+	t_nodo* nodolibre =	buscar_nodo_libre (0);
+	int numBloque = buscarBloque(nodolibre);
+	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
 
-nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
-numBloque = buscarBloque(nodolibre);
-enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+	nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
+	numBloque = buscarBloque(nodolibre);
+	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+	return;
 }

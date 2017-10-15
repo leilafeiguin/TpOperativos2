@@ -28,19 +28,11 @@ int main(void) {
 	dataNode_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-
-
 	//MMAP
 	struct stat sb;
-
-
-
 	int fd=open(configuracion.RUTA_DATABIN, O_RDWR);
 	fstat(fd, &sb);
-
-
 	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
-	//mmap
 
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
@@ -48,16 +40,13 @@ int main(void) {
 	//todo mati e, aca hacer enviar
 	while(1){
 		t_paquete* paquete=recibir(fileSystemSocket);
-
 		switch (paquete-> codigo_operacion){
 			case cop_datanode_get_bloque:
 			{
 				int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
 				void* bloqueAenviar = malloc(1024*1024);
 				leer_bloque(numeroBloque, bloqueAenviar);
-
 				enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
-
 				free(bloqueAenviar);
 				free(paquete);
 			}
@@ -74,7 +63,6 @@ int main(void) {
 		break;
 		}
 	}
-
 	return EXIT_SUCCESS;
 }
 

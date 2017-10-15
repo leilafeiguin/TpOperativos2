@@ -31,8 +31,6 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 
 	enviar(yamaSocket,cop_master_archivo_a_transaformar,sizeof(char*)*strlen(archivoOrigen),archivoOrigen);
 
-
-
 	log_trace(logger, "Recibi datos de workers de Yama");
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
 
@@ -58,8 +56,6 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 	enviar(yamaSocket, cop_master_estados_workers, sizeof(char*)*strlen(estado_worker1), estado_worker1);
 
 	//hacer un if para saber si pasa a etapa de transformacion o si hubo error esperar nuevos workers
-
-
 
 	return EXIT_SUCCESS;
 }

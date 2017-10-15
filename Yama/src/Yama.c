@@ -30,7 +30,6 @@ int main(void) {
 	yama_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-
 	t_job job;
 	job.master = 1;
 	job.nodo = 1;
@@ -134,7 +133,6 @@ int main(void) {
 		if (listener < 0) {
 			continue;
 		}
-
 		// lose the pesky "address already in use" error message
 		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
@@ -142,32 +140,25 @@ int main(void) {
 			close(listener);
 			continue;
 		}
-
 			break;
 		}
-
 		// if we got here, it means we didn't get bound
 		if (p == NULL) {
 			fprintf(stderr, "selectserver: failed to bind\n");
 			exit(2);
 		}
-
 		freeaddrinfo(ai); // all done with this
-
 		// listen
 		if (listen(listener, 10) == -1) {
 			perror("listen");
 			exit(3);
 		}
-
 		// add the listener to the master set
 		FD_SET(listener, &master);
-
 		// keep track of the biggest file descriptor
 		fd_max = listener; // so far, it's this one
 
 	 	//Iniciar hilo consola
-
 		pthread_t hiloFileSystem;
 		//pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola);
 
@@ -213,9 +204,7 @@ int main(void) {
 							case cop_master_archivo_a_transaformar:
 							{
 								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
-
 								//Evalua y planifica en base al archivo que tiene que transaformar
-
 								//Devuelve lista con los workers
 								char* listaWorkers;
 								listaWorkers = "127.0.0.1|3000";
@@ -224,7 +213,6 @@ int main(void) {
 							}
 							case cop_master_estados_workers:
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
-
 								//hacer lo que corresponda
 								//si esta todo ok avanza el proceso de forma normal y sino debe replanificar
 								//y mandar nuevos sockets
@@ -232,11 +220,8 @@ int main(void) {
 							}
 						}
 					}
-
 			}
-
 		}
-
 	return EXIT_SUCCESS;
 }
 
@@ -260,19 +245,15 @@ void procesar_job(int jobId, t_job datos){
 		t_job* nuevoJob= crearJob(datos);
 		list_add(job->contenido, nuevoJob);
 		list_add(tabla_estados, job);
-	}
-	else
-		{
-			t_job* nodo = buscar_por_nodo(datos.nodo, registro->contenido);
-			if (nodo == NULL){
-				t_job* nuevoJob= crearJob(datos);
-				list_add(registro->contenido, nuevoJob);
-			}
-			else
-			{
-				setearJob(nodo, datos);
-			}
+	}else{
+		t_job* nodo = buscar_por_nodo(datos.nodo, registro->contenido);
+		if (nodo == NULL){
+			t_job* nuevoJob= crearJob(datos);
+			list_add(registro->contenido, nuevoJob);
+		}else{
+			setearJob(nodo, datos);
 		}
+	}
 }
 
 t_job* crearJob(t_job datos){
@@ -291,8 +272,8 @@ void setearJob(t_job* nuevoJob, t_job datos){
 	nuevoJob->temporal = malloc(strlen(datos.temporal) +1);
 	strcpy(nuevoJob->temporal, datos.temporal);
 	//asignar el resto de los campos
-
 }
+
 void* buscar_por_nodo (int nodo, t_list* listaNodos){
 	int es_el_nodo(t_job* job){
 		return job->nodo == nodo;
@@ -302,8 +283,7 @@ void* buscar_por_nodo (int nodo, t_list* listaNodos){
 
 void* buscar_por_jobid(int jobId){
 	int _is_the_one(t_estados *p) {
-	            			return p->job == jobId;
-	            		}
-
+		return p->job == jobId;
+	}
 	return list_find(tabla_estados, (void*) _is_the_one);
 }
