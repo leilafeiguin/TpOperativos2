@@ -37,10 +37,11 @@ int main(void) {
 	int x;
 	for(x=0; x<100;x++){
 		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
-		tablaDeDirectorios[x]->index = 0;
+		tablaDeDirectorios[x]->index = -2;
 		sprintf(tablaDeDirectorios[x]->nombre, "");
 		tablaDeDirectorios[x]->padre = 0;
 	}
+
 	if( access("directorios.txt", F_OK) != -1 ){
 	    // El archivo existe, recupero la informacion
 	} else {
@@ -121,6 +122,7 @@ int main(void) {
 		select(fdmax+1, &read_fds, NULL, NULL, NULL);
 		for(socketActual = 0; socketActual <= fdmax; socketActual++) {
 				if (FD_ISSET(socketActual, &read_fds)) {
+
 					if (socketActual == listener) { //es una conexion nueva
 						newfd = aceptar_conexion(socketActual);
 						t_paquete* handshake = recibir(socketActual);
@@ -167,10 +169,166 @@ int main(void) {
 
 
 void CP_FROM(char* origen, char* destino){
-	char** bloques = LeerArchivo(origen);
+	int cantidadBloques=0;
+	char** bloques = LeerArchivo(origen, &cantidadBloques);
+	char* path= malloc(255);
+	char* file= malloc(255);
+	destino= str_replace(destino, "yamafs://","");
+    split_path_file(&path, &file, destino);
+    char** listaDirectorios=string_split(path, "/");
+
+    int j=0;
+    int padre=0;
+    int cantidadDirectorios = countOccurrences(path, "/")+1;
+    for(;j<cantidadDirectorios;j++){
+    	t_directory* directorio= buscarDirectorio(padre, listaDirectorios[cantidadDirectorios]);
+    	if(directorio != NULL)
+    		directorio= crearDirectorio(padre, listaDirectorios[cantidadDirectorios]) ;
+
+    	padre= directorio->index;
+    }
+
+	int i=0;
+	for(;i<cantidadBloques;i++){
+		t_nodoasignado* respuesta = escribir_bloque(bloques[i]);
+		t_nodo* nodo1= buscar_nodo(respuesta->nodo1);
+		nodo1->libre--;
+		if(nodo1->libre ==0)
+			nodo1->ocupado=true;
+
+		bitarray_set_bit(nodo1->bitmap,respuesta->bloque1 );
+
+
+		t_nodo* nodo2= buscar_nodo(respuesta->nodo2);
+		nodo2->libre--;
+		if(nodo2->libre ==0)
+			nodo2->ocupado=true;
+
+		bitarray_set_bit(nodo2->bitmap,respuesta->bloque2 );
+
+
+	}
+
+	//todo tabla de dir
+	//todo tabla archivos
+
 }
 
-char** LeerArchivo(char* archivo){
+t_directory* crearDirectorio(int padre, char* nombre){
+	int x;
+	for(x=0; x<100;x++){
+
+		if(tablaDeDirectorios[x]->index == -2)
+		{
+			tablaDeDirectorios[x]->nombre= malloc(strlen(nombre)+1);
+			strcpy(tablaDeDirectorios[x]->nombre, nombre);
+			tablaDeDirectorios[x]->padre=padre;
+			tablaDeDirectorios[x]->index= x;
+			return tablaDeDirectorios[x];
+		}
+	}
+
+		 return NULL;
+}
+
+t_directory* buscarDirectorio(int padre, char* nombre){
+	int x;
+		for(x=0; x<100;x++){
+
+			if(tablaDeDirectorios[x]->padre == padre && string_equals_ignore_case(tablaDeDirectorios[x] ->nombre, nombre))
+				return tablaDeDirectorios[x];
+		}
+
+	 return NULL;
+}
+
+int countOccurrences(char * str, char * toSearch)
+{
+    int i, j, found, count;
+    int stringLen, searchLen;
+
+    stringLen = strlen(str);      // length of string
+    searchLen = strlen(toSearch); // length of word to be searched
+
+    count = 0;
+
+    for(i=0; i <= stringLen-searchLen; i++)
+    {
+        /* Match word with string */
+        found = 1;
+        for(j=0; j<searchLen; j++)
+        {
+            if(str[i + j] != toSearch[j])
+            {
+                found = 0;
+                break;
+            }
+        }
+
+        if(found == 1)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+char *str_replace(char *orig, char *rep, char *with) {
+    char *result; // the return string
+    char *ins;    // the next insert point
+    char *tmp;    // varies
+    int len_rep;  // length of rep (the string to remove)
+    int len_with; // length of with (the string to replace rep with)
+    int len_front; // distance between rep and end of last rep
+    int count;    // number of replacements
+
+    // sanity checks and initialization
+    if (!orig || !rep)
+        return NULL;
+    len_rep = strlen(rep);
+    if (len_rep == 0)
+        return NULL; // empty rep causes infinite loop during count
+    if (!with)
+        with = "";
+    len_with = strlen(with);
+
+    // count the number of replacements needed
+    ins = orig;
+    for (count = 0; tmp = strstr(ins, rep); ++count) {
+        ins = tmp + len_rep;
+    }
+
+    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+    if (!result)
+        return NULL;
+
+    // first time through the loop, all the variable are set correctly
+    // from here on,
+    //    tmp points to the end of the result string
+    //    ins points to the next occurrence of rep in orig
+    //    orig points to the remainder of orig after "end of rep"
+    while (count--) {
+        ins = strstr(orig, rep);
+        len_front = ins - orig;
+        tmp = strncpy(tmp, orig, len_front) + len_front;
+        tmp = strcpy(tmp, with) + len_with;
+        orig += len_front + len_rep; // move to next "end of rep"
+    }
+    strcpy(tmp, orig);
+    return result;
+}
+
+void split_path_file(char** p, char** f, char *pf) {
+    char *slash = pf, *next;
+    while ((next = strpbrk(slash + 1, "\\/"))) slash = next;
+    if (pf != slash) slash++;
+    *p = strndup(pf, slash - pf);
+    *f = strdup(slash);
+}
+
+char** LeerArchivo(char* archivo, int* cantbloques){
 	struct stat sb;
 	int fd = open(archivo, O_RDONLY);
 	fstat(fd, &sb);
@@ -190,6 +348,7 @@ char** LeerArchivo(char* archivo){
 		memcpy((*listaBloques[i]), archivoMapeado+tamanio, tamanioBloque);
 		tamanio+=(tamanioBloque);
 	}
+	*cantbloques=cantidadBloques;
 	return listaBloques;
 }
 

@@ -6,6 +6,11 @@
 #include <commons/bitarray.h>
 #include <commons/collections/list.h>
 
+typedef enum {
+
+	TEXTO=0,
+	BINARIO=1
+}t_tipo_archivo;
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct fileSystem_configuracion {
 	char* IP_FS;
@@ -50,6 +55,7 @@ typedef struct t_bloque{
 typedef struct t_archivo{
 	char* nombre;
 	char* path;
+	t_tipo_archivo tipoArchivo;
 	unsigned long int tamanio;
 	bool estado; //Disponible o no - true o false
 	t_list bloques; // se le deben agregar struct t_bloque
@@ -62,10 +68,20 @@ typedef struct t_nodo{
 	t_bitarray* bitmap;
 	char* ip;
 	int puertoWorker;
+	int tamanio;
+	int libre;
 }t_nodo;
+
+typedef struct t_nodoasignado{
+	char* nodo1;
+	char* nodo2;
+	int bloque1;
+	int bloque2;
+}t_nodoasignado;
 
 typedef struct t_fs{
 	t_list* ListaNodos; //se le deben agregar struct t_nodo
+	t_list* listaArchivos;
 	int tamanio;
 	int libre;
 }t_fs;
@@ -94,15 +110,17 @@ t_list* nodos;
 void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
 void CP_FROM(char* origen, char* destino);
-char** LeerArchivo(char* archivo);
+char** LeerArchivo(char* archivo, int* cantidadBloques);
 
 
 t_nodo* buscar_nodo_libre (int nodoAnterior);
-
+t_nodo* buscar_nodo (char* nombreNodo);
 int buscarBloque (t_nodo*);
 
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
 
-void escribir_bloque (void* bloque);
-
+t_nodoasignado* escribir_bloque (void* bloque);
+void split_path_file(char** p, char** f, char *pf);
 void actualizarArchivoDeDirectorios();
+char *str_replace(char *orig, char *rep, char *with);
+int countOccurrences(char * str, char * toSearch);
