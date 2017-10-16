@@ -30,6 +30,8 @@ int main(void) {
 	yama_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
+	t_tabla_planificacion tabla;
+	tabla.workers = list_create();
 	t_job job;
 	job.master = 1;
 	job.nodo = 1;
@@ -216,9 +218,47 @@ int main(void) {
 								//hacer lo que corresponda
 								//si esta todo ok avanza el proceso de forma normal y sino debe replanificar
 								//y mandar nuevos sockets
-							break;
+
+								break;
+							case cop_datanode_info :
+								{
+									int desplazamiento=0;
+									int cantidadElementos;
+									memcpy(&cantidadElementos, paqueteRecibido->data, sizeof(int));
+									desplazamiento += sizeof(int);
+
+									int i=0;
+									for(;i<cantidadElementos;i++){
+										t_clock* worker = malloc(sizeof(t_clock*));
+										int longitudIp;
+										memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento += sizeof(int);
+										worker->ip =  malloc(longitudIp);
+										memcpy(worker->ip, paqueteRecibido->data + desplazamiento, longitudIp);
+										desplazamiento += longitudIp;
+
+										memcpy(worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento += sizeof(int);
+										desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
+
+										int longitudNombre;
+										memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento += sizeof(int);
+										worker->worker_id =  malloc(longitudNombre);
+										memcpy(worker->worker_id, paqueteRecibido->data + desplazamiento, longitudNombre);
+										desplazamiento += longitudNombre;
+
+										list_add(tabla.workers,worker);
+
+
+									}
+
+									tabla.clock_actual = (t_clock*)tabla.workers->head->data;
+								}
+								break;
+
 							}
-						}
+
 					}
 			}
 		}

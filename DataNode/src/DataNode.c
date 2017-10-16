@@ -37,6 +37,36 @@ int main(void) {
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
 	realizar_handshake(fileSystemSocket, cop_handshake_datanode);
+	t_paquete_datanode_info_list* paquete = malloc(sizeof(t_paquete_datanode_info_list));
+	char*ip=obtener_mi_ip();
+	paquete->ip= malloc(strlen(ip)+1);
+	strcpy(paquete->ip,ip);
+	paquete->puertoWorker = atoi(configuracion.PUERTO_WORKER);
+	paquete->tamanio = sb.st_size;
+	paquete->nombreNodo = malloc(strlen(paquete->nombreNodo )+1);
+	strcpy(paquete->nombreNodo, configuracion.NOMBRE_NODO);
+
+	int longitudIp=strlen(paquete->ip)+1;
+	int longitudNombre = strlen(paquete->nombreNodo )+1;
+	int desplazamiento=0;
+
+	void* buffer = malloc( longitudIp+ sizeof(int) + sizeof(int)+sizeof(int) + sizeof(int) + longitudNombre);
+	memcpy(buffer, &longitudIp, sizeof(int));
+	desplazamiento+= sizeof(int);
+	memcpy(buffer+desplazamiento, paquete->ip, longitudIp);
+	desplazamiento+= longitudIp;
+	memcpy(buffer+ desplazamiento, &paquete->puertoWorker, sizeof(int));
+	desplazamiento+= sizeof(int);
+	memcpy(buffer+ desplazamiento, &paquete->tamanio, sizeof(int));
+	desplazamiento+= sizeof(int);
+	memcpy(buffer+ desplazamiento, &longitudNombre, sizeof(int));
+	desplazamiento+= sizeof(int);
+	memcpy(buffer+ desplazamiento, paquete->nombreNodo,longitudNombre);
+	desplazamiento+= longitudNombre;
+
+
+	enviar(fileSystemSocket, cop_datanode_info,desplazamiento, buffer);
+
 	//todo mati e, aca hacer enviar
 	while(1){
 		t_paquete* paquete=recibir(fileSystemSocket);

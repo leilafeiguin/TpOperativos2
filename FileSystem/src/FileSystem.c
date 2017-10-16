@@ -137,7 +137,46 @@ int main(void) {
 						t_paquete* paqueteRecibido = recibir(socketActual);
 						switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 						case cop_handshake_yama:
-							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_yama);
+							{
+								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_yama);
+
+								int tamanioTotal=0;
+								void contabilizarTamanio(void* elemento){
+									tamanioTotal+= (strlen(((t_nodo*)elemento)->ip)+1 + 3* sizeof(int));
+								};
+
+								int cantidadElementos=list_size(fileSystem.ListaNodos);
+								list_iterate(fileSystem.ListaNodos, contabilizarTamanio );
+
+								int desplazamiento=0;
+								void* buffer = malloc(sizeof(int) + tamanioTotal);
+								memcpy(buffer, &cantidadElementos, sizeof(int));
+								desplazamiento+= sizeof(int);
+
+								void copiarABuffer(void* elemento){
+									int longitudIp=strlen(((t_nodo*)elemento)->ip)+1;
+									int longitudNombre = strlen(((t_nodo*)elemento)->nroNodo )+1;
+
+									memcpy(buffer+desplazamiento,  longitudIp, sizeof(int));
+									desplazamiento+= sizeof(int);
+									memcpy(buffer+desplazamiento, ((t_nodo*)elemento)->ip, longitudIp);
+									desplazamiento+= longitudIp;
+									memcpy(buffer+ desplazamiento, &((t_nodo*)elemento)->puertoWorker, sizeof(int));
+									desplazamiento+= sizeof(int);
+									memcpy(buffer+ desplazamiento, &((t_nodo*)elemento)->tamanio, sizeof(int));
+									desplazamiento+= sizeof(int);
+									memcpy(buffer+ desplazamiento, &longitudNombre, sizeof(int));
+									desplazamiento+= sizeof(int);
+									memcpy(buffer+ desplazamiento, ((t_nodo*)elemento)->nroNodo,longitudNombre);
+									desplazamiento+= longitudNombre;
+
+								};
+
+								list_iterate(fileSystem.ListaNodos,copiarABuffer);
+
+								enviar(socketActual, cop_datanode_info,desplazamiento, buffer);
+							}
+
 							//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
 							//todo mati e armar un paquete con t_datanode_info_list lista de t_nodos y enviarlo
 						break;
@@ -150,11 +189,36 @@ int main(void) {
 							break;
 						case cop_datanode_info:
 						{
-							char* nroNodo; //cambiarlo a char*
+							t_paquete_datanode_info_list* infoNodo = malloc(sizeof(t_paquete_datanode_info_list));
+							int longitudIp;
+							int longitudNombre;
+							int desplazamiento=0;
+							memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
+							desplazamiento+=sizeof(int);
+							infoNodo->ip= malloc(longitudIp);
+
+							memcpy(infoNodo->ip, paqueteRecibido->data + desplazamiento, longitudIp);
+							desplazamiento+=longitudIp;
+
+							memcpy(&infoNodo->puertoWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
+							desplazamiento+=sizeof(int);
+
+							memcpy(&infoNodo->tamanio, paqueteRecibido->data + desplazamiento, sizeof(int));
+							desplazamiento+=sizeof(int);
+
+							memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento, sizeof(int));
+							desplazamiento+=sizeof(int);
+							infoNodo->nombreNodo= malloc(longitudNombre);
+
+							memcpy(infoNodo->nombreNodo, paqueteRecibido->data + desplazamiento, longitudNombre);
+							desplazamiento+=longitudNombre;
+
+
+
 							t_bitarray* unBitmap;
 							char* data[] = {00000000000000000000};
 							unBitmap = bitarray_create(data, 3);
-							t_nodo* unNodo = nodo_create(nroNodo, false, unBitmap, socketActual );
+							t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap, socketActual , infoNodo->ip, infoNodo->puertoWorker, infoNodo->tamanio);
 							list_add(fileSystem.ListaNodos, unNodo);
 						}
 							//falta agregar otras estructuras administrativas
@@ -220,7 +284,7 @@ t_directory* crearDirectorio(int padre, char* nombre){
 
 		if(tablaDeDirectorios[x]->index == -2)
 		{
-			tablaDeDirectorios[x]->nombre= malloc(strlen(nombre)+1);
+			//tablaDeDirectorios[x]->nombre= malloc(strlen(nombre)+1);
 			strcpy(tablaDeDirectorios[x]->nombre, nombre);
 			tablaDeDirectorios[x]->padre=padre;
 			tablaDeDirectorios[x]->index= x;
@@ -493,6 +557,13 @@ void hiloFileSystem_Consola(void * unused){
 	}
 }
 
+t_nodo* buscar_nodo (char* nombreNodo){
+	bool buscarNodo(void* elemento){
+		return string_equals_ignore_case(((t_nodo*)elemento)->nroNodo, nombreNodo);
+	}
+	return list_find(fileSystem.ListaNodos, buscarNodo);
+}
+
 t_nodo* buscar_nodo_libre (int nodoAnterior){
 	bool buscarLibre(void* elemento){
 		return !((t_nodo*)elemento)->ocupado && (nodoAnterior ==0 || ((t_nodo*)elemento)->nroNodo!=nodoAnterior);
@@ -526,7 +597,7 @@ void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
 	enviar(nodo->socket, cop_datanode_setbloque,desplazamiento, bloque);
 }
 
-void escribir_bloque (void* bloque){
+t_nodoasignado* escribir_bloque (void* bloque){
 	t_nodo* nodolibre =	buscar_nodo_libre (0);
 	int numBloque = buscarBloque(nodolibre);
 	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
@@ -534,7 +605,8 @@ void escribir_bloque (void* bloque){
 	nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
 	numBloque = buscarBloque(nodolibre);
 	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
-	return;
+
+	return NULL;//todo mati gg aca crea la estructura nodo asignado y asignale los valores que corresponden.
 }
 
 void actualizarArchivoDeDirectorios(){

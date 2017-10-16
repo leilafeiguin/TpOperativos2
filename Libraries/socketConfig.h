@@ -89,6 +89,8 @@ typedef struct {
 typedef struct {
 	char* ip;
 	int puertoWorker;
+	int tamanio;
+	char* nombreNodo;
 } t_paquete_datanode_info_list;
 
 char* archivo;
@@ -168,7 +170,7 @@ bool comprobar_archivo(char* path);
 /** @NAME: leer_bloque
  *
  */
-
+char* obtener_mi_ip();
 
 
 

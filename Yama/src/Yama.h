@@ -41,9 +41,9 @@ typedef struct t_estados{
 
 typedef struct t_clock{
 	int disponibilidad;
-	int worker_id;
+	char* worker_id;
 	char* ip;
-	char* puerto;
+	int puerto;
 	t_list* bloques; //(int)
 } t_clock;
 

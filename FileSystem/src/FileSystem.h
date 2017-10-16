@@ -86,12 +86,16 @@ typedef struct t_fs{
 	int libre;
 }t_fs;
 
-static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap, un_socket socket){
+static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap, un_socket socket, char* ipWorker, int puertoWorker, int tamanio){
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
 	new->nroNodo = nroNodo;
 	new->ocupado = ocupado;
 	new->socket = socket;
+	new->ip = malloc(strlen(ipWorker)+1);
+	strcpy(new->ip, ipWorker);
+	new->puertoWorker = puertoWorker;
+	new->tamanio = tamanio;
 	return new;
 }
 
@@ -116,7 +120,6 @@ char** LeerArchivo(char* archivo, int* cantidadBloques);
 t_nodo* buscar_nodo_libre (int nodoAnterior);
 t_nodo* buscar_nodo (char* nombreNodo);
 int buscarBloque (t_nodo*);
-
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
 
 t_nodoasignado* escribir_bloque (void* bloque);
@@ -124,3 +127,5 @@ void split_path_file(char** p, char** f, char *pf);
 void actualizarArchivoDeDirectorios();
 char *str_replace(char *orig, char *rep, char *with);
 int countOccurrences(char * str, char * toSearch);
+t_directory* crearDirectorio(int padre, char* nombre);
+t_directory* buscarDirectorio(int padre, char* nombre);

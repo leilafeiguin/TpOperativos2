@@ -10,7 +10,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <linux/if_link.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
 
 /**  @NAME: _configurar_addrinfo
  *	 @DESC: Retorna un puntero a una addrInfo totalmente lista para usar,
@@ -60,6 +62,47 @@ un_socket conectar_a(char *IP, char* Port) {
 	}
 	freeaddrinfo(serverInfo);
 	return serverSocket;
+}
+
+char* obtener_mi_ip(){
+	 struct ifaddrs *ifaddr, *ifa;
+	   int family, s, n;
+	   char host[NI_MAXHOST];
+
+	   if (getifaddrs(&ifaddr) == -1) {
+		   return NULL;
+	   }
+
+	   /* Walk through linked list, maintaining head pointer so we
+		  can free list later */
+
+	   for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+		   if (ifa->ifa_addr == NULL)
+			   continue;
+
+		   family = ifa->ifa_addr->sa_family;
+
+
+		   if (family == AF_INET) {
+			   s = getnameinfo(ifa->ifa_addr,
+					   (family == AF_INET) ? sizeof(struct sockaddr_in) :
+											 sizeof(struct sockaddr_in6),
+					   host, NI_MAXHOST,
+					   NULL, 0, NI_NUMERICHOST);
+			   if (s != 0) {
+				   printf("getnameinfo() failed: %s\n", gai_strerror(s));
+				   exit(EXIT_FAILURE);
+			   }
+
+			   freeifaddrs(ifaddr);
+			   return host;
+
+		   }
+	   }
+
+
+
+	   return NULL;
 }
 
 un_socket socket_escucha(char* IP, char* Port) {
