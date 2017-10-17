@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <commons/bitarray.h>
 #include <commons/collections/list.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 typedef enum {
 
@@ -81,7 +83,7 @@ typedef struct t_nodoasignado{
 
 typedef struct t_fs{
 	t_list* ListaNodos; //se le deben agregar struct t_nodo
-	t_list* listaArchivos;
+	t_list* listaArchivos; //se le deben agregar struct t_archivo
 	int tamanio;
 	int libre;
 }t_fs;
@@ -109,7 +111,6 @@ static void nodo_destroy(t_nodo* nodo){
 t_directory* tablaDeDirectorios[99];
 
 t_fs fileSystem;
-t_list* nodos;
 
 void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
@@ -129,3 +130,4 @@ char *str_replace(char *orig, char *rep, char *with);
 int countOccurrences(char * str, char * toSearch);
 t_directory* crearDirectorio(int padre, char* nombre);
 t_directory* buscarDirectorio(int padre, char* nombre);
+void crear_subcarpeta(char* nombre);

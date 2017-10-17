@@ -49,6 +49,11 @@ int main(void) {
 	}
 	actualizarArchivoDeDirectorios();
 
+	fileSystem.ListaNodos = list_create(); //Se le deben cargar estructuras de tipo t_nodo
+	fileSystem.libre = 0;
+	fileSystem.listaArchivos = list_create(); //Se le deben cargar estructuras de tipo t_archivo
+	fileSystem.tamanio = 0;
+
 	// ----------------------------------------------
 	// ----------------------------------------------
 	// ----------------------------------------------
@@ -113,8 +118,6 @@ int main(void) {
 	pthread_t hiloFileSystem;
 	pthread_create(&hiloFileSystem, NULL, hiloFileSystem_Consola,NULL);
 	int socketActual;
-	nodos = list_create();
-	fileSystem.ListaNodos = nodos;
 
 	//CONEXIONES
 	while(1){
@@ -473,7 +476,7 @@ char** validaCantParametrosComando(char* comando, int cantParametros){
 void formatearFileSystem(){
 	int i;
 	list_destroy(fileSystem.ListaNodos);
-	nodos = list_create();
+	t_list* nodos = list_create();
 	fileSystem.ListaNodos = nodos;
 
 	for(i=0;i<sizeof(tablaDeDirectorios)/sizeof(t_directory);i++){
@@ -610,7 +613,8 @@ t_nodoasignado* escribir_bloque (void* bloque){
 }
 
 void actualizarArchivoDeDirectorios(){
-	FILE * file= fopen("directorios.txt", "w");
+	crear_subcarpeta("metadata");
+	FILE * file= fopen("metadata/directorios.txt", "w");
 	int i;
 	if (file != NULL) {
 		fprintf(file, "%i,%s,%i" ,tablaDeDirectorios[0]->index,tablaDeDirectorios[0]->nombre,tablaDeDirectorios[0]->padre);
@@ -622,3 +626,12 @@ void actualizarArchivoDeDirectorios(){
 		fclose(file);
 		}
 }
+
+void crear_subcarpeta(char* nombre){
+	struct stat st = {0};
+	if (stat(nombre, &st) == -1) {
+	    mkdir(nombre, 0700);
+	}
+}
+
+
