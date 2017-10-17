@@ -249,16 +249,12 @@ int main(void) {
 										desplazamiento += longitudNombre;
 
 										list_add(tabla.workers,worker);
-
-
 									}
-
 									tabla.clock_actual = (t_clock*)tabla.workers->head->data;
 								}
 								break;
-
-							}
-
+								}
+						}
 					}
 			}
 		}

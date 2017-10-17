@@ -35,7 +35,7 @@ fileSystem_configuracion get_configuracion() {
 
 typedef struct t_directory {
   int index;
-  char nombre[255];
+  char* nombre;
   int padre;
 }t_directory;
 
