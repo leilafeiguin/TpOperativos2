@@ -323,3 +323,17 @@ void* buscar_por_jobid(int jobId){
 	}
 	return list_find(tabla_estados, (void*) _is_the_one);
 }
+
+int availability(){
+	yama_configuracion configuracion = get_configuracion();
+	int base = configuracion.DISPONIBILIDAD_BASE;
+	int pwl = 0; //PARA W-CLOCK SERIA: PWL(w) = WLmax - WL(w)
+	return base + pwl;
+}
+
+void planificacion(t_tabla_planificacion tabla, t_job bloqueAAsignar){
+	if(tabla.clock_actual->disponibilidad > 0){
+
+	}
+
+}

@@ -78,3 +78,5 @@ void* buscar_por_nodo (int nodo, t_list* listaNodos);
 void setearJob(t_job* nuevoJob, t_job datos);
 
 t_job* crearJob(t_job datos);
+
+int availability();

@@ -26,4 +26,4 @@ worker_configuracion get_configuracion() {
 	return configuracion;
 }
 
-char* apareo (char* paths [4]);
+char* apareo (char* paths []);
