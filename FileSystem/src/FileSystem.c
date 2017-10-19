@@ -235,9 +235,9 @@ int main(void) {
 }
 
 
-void CP_FROM(char* origen, char* destino){
-	int cantidadBloques=0;
-	char** bloques = LeerArchivo(origen, &cantidadBloques);
+void CP_FROM(char* origen, char* destino, char tipoArchivo){
+
+	t_archivo_partido* archivoPartido = LeerArchivo(origen);
 	char* path= malloc(255);
 	char* file= malloc(255);
 	destino= str_replace(destino, "yamafs://","");
@@ -256,8 +256,8 @@ void CP_FROM(char* origen, char* destino){
     }
 
 	int i=0;
-	for(;i<cantidadBloques;i++){
-		t_nodoasignado* respuesta = escribir_bloque(bloques[i]);
+	for(;i<archivoPartido->cantidadBloques;i++){
+		t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos,i));
 		t_nodo* nodo1= buscar_nodo(respuesta->nodo1);
 		nodo1->libre--;
 		if(nodo1->libre ==0)
@@ -395,28 +395,73 @@ void split_path_file(char** p, char** f, char *pf) {
     *f = strdup(slash);
 }
 
-char** LeerArchivo(char* archivo, int* cantbloques){
+t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo){
 	struct stat sb;
 	int fd = open(archivo, O_RDONLY);
 	fstat(fd, &sb);
 	void* archivoMapeado = mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
-	int cantidadBloques = sb.st_size / 1024*1024;
-	if(sb.st_size % (1024 *1024) != 0)
-		cantidadBloques++;
-	char** listaBloques = malloc(cantidadBloques);
-	int tamanio=0;
-	int i=0;
-	for(; i< cantidadBloques ; i++) //falta completar casos de archivos de texto
+
+	t_archivo_partido* archivoPartido= malloc(sizeof(t_archivo_partido));
+	archivoPartido->bloquesPartidos = list_create();
+	if(tipoArchivo == 'B')
 	{
-		int tamanioBloque = 1024*1024;
-		if(sb.st_size - tamanio < tamanioBloque)
-			tamanioBloque = sb.st_size-tamanio;
-		(*listaBloques[i]) = malloc(tamanioBloque);
-		memcpy((*listaBloques[i]), archivoMapeado+tamanio, tamanioBloque);
-		tamanio+=(tamanioBloque);
+
+		int cantidadBloques = sb.st_size / 1024*1024;
+		if(sb.st_size % (1024 *1024) != 0)
+			cantidadBloques++;
+		int tamanio=0;
+		int i=0;
+		for(; i< cantidadBloques ; i++) //falta completar casos de archivos de texto
+		{
+			t_bloque_particion* bloquePartido = malloc(sizeof(t_bloque_particion));
+
+			int tamanioBloque = 1024*1024;
+			if(sb.st_size - tamanio < tamanioBloque)
+				tamanioBloque = sb.st_size-tamanio;
+
+			bloquePartido->ultimoByteValido=tamanioBloque;
+
+			bloquePartido->contenido = malloc(tamanioBloque);
+			memcpy(bloquePartido->contenido, archivoMapeado+tamanio, tamanioBloque);
+			tamanio+=(tamanioBloque);
+			list_add(archivoPartido->bloquesPartidos, bloquePartido);
+		}
+		archivoPartido->cantidadBloques=cantidadBloques;
+
 	}
-	*cantbloques=cantidadBloques;
-	return listaBloques;
+	else
+	{
+		int cantidadBloques=0;
+		t_bloque_particion* bloquePartido=NULL;
+		int cantidadRenglones=countOccurrences(archivo, "\n");
+		char** renglones=string_split(archivo, "\n");
+		int tamanioBloque = 0;
+		int i=0;
+		while(cantidadRenglones != i){
+			if(bloquePartido == NULL || tamanioBloque + strlen(renglones[i]+"\n") > 1024 *1024){
+				tamanioBloque=0;
+				cantidadBloques++;
+				if(bloquePartido != NULL)
+				{
+					bloquePartido->ultimoByteValido = tamanioBloque;
+					list_add(archivoPartido->bloquesPartidos, bloquePartido);
+				}
+				bloquePartido = malloc(sizeof(t_bloque_particion));
+
+			}
+
+
+			bloquePartido->contenido = realloc(bloquePartido->contenido, tamanioBloque + strlen(renglones[i]+"\n"));
+			memcpy(bloquePartido->contenido+tamanioBloque, renglones[i]+"\n", strlen(renglones[i]+"\n"));
+			tamanioBloque += strlen(renglones[i]+"\n");
+			i++;
+
+		}
+
+		archivoPartido->cantidadBloques = cantidadBloques;
+		return archivoPartido;
+	}
+
 }
 
 char** str_split(char* a_str, const char a_delim){
@@ -530,7 +575,7 @@ void hiloFileSystem_Consola(void * unused){
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
-				parametros = validaCantParametrosComando(linea, 2);
+				parametros = validaCantParametrosComando(linea, 3);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpto") == 0){
 				printf("Copiar un archivo local al yamafs\n");
@@ -539,6 +584,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "cpblock") == 0){
 				printf("Crea una copia de un bloque de un archivo en el nodo dado.\n");
 				parametros = validaCantParametrosComando(linea, 3);
+				CP_FROM(parametros[0], parametros[1], (char)parametros[2]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "md5") == 0){
 				printf("Solicitar el MD5 de un archivo en yamafs\n");
@@ -601,13 +647,17 @@ void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
 }
 
 t_nodoasignado* escribir_bloque (void* bloque){
+	t_bloque_particion* bloque_partido= (t_bloque_particion*)bloque;
+	void* buffer = malloc(1024*1024);
+	memcpy(buffer, bloque_partido->contenido, bloque_partido->ultimoByteValido);
+
 	t_nodo* nodolibre =	buscar_nodo_libre (0);
 	int numBloque = buscarBloque(nodolibre);
-	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+	enviar_bloque_a_escribir(numBloque,buffer,nodolibre );
 
 	nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
 	numBloque = buscarBloque(nodolibre);
-	enviar_bloque_a_escribir(numBloque,bloque,nodolibre );
+	enviar_bloque_a_escribir(numBloque,buffer,nodolibre );
 
 	return NULL;//todo mati gg aca crea la estructura nodo asignado y asignale los valores que corresponden.
 }
