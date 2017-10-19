@@ -48,13 +48,16 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 
 		un_socket unSocket = conectar_a(ip_aux, puerto_aux);
 		bool estado = realizar_handshake(unSocket, cop_handshake_master);
-		t_worker* unWorker = malloc(sizeof(char*)*(strlen(ip_aux)+strlen(puerto_aux))+sizeof(bool)+sizeof(un_socket));
-		unWorker->IP = ip_aux;
-		unWorker->puerto = puerto_aux;
+		t_worker* unWorker = malloc(sizeof(t_worker));
+		unWorker->IP = malloc(strlen(ip_aux)+1);
+		strcpy(unWorker->IP,ip_aux);
+		unWorker->puerto = malloc(strlen(puerto_aux)+1);
+		strcpy(unWorker->puerto , puerto_aux);
 		unWorker->estado = estado;
 		unWorker->socket = unSocket;
 
 		list_add(workers, unWorker);
+		free(auxiliar);
 	}
 
 	free(buffer);
