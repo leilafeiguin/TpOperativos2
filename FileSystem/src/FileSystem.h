@@ -88,6 +88,16 @@ typedef struct t_fs{
 	int libre;
 }t_fs;
 
+typedef struct t_bloque_particion {
+	char* contenido;
+	int ultimoByteValido;
+}t_bloque_particion;
+
+typedef struct t_archivo_partido {
+	int cantidadBloques;//en cuantos bloques se parte
+	t_list* bloquesPartidos;
+}t_archivo_partido;
+
 static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap, un_socket socket, char* ipWorker, int puertoWorker, int tamanio){
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
@@ -114,8 +124,8 @@ t_fs fileSystem;
 
 void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
-void CP_FROM(char* origen, char* destino);
-char** LeerArchivo(char* archivo, int* cantidadBloques);
+void CP_FROM(char* origen, char* destino, char tipoArchivo);
+t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo);
 
 
 t_nodo* buscar_nodo_libre (int nodoAnterior);
