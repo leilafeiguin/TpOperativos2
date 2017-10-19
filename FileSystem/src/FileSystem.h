@@ -131,3 +131,5 @@ int countOccurrences(char * str, char * toSearch);
 t_directory* crearDirectorio(int padre, char* nombre);
 t_directory* buscarDirectorio(int padre, char* nombre);
 void crear_subcarpeta(char* nombre);
+void actualizarBitmap(t_nodo unNodo);
+void actualizarArchivoTablaNodos();

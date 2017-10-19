@@ -634,4 +634,53 @@ void crear_subcarpeta(char* nombre){
 	}
 }
 
+//Revisar
+void actualizarBitmap(t_nodo unNodo){
+	crear_subcarpeta("metadata/bitmaps/");
+	char* aux;
+	aux = "";
+	strcat(aux, "metadata/bitmaps/");
+	strcat(aux, unNodo.nroNodo);
+	strcat(aux, ".dat");
+	FILE * file= fopen(aux, "wb");
+	if (file != NULL) {
+		fwrite(unNodo.bitmap,sizeof(unNodo.bitmap),1,file);
+		fclose(file);
+		}
+}
+
+void actualizarArchivoTablaNodos(){
+	crear_subcarpeta("metadata");
+	FILE * file= fopen("metadata/nodos.bin", "wb");
+	if (file != NULL) {
+		int libreTotal;
+		libreTotal = 0;
+		int tamanioTotal;
+		tamanioTotal = 0;
+		int cantidadNodos;
+		cantidadNodos = list_count_satisfying(fileSystem.ListaNodos ,true);
+		int libresPorNodo[cantidadNodos];
+		int tamanioPorNodo[cantidadNodos];
+		char* nodos[cantidadNodos];
+		int i;
+		for(i=0;i<cantidadNodos;i++){
+			t_nodo* aux;
+			aux = list_get(fileSystem.ListaNodos,i);
+			libreTotal += aux->libre;
+			tamanioTotal += aux->tamanio;
+			libresPorNodo[i] = aux->libre;
+			tamanioPorNodo[i] = aux->tamanio;
+			nodos[i] = aux->nroNodo;
+		}
+		fprintf(file, "TAMANIO=%i\nLIBRE=%i\nNODOS=[" ,tamanioTotal,libreTotal);
+		for(i=0;i<cantidadNodos-1;i++){
+			fprintf(file, "%s,", nodos[i]);
+		}
+		fprintf(file,"%s]\n",nodos[cantidadNodos]);
+		for(i=0;i<cantidadNodos;i++){
+			fprintf(file,"%sTotal=%i\n%sLibre%i\n",nodos[i],tamanioPorNodo[i],nodos[i],libresPorNodo[i]);
+		}
+		fclose(file);
+		}
+}
 
