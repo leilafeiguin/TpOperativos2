@@ -234,7 +234,15 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+// CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
+void CP_TO (char* origen, char*destino){
+	//desarrolar
+}
 
+
+
+
+//CPFROM
 void CP_FROM(char* origen, char* destino){
 	int cantidadBloques=0;
 	char** bloques = LeerArchivo(origen, &cantidadBloques);

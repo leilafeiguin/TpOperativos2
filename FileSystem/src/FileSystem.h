@@ -114,6 +114,7 @@ t_fs fileSystem;
 
 void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
+void CP_TO (char* origen, char* destino);
 void CP_FROM(char* origen, char* destino);
 char** LeerArchivo(char* archivo, int* cantidadBloques);
 
