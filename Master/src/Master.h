@@ -1,6 +1,8 @@
 #include <socketConfig.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
+#include <assert.h>
+
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct master_configuracion {
@@ -22,16 +24,14 @@ master_configuracion get_configuracion() {
 	return configuracion;
 }
 
-typedef enum t_estado {
-	conectado = 1,
-	error = 2
-} t_estado;
-
 typedef struct t_worker{
-	t_estado estado;
-	int puerto;
+	bool estado;
+	char* puerto;
 	char* IP;
 	int socket;
 }t_worker;
 
 t_list* workers;
+
+size_t cantidadCaracterEnString(const char *str, char token);
+char** str_split(char* a_str, const char a_delim);

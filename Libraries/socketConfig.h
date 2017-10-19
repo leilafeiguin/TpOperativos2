@@ -43,7 +43,7 @@ enum codigos_de_operacion {
 	cop_handshake_master = 4,
 	cop_handshake_worker = 5,
 
-	cop_master_archivo_a_transaformar = 10,
+	cop_master_archivo_a_transformar = 10,
 	cop_master_estados_workers = 11,
 
 	cop_yama_lista_de_workers = 50,
