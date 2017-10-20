@@ -462,6 +462,8 @@ t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo){
 		return archivoPartido;
 	}
 
+
+
 }
 
 char** str_split(char* a_str, const char a_delim){
