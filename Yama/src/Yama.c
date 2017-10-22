@@ -17,7 +17,7 @@
 #include "Yama.h"
 
 t_list* tabla_estados;
-
+yama_configuracion configuracion;
 int main(void) {
 	t_log* logger;
 	char* fileLog;
@@ -27,7 +27,7 @@ int main(void) {
 	logger = log_create(fileLog, "Yama Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Yama");
 
-	yama_configuracion configuracion = get_configuracion();
+    configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
 	t_tabla_planificacion tabla;
@@ -206,11 +206,20 @@ int main(void) {
 							case cop_master_archivo_a_transformar:
 							{
 								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
+								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
+
+								t_archivoxnodo* archivoNodo=NULL;
+
 								//Evalua y planifica en base al archivo que tiene que transaformar
+								void planificarBloques(void* bloque){
+									int* nroBloque = (int*)bloque;
+									planificarBloque(tabla , *nroBloque, archivoNodo );
+								}
+
+								list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
+
 								//Devuelve lista con los workers
-
-
-
+								//Ahora lo debe sacar de archivoNodo workersAsignados
 								char* listaWorkers;
 								listaWorkers = "127.0.0.1|3000,127.0.0.1|3001,127.0.0.1|3002";
 								enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
@@ -253,7 +262,7 @@ int main(void) {
 
 										list_add(tabla.workers,worker);
 									}
-									tabla.clock_actual = (t_clock*)tabla.workers->head->data;
+									tabla.clock_actual = (t_clock*)tabla.workers->head;
 								}
 								break;
 								}
@@ -310,7 +319,7 @@ void setearJob(t_job* nuevoJob, t_job datos){
 	nuevoJob->etapa =datos.etapa;
 	nuevoJob->temporal = malloc(strlen(datos.temporal) +1);
 	strcpy(nuevoJob->temporal, datos.temporal);
-	//asignar el resto de los campos
+	//asignar el resto de los camposa
 }
 
 void* buscar_por_nodo (int nodo, t_list* listaNodos){
@@ -327,16 +336,90 @@ void* buscar_por_jobid(int jobId){
 	return list_find(tabla_estados, (void*) _is_the_one);
 }
 
-int availability(){
-	yama_configuracion configuracion = get_configuracion();
-	int base = configuracion.DISPONIBILIDAD_BASE;
-	int pwl = 0; //PARA W-CLOCK SERIA: PWL(w) = WLmax - WL(w)
-	return base + pwl;
-}
 
-void planificacion(t_tabla_planificacion tabla, t_job bloqueAAsignar){
-	if(tabla.clock_actual->disponibilidad > 0){
+
+void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxnodo* archivo){
+
+	bool existeBloqueEnWorker(void* elem){
+		return numeroBloque == *((int*)elem);
+	}
+
+	bool workerContieneBloque(void* elem){
+		return string_equals_ignore_case(((t_clock*)tabla.clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo) &&
+				list_any_satisfy(((t_nodoxbloques*)elem)->bloquesRelativos, existeBloqueEnWorker);
+	}
+
+	void asignarBloqueAWorker(t_clock* worker,int numeroBloque, t_archivoxnodo* archivo){
+		worker->disponibilidad--;
+
+		list_add(worker->bloques, numeroBloque);
+
+		bool existeWorkerAsignado(void* elem){
+			return string_equals_ignore_case(((t_clock*)elem)->worker_id , worker->worker_id);
+		}
+
+		if(!list_any_satisfy(archivo->workersAsignados, existeWorkerAsignado))
+		{
+			list_add(archivo->workersAsignados, worker);
+		}
 
 	}
 
+	if(list_any_satisfy(archivo->nodos, workerContieneBloque)){
+		if(((t_clock*)tabla.clock_actual->data)->disponibilidad > 0)
+		{
+			asignarBloqueAWorker(((t_clock*)tabla.clock_actual->data), numeroBloque, archivo);
+			tabla.clock_actual = tabla.clock_actual->next;
+			if(tabla.clock_actual == NULL)
+				tabla.clock_actual = tabla.workers->head;
+
+			if(((t_clock*)tabla.clock_actual->data)->disponibilidad ==0)
+			{
+				((t_clock*)tabla.clock_actual->data)->disponibilidad= configuracion.DISPONIBILIDAD_BASE;
+				/*tabla.clock_actual = tabla.clock_actual->next;
+				if(tabla.clock_actual == NULL)
+					tabla.clock_actual = tabla.workers->head;*///No sabemos si esto es necesario o no
+			}
+		}
+		else {//el worker apuntado por el clock actual posee el bloque pero no tiene disponibilidad
+			//aca entra alguna vez?
+		}
+	}
+	else{ //el worker apuntado por el clock actual no posee ese bloque
+		t_link_element* elementoActual= tabla.clock_actual->next;
+		t_link_element* elementoOriginal = tabla.clock_actual;
+		bool encontro=false;
+		while(!encontro)
+		{
+			char* nombreWorker= ((t_clock*)elementoActual->data)->worker_id;
+			bool workerContieneBloqueByWorkerId(void* elem){
+				return string_equals_ignore_case( nombreWorker, ((t_nodoxbloques*)elem)->idNodo) &&
+				list_any_satisfy(((t_nodoxbloques*)elem)->bloquesRelativos, existeBloqueEnWorker);
+			}
+			if(list_any_satisfy(archivo->nodos, workerContieneBloqueByWorkerId) && ((t_clock*)elementoActual->data)->disponibilidad >0)
+			{
+				encontro=true;
+				asignarBloqueAWorker(((t_clock*)elementoActual->data), numeroBloque, archivo);
+			}
+			else{
+				elementoActual = elementoActual->next;
+				if(elementoActual == NULL)
+					elementoActual = tabla.workers->head;
+
+				if(string_equals_ignore_case(((t_clock*)elementoActual->data)->worker_id, ((t_clock*)elementoOriginal->data)->worker_id))
+				{
+					void sumarDisponibilidadBase(void* elem){
+						((t_clock*)elem)->disponibilidad+= configuracion.DISPONIBILIDAD_BASE;
+					}
+					list_iterate(tabla.workers,sumarDisponibilidadBase);
+				}
+			}
+
+		}
+
+	}
+
+
+
 }
+
