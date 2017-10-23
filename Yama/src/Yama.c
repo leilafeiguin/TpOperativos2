@@ -376,13 +376,15 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 			if(((t_clock*)tabla.clock_actual->data)->disponibilidad ==0)
 			{
 				((t_clock*)tabla.clock_actual->data)->disponibilidad= configuracion.DISPONIBILIDAD_BASE;
-				/*tabla.clock_actual = tabla.clock_actual->next;
+				//Vuelve a mover el clock
+				tabla.clock_actual = tabla.clock_actual->next;
 				if(tabla.clock_actual == NULL)
-					tabla.clock_actual = tabla.workers->head;*///No sabemos si esto es necesario o no
+					tabla.clock_actual = tabla.workers->head;
 			}
 		}
-		else {//el worker apuntado por el clock actual posee el bloque pero no tiene disponibilidad
-			//aca entra alguna vez?
+		else {
+			//ACA NO DEBERIA ENTRAR NUNCA.
+			printf("el worker apuntado por el clock actual posee el bloque pero no tiene disponibilidad.\n");
 		}
 	}
 	else{ //el worker apuntado por el clock actual no posee ese bloque
