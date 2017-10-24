@@ -131,8 +131,8 @@ int main(void) {
 							{
 								t_transf* paquete_transformacion = malloc(sizeof(t_transf));
 								FILE *archivoPaqueteTransformacion = fopen("archivoPaqueteTransformacion", "wb");
-								fprintf('archivoPaqueteTransformacion',"%s", paquete_transformacion->archivo_temporal);
-								chmod(archivoPaqueteTransformacion, 001); //permiso de ejecucion
+								fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->archivo_temporal);
+								chmod('archivoPaqueteTransformacion', 001); //permiso de ejecucion para ese path
 
 								int desplazamiento = 0;
 
