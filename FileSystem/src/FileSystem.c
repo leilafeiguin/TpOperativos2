@@ -615,6 +615,142 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 	}
 }
 
+void ls(char*path){
+	path= str_replace(path, "yamafs://","");
+	if(!string_ends_with(path, "/"))
+		string_append(&path, "/");
+
+	int cantidadDirectorios=countOccurrences(path, "/");
+	char** directorios=string_split(path, "/");
+	int i=0;
+	int indicePadre=-1;
+	t_directory* directorioActual=NULL;
+	for(;i<cantidadDirectorios;i++){
+		if(directorios[i] == NULL) break;
+		directorioActual=buscarDirectorio(indicePadre, directorios[i]);
+		if(directorioActual == NULL){
+			printf("El directorio %s no existe para el padre %i", directorios[i], indicePadre);
+			return;
+		}
+		indicePadre= directorioActual->index;
+	}
+
+	t_list* listaDirectorios=obtenerSubdirectorios(indicePadre);
+	bool buscarArchivoPorPath(void* elem){
+		        char* partial_string=str_replace(((t_archivo*)elem)->path, path);
+				return string_equals_ignore_case(partial_string, ((t_archivo*)elem)->nombre);
+			};
+
+	t_list* listaArchivos=list_filter(fileSystem.listaArchivos,buscarArchivoPorPath);
+
+	void imprimirDirectorios(void* elem){
+		printf("Directorio: %s", ((t_directory*)elem)->nombre);
+	}
+
+	void imprimirArchivos(void* elem){
+			printf("Archivo: %s", ((t_archivo*)elem)->nombre);
+		}
+
+	list_iterate(listaDirectorios, imprimirDirectorios);
+	list_iterate(listaArchivos, imprimirArchivos);
+
+}
+
+t_list* obtenerSubdirectorios(int indicePadre){
+	int x;
+	t_list* listaDirectorios=list_create();
+	for(x=0; x<100;x++){
+
+		if(tablaDeDirectorios[x]->padre == indicePadre)
+			list_add( tablaDeDirectorios[x]);
+	}
+
+	return listaDirectorios;
+
+}
+
+
+void calcular_md5(char* path){
+	bool buscarArchivoPorPath(void* elem){
+			return string_equals_ignore_case(((t_archivo*)elem)->path,path);
+		};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+
+	if(archivoEncontrado == NULL)
+	{
+		printf("El path %s no se encuentra en el FS", path);
+		return;
+	}
+
+	void* buffer= malloc(archivoEncontrado->tamanio);
+	int desplazamiento=0;
+	void concatenarBloques(void* elem){
+			t_bloque* bloque= (t_bloque*)elem;
+
+
+			t_nodo* nodo=NULL;
+			if(bloque->copia1 != NULL)
+				nodo=buscar_nodo(bloque->copia1->nroNodo);
+
+			if(nodo != NULL)
+			{
+				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
+				int longitudBloque;
+				if(archivoEncontrado->tipoArchivo == BINARIO)
+					longitudBloque=1024*1024;
+				else
+					longitudBloque=bloque->finBloque;
+
+				memcpy(buffer+desplazamiento, contenido, longitudBloque);
+				desplazamiento+=longitudBloque;
+				return;
+			}
+			else{
+				if(bloque->copia2 != NULL)
+					nodo=buscar_nodo(bloque->copia2->nroNodo);
+
+				if(nodo== NULL)
+				{
+					char* nombre1="";
+					char* nombre2="";
+					if(bloque->copia1 != NULL)
+						nombre1=bloque->copia1->nroNodo;
+
+					if(bloque->copia2 != NULL)
+						nombre2=bloque->copia2->nroNodo;
+
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					return;
+				}
+
+				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
+				int longitudBloque;
+				if(archivoEncontrado->tipoArchivo == BINARIO)
+					longitudBloque=1024*1024;
+				else
+					longitudBloque=bloque->finBloque;
+
+				memcpy(buffer+desplazamiento, contenido, longitudBloque);
+				desplazamiento+=longitudBloque;
+				return;
+
+				return;
+			}
+
+		}
+
+	  list_iterate(archivoEncontrado->bloques,concatenarBloques);
+	  char* pathArchivo="./temp-MD5SUM";
+	  FILE *fp = fopen(pathArchivo, "w+");
+
+	  fwrite(buffer,sizeof(char),archivoEncontrado->tamanio,fp);
+	  fclose(fp);
+	  char* comando="md5sum ";
+	  string_append(&comando, pathArchivo);
+	  system(comando);
+}
+
 void cat(char* path){
 	bool buscarArchivoPorPath(void* elem){
 		return string_equals_ignore_case(((t_archivo*)elem)->path,path);
@@ -627,6 +763,7 @@ void cat(char* path){
 		printf("El path %s no se encuentra en el FS", path);
 		return;
 	}
+
 
 	void imprimirPorPantallaContenidoBloque(void* elem){
 			t_bloque* bloque= (t_bloque*)elem;
@@ -748,10 +885,12 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "md5") == 0){
 				printf("Solicitar el MD5 de un archivo en yamafs\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				calcular_md5(parametros[1]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "ls") == 0){
 				printf("Lista los archivos de un directorio\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				ls(parametros[1]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "info") == 0){
 				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");

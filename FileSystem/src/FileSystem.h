@@ -149,3 +149,5 @@ void cat (char*);
 void imprimirPorPantallaContenidoBloque(void* elem);
 bool buscarArchivoPorPath(void* elem);
 void cp_block(char* path, int numeroBloque, char* nombreNodo);
+void calcular_md5(char* path);
+void ls(char*path);
