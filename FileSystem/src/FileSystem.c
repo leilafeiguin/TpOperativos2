@@ -137,6 +137,7 @@ int main(void) {
 						free(handshake);
 					//No es una nueva conexion -> Recibo el paquete
 					} else {
+
 						t_paquete* paqueteRecibido = recibir(socketActual);
 						switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 						case cop_handshake_yama:
@@ -148,6 +149,7 @@ int main(void) {
 									tamanioTotal+= (strlen(((t_nodo*)elemento)->ip)+1 + 3* sizeof(int));
 								};
 
+
 								int cantidadElementos=list_size(fileSystem.ListaNodos);
 								list_iterate(fileSystem.ListaNodos, contabilizarTamanio );
 
@@ -156,7 +158,7 @@ int main(void) {
 								memcpy(buffer, &cantidadElementos, sizeof(int));
 								desplazamiento+= sizeof(int);
 
-								void copiarABuffer(void* elemento){
+									void copiarABuffer(void* elemento){
 									int longitudIp=strlen(((t_nodo*)elemento)->ip)+1;
 									int longitudNombre = strlen(((t_nodo*)elemento)->nroNodo )+1;
 
@@ -234,10 +236,17 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+// CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
+void CP_TO (char* origen, char*destino){
+	//desarrolar
+}
+
+
 
 void CP_FROM(char* origen, char* destino, char tipoArchivo){
 
-	t_archivo_partido* archivoPartido = LeerArchivo(origen);
+	t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
+
 	char* path= malloc(255);
 	char* file= malloc(255);
 	destino= str_replace(destino, "yamafs://","");
@@ -438,7 +447,9 @@ t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo){
 		int tamanioBloque = 0;
 		int i=0;
 		while(cantidadRenglones != i){
-			if(bloquePartido == NULL || tamanioBloque + strlen(renglones[i]+"\n") > 1024 *1024){
+
+			string_append(& renglones[i], "\n");
+			if(bloquePartido == NULL || tamanioBloque + strlen(renglones[i]) > 1024 *1024){
 				tamanioBloque=0;
 				cantidadBloques++;
 				if(bloquePartido != NULL)
@@ -451,9 +462,9 @@ t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo){
 			}
 
 
-			bloquePartido->contenido = realloc(bloquePartido->contenido, tamanioBloque + strlen(renglones[i]+"\n"));
-			memcpy(bloquePartido->contenido+tamanioBloque, renglones[i]+"\n", strlen(renglones[i]+"\n"));
-			tamanioBloque += strlen(renglones[i]+"\n");
+			bloquePartido->contenido = realloc(bloquePartido->contenido, tamanioBloque + strlen(renglones[i]));
+			memcpy(bloquePartido->contenido+tamanioBloque, renglones[i], strlen(renglones[i]));
+			tamanioBloque += strlen(renglones[i]);
 			i++;
 
 		}
@@ -532,6 +543,151 @@ void formatearFileSystem(){
 	printf("Filesystem formateado.\n");
 }
 
+
+
+
+
+
+void cp_block(char* path, int numeroBloque, char* nombreNodo){
+	t_nodo* nodoDestino= buscar_nodo(nombreNodo);
+	if(nodoDestino == NULL || nodoDestino->ocupado)
+	{
+		printf("no existe el nodo %s o está ocupado" , nombreNodo);
+		return;
+
+	}
+
+	bool buscarArchivoPorPath(void* elem){
+		return string_equals_ignore_case(((t_archivo*)elem)->path,path);
+	};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+	if(archivoEncontrado == NULL)
+	{
+		printf("El path %s no se encuentra en el FS", path);
+		return;
+	}
+
+	bool buscarBloquePorNumero(void* elem){
+		return ((t_bloque*)elem)->nroBloque == numeroBloque;
+	}
+
+	t_bloque* bloque= list_find(archivoEncontrado->bloques, buscarBloquePorNumero);
+
+	if(bloque == NULL)
+	{
+		printf("El bloque %i no se encuentra en el FS", numeroBloque);
+		return;
+	}
+
+	ubicacionBloque* ubicacionOrigen = bloque->copia1;
+
+	if( ubicacionOrigen == NULL)
+	{
+		ubicacionOrigen = bloque->copia2;
+	}
+
+	if(ubicacionOrigen != NULL)
+	{
+
+		t_nodo* nodoOrigen= buscar_nodo(ubicacionOrigen->nroNodo);
+		void* contenido=getbloque(ubicacionOrigen->nroBloque, nodoOrigen);
+		int numBloqueDestino = buscarBloque(nodoDestino);
+		nodoDestino->libre--;
+		if(nodoDestino->libre ==0)
+			nodoDestino->ocupado=true;
+		bitarray_set_bit(nodoDestino->bitmap,numBloqueDestino);
+		enviar_bloque_a_escribir(numBloqueDestino, contenido, nodoDestino);
+
+		ubicacionBloque* bloqueAsignado=malloc(sizeof(ubicacionBloque));
+		bloqueAsignado->nroBloque =numBloqueDestino;
+		bloqueAsignado->nroNodo = malloc(strlen(nombreNodo)+1);
+		strcpy(bloqueAsignado->nroNodo, nombreNodo);
+		if(bloque->copia1==NULL)
+			bloque->copia1 = bloqueAsignado;
+		else
+			bloque->copia2 = bloqueAsignado;
+	}
+	else
+	{
+		printf("No tiene ninguna copia para tomar de origen");
+		return;
+	}
+}
+
+void cat(char* path){
+	bool buscarArchivoPorPath(void* elem){
+		return string_equals_ignore_case(((t_archivo*)elem)->path,path);
+	};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+
+	if(archivoEncontrado == NULL)
+	{
+		printf("El path %s no se encuentra en el FS", path);
+		return;
+	}
+
+	void imprimirPorPantallaContenidoBloque(void* elem){
+			t_bloque* bloque= (t_bloque*)elem;
+
+
+			t_nodo* nodo=NULL;
+			if(bloque->copia1 != NULL)
+				nodo=buscar_nodo(bloque->copia1->nroNodo);
+			if(nodo != NULL)
+			{
+				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
+				if(archivoEncontrado->tipoArchivo == BINARIO)
+				{
+
+				}
+				else{
+					char* buffer = malloc(bloque->finBloque);
+					memcpy(buffer, contenido, bloque->finBloque);
+					printf(buffer);
+				}
+				//imprimir contenido
+
+				return;
+			}
+			else{
+				if(bloque->copia2 != NULL)
+					nodo=buscar_nodo(bloque->copia2->nroNodo);
+
+				if(nodo== NULL)
+				{
+					char* nombre1="";
+					char* nombre2="";
+					if(bloque->copia1 != NULL)
+						nombre1=bloque->copia1->nroNodo;
+
+					if(bloque->copia2 != NULL)
+						nombre2=bloque->copia2->nroNodo;
+
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					return;
+				}
+
+				void* contenido=getbloque(bloque->copia2->nroBloque, nodo);
+				if(archivoEncontrado->tipoArchivo == BINARIO)
+				{
+
+				}
+				else{
+					char* buffer = malloc(bloque->finBloque);
+					memcpy(buffer, contenido, bloque->finBloque);
+					printf("%s", buffer);
+				}
+
+				return;
+			}
+
+		}
+
+	list_iterate(archivoEncontrado->bloques,imprimirPorPantallaContenidoBloque);
+}
+
 void hiloFileSystem_Consola(void * unused){
 	printf("Consola Iniciada. Ingrese una opcion \n");
 	char * linea;
@@ -570,6 +726,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "cat") == 0){
 				printf("Muestra el contenido del archivo como texto plano.\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				cat(parametros[1]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
@@ -632,6 +789,19 @@ int buscarBloque(t_nodo* nodo){
 			return i;
 	}
 	return -1;
+}
+
+void* getbloque (int numBloque, t_nodo* nodo){
+	t_getbloque* bloque = malloc(sizeof(t_getbloque));
+	bloque->numero_bloque= numBloque;
+	void* buffer = malloc(sizeof(int));
+	int desplazamiento=0;
+	memcpy(buffer, &bloque->numero_bloque, sizeof(int));
+	desplazamiento+= sizeof(int);
+	enviar(nodo->socket, cop_datanode_get_bloque,desplazamiento, buffer);
+	t_paquete* paquete=recibir(nodo->socket);
+	return paquete->data;
+
 }
 
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){

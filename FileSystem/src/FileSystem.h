@@ -42,15 +42,15 @@ typedef struct t_directory {
 }t_directory;
 
 typedef struct ubicacionBloque{
-	int nroNodo;
+	char* nroNodo;
 	int nroBloque; //en nodo
 }ubicacionBloque;
 
 typedef struct t_bloque{
 	int nroBloque;
-	unsigned long int tamanioBloque;
-	ubicacionBloque copia1;
-	ubicacionBloque copia2;
+	unsigned long int tamanioBloque; //todo marco revisa si hace falta este campo
+	ubicacionBloque* copia1;
+	ubicacionBloque* copia2;
 	unsigned long int finBloque;
 }t_bloque;
 
@@ -60,7 +60,7 @@ typedef struct t_archivo{
 	t_tipo_archivo tipoArchivo;
 	unsigned long int tamanio;
 	bool estado; //Disponible o no - true o false
-	t_list bloques; // se le deben agregar struct t_bloque
+	t_list* bloques; // se le deben agregar struct t_bloque
 }t_archivo;
 
 typedef struct t_nodo{
@@ -124,15 +124,17 @@ t_fs fileSystem;
 
 void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
+
 void CP_FROM(char* origen, char* destino, char tipoArchivo);
 t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo);
+void CP_TO (char* origen, char* destino);
 
 
 t_nodo* buscar_nodo_libre (int nodoAnterior);
 t_nodo* buscar_nodo (char* nombreNodo);
 int buscarBloque (t_nodo*);
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
-
+void* getbloque (int, t_nodo*);
 t_nodoasignado* escribir_bloque (void* bloque);
 void split_path_file(char** p, char** f, char *pf);
 void actualizarArchivoDeDirectorios();
@@ -143,3 +145,7 @@ t_directory* buscarDirectorio(int padre, char* nombre);
 void crear_subcarpeta(char* nombre);
 void actualizarBitmap(t_nodo unNodo);
 void actualizarArchivoTablaNodos();
+void cat (char*);
+void imprimirPorPantallaContenidoBloque(void* elem);
+bool buscarArchivoPorPath(void* elem);
+void cp_block(char* path, int numeroBloque, char* nombreNodo);
