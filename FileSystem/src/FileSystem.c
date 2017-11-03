@@ -158,7 +158,7 @@ int main(void) {
 								memcpy(buffer, &cantidadElementos, sizeof(int));
 								desplazamiento+= sizeof(int);
 
-								void copiarABuffer(void* elemento){
+									void copiarABuffer(void* elemento){
 									int longitudIp=strlen(((t_nodo*)elemento)->ip)+1;
 									int longitudNombre = strlen(((t_nodo*)elemento)->nroNodo )+1;
 
@@ -678,7 +678,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "cat") == 0){
 				printf("Muestra el contenido del archivo como texto plano.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				cat(parametros[0]);
+				cat(parametros[1]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
