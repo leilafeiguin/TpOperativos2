@@ -21,7 +21,7 @@
 #include <commons/error.h>
 #include <commons/config.h>
 #include <unistd.h>
-
+#include <commons/collections/list.h>
 
 
 
@@ -92,6 +92,26 @@ typedef struct {
 	int tamanio;
 	char* nombreNodo;
 } t_paquete_datanode_info_list;
+
+
+typedef struct t_archivoxnodo{
+	char * pathArchivo;
+	t_list* bloquesRelativos; //int (esto va para no tener que recorrer tanto la lista, son los bloques del archivo sin repetir y sin importar en que nodo este)
+	t_list* nodos; //t_nodoxbloques
+	t_list* workersAsignados; //t_clock* // no se serializa
+}t_archivoxnodo;
+
+typedef struct t_nodoxbloques {
+	char * idNodo;
+	t_list* bloques; //t_infobloque
+}t_nodoxbloques;
+
+typedef struct t_infobloque
+{
+	int bloqueRelativo;
+	int bloqueAbsoluto;
+	int finBloque;
+}t_infobloque;
 
 char* archivo;
 

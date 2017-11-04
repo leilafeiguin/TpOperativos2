@@ -151,3 +151,5 @@ bool buscarArchivoPorPath(void* elem);
 void cp_block(char* path, int numeroBloque, char* nombreNodo);
 void calcular_md5(char* path);
 void ls(char*path);
+t_list* obtenerSubdirectorios(int indicePadre);
+void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_bloque* bloque);

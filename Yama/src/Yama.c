@@ -203,12 +203,79 @@ int main(void) {
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
 								//recibir un archivo
 							break;
-							case cop_master_archivo_a_transformar:
+							case cop_yama_info_fs:
 							{
-								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
-								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
+								//deserializar
+								t_archivoxnodo* archivoNodo=malloc(sizeof(t_archivoxnodo));
+								archivoNodo->bloquesRelativos =  list_create();
+								archivoNodo->nodos =  list_create();
 
-								t_archivoxnodo* archivoNodo=NULL;
+								int longitudNombre = 0;
+								int desplazamiento = 0;
+								memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+								archivoNodo->pathArchivo= malloc(longitudNombre);
+
+								memcpy(archivoNodo->pathArchivo, paqueteRecibido->data + desplazamiento, longitudNombre);
+								desplazamiento+=longitudNombre;
+
+								//lista bloques relativos
+								int cantidadElementosBloques = 0;
+								memcpy(&cantidadElementosBloques ,paqueteRecibido->data + desplazamiento,sizeof(int));
+								desplazamiento+= sizeof(int);
+
+								for(i=0;i<cantidadElementosBloques;i++){
+									int bloque = 0;
+									memcpy(&bloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+									desplazamiento+= sizeof(int);
+									list_add(archivoNodo->bloquesRelativos, bloque);
+								}
+
+								//lista nodos (t_nodoxbloques)
+								int cantidadElementosNodos = 0;
+								memcpy(&cantidadElementosNodos ,paqueteRecibido->data + desplazamiento,sizeof(int));
+								desplazamiento+= sizeof(int);
+
+								for(i=0;i<cantidadElementosNodos;i++){
+									t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
+									int longitudNombreNodo = 0;
+									memcpy(&longitudNombreNodo, paqueteRecibido->data + desplazamiento, sizeof(int));
+									desplazamiento+=sizeof(int);
+
+									char* idNodo;
+									memcpy(&idNodo ,paqueteRecibido->data + desplazamiento,sizeof(int));
+									desplazamiento+= sizeof(int);
+									nodoBloques->idNodo = idNodo;
+
+									//cantidad elementos lista bloques (t_infobloque)
+									int cantidadElementos = 0;
+									memcpy(&cantidadElementos ,paqueteRecibido->data + desplazamiento,sizeof(int));
+									desplazamiento+= sizeof(int);
+
+									for(i=0;i<cantidadElementos;i++){
+										t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
+										int bloqueAbsoluto = 0;
+										memcpy(&bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento+=sizeof(int);
+										infoBloque->bloqueAbsoluto = bloqueAbsoluto;
+
+										int bloqueRelativo = 0;
+										memcpy(&bloqueRelativo, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento+=sizeof(int);
+										infoBloque->bloqueRelativo = bloqueRelativo;
+
+										int finBloque = 0;
+										memcpy(&finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento+=sizeof(int);
+										infoBloque->finBloque = finBloque;
+
+										list_add(nodoBloques->bloques, infoBloque);
+									}
+
+									archivoNodo->nodos = nodoBloques;
+
+								}
+
 
 								//Evalua y planifica en base al archivo que tiene que transaformar
 								void planificarBloques(void* bloque){
@@ -223,7 +290,18 @@ int main(void) {
 								char* listaWorkers;
 								listaWorkers = "127.0.0.1|3000,127.0.0.1|3001,127.0.0.1|3002";
 								enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
-							break;
+
+							}
+								break;
+							case cop_master_archivo_a_transformar:
+							{
+								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
+								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
+								char* pathArchivo=(char*)paqueteRecibido->data;
+								enviar(fileSystemSocket,cop_yama_info_fs,sizeof(char*)*strlen(pathArchivo),pathArchivo);
+
+
+								break;
 							}
 							case cop_master_estados_workers:
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
@@ -340,19 +418,21 @@ void* buscar_por_jobid(int jobId){
 
 void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxnodo* archivo){
 
+	int* numBloqueParaLista = malloc(sizeof(int));
+	*numBloqueParaLista=numeroBloque;
 	bool existeBloqueEnWorker(void* elem){
-		return numeroBloque == *((int*)elem);
+		return numeroBloque == ((t_infobloque*)elem)->bloqueRelativo;
 	}
 
 	bool workerContieneBloque(void* elem){
 		return string_equals_ignore_case(((t_clock*)tabla.clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo) &&
-				list_any_satisfy(((t_nodoxbloques*)elem)->bloquesRelativos, existeBloqueEnWorker);
+				list_any_satisfy(((t_nodoxbloques*)elem)->bloques, existeBloqueEnWorker);
 	}
 
-	void asignarBloqueAWorker(t_clock* worker,int numeroBloque, t_archivoxnodo* archivo){
+	void asignarBloqueAWorker(t_clock* worker,int* numeroBloque, t_archivoxnodo* archivo){
 		worker->disponibilidad--;
 
-		list_add(worker->bloques, numeroBloque);
+		list_add(worker->bloques, numBloqueParaLista);
 
 		bool existeWorkerAsignado(void* elem){
 			return string_equals_ignore_case(((t_clock*)elem)->worker_id , worker->worker_id);
@@ -368,7 +448,7 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 	if(list_any_satisfy(archivo->nodos, workerContieneBloque)){
 		if(((t_clock*)tabla.clock_actual->data)->disponibilidad > 0)
 		{
-			asignarBloqueAWorker(((t_clock*)tabla.clock_actual->data), numeroBloque, archivo);
+			asignarBloqueAWorker(((t_clock*)tabla.clock_actual->data), numBloqueParaLista, archivo);
 			tabla.clock_actual = tabla.clock_actual->next;
 			if(tabla.clock_actual == NULL)
 				tabla.clock_actual = tabla.workers->head;
@@ -396,12 +476,12 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 			char* nombreWorker= ((t_clock*)elementoActual->data)->worker_id;
 			bool workerContieneBloqueByWorkerId(void* elem){
 				return string_equals_ignore_case( nombreWorker, ((t_nodoxbloques*)elem)->idNodo) &&
-				list_any_satisfy(((t_nodoxbloques*)elem)->bloquesRelativos, existeBloqueEnWorker);
+				list_any_satisfy(((t_nodoxbloques*)elem)->bloques, existeBloqueEnWorker);
 			}
 			if(list_any_satisfy(archivo->nodos, workerContieneBloqueByWorkerId) && ((t_clock*)elementoActual->data)->disponibilidad >0)
 			{
 				encontro=true;
-				asignarBloqueAWorker(((t_clock*)elementoActual->data), numeroBloque, archivo);
+				asignarBloqueAWorker(((t_clock*)elementoActual->data), numBloqueParaLista, archivo);
 			}
 			else{
 				elementoActual = elementoActual->next;

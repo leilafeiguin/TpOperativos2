@@ -52,18 +52,6 @@ typedef struct t_tabla_planificacion{
 	t_list* workers; //(t_clock)*
 }t_tabla_planificacion;
 
-typedef struct t_archivoxnodo{
-	char * pathArchivo;
-	t_list* bloquesRelativos; //int (esto va para no tener que recorrer tanto la lista, son los bloques del archivo sin repetir y sin importar en que nodo este)
-	t_list* nodos; //t_nodoxbloques
-	t_list* workersAsignados; //t_clock*
-}t_archivoxnodo;
-
-typedef struct t_nodoxbloques {
-	char * idNodo;
-	t_list* bloquesRelativos; //int
-	t_list* bloquesAbsolutos; //int
-}t_nodoxbloques;
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
 

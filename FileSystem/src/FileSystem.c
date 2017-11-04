@@ -162,7 +162,7 @@ int main(void) {
 									int longitudIp=strlen(((t_nodo*)elemento)->ip)+1;
 									int longitudNombre = strlen(((t_nodo*)elemento)->nroNodo )+1;
 
-									memcpy(buffer+desplazamiento,  longitudIp, sizeof(int));
+									memcpy(buffer+desplazamiento,  &longitudIp, sizeof(int));
 									desplazamiento+= sizeof(int);
 									memcpy(buffer+desplazamiento, ((t_nodo*)elemento)->ip, longitudIp);
 									desplazamiento+= longitudIp;
@@ -194,6 +194,7 @@ int main(void) {
 							break;
 						case cop_datanode_info:
 						{
+							//deserializa
 							t_paquete_datanode_info_list* infoNodo = malloc(sizeof(t_paquete_datanode_info_list));
 							int longitudIp;
 							int longitudNombre;
@@ -218,8 +219,6 @@ int main(void) {
 							memcpy(infoNodo->nombreNodo, paqueteRecibido->data + desplazamiento, longitudNombre);
 							desplazamiento+=longitudNombre;
 
-
-
 							t_bitarray* unBitmap;
 							char* data[] = {00000000000000000000};
 							unBitmap = bitarray_create(data, 3);
@@ -228,12 +227,141 @@ int main(void) {
 						}
 							//falta agregar otras estructuras administrativas
 						break;
+						case cop_yama_info_fs :
+						{
+							char* pathArchivo=(char*)paqueteRecibido->data;
+							pathArchivo=str_replace(pathArchivo, "yamafs://","");
+							bool buscarArchivoPorPath(void* elem){
+									return string_equals_ignore_case(((t_archivo*)elem)->path,pathArchivo);
+								};
+
+							t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+							if(archivoEncontrado != NULL){
+								t_archivoxnodo* archivoxnodo = malloc(sizeof(t_archivoxnodo));
+								archivoxnodo->pathArchivo= pathArchivo;
+								archivoxnodo->nodos =  list_create();
+								archivoxnodo->bloquesRelativos =  list_create();
+
+								void recopilarInfoArchivo(void* elem){
+									t_bloque* bloque= (t_bloque*)elem;
+
+									list_add(archivoxnodo->bloquesRelativos,&bloque->nroBloque);
+
+									if(bloque->copia1 != NULL){
+										recopilarInfoCopia(bloque->copia1, archivoxnodo, bloque);
+									}
+
+									if(bloque->copia2 != NULL){
+										recopilarInfoCopia(bloque->copia2, archivoxnodo, bloque);
+									}
+								}
+
+								list_iterate(archivoEncontrado->bloques, recopilarInfoArchivo);
+
+								int tamanioTotalBloques=0;
+								void contabilizarTamanioBloques(void* elemento){
+									tamanioTotalBloques+=  sizeof(int);
+								}
+								int cantidadElementosBloques=list_size(archivoxnodo->bloquesRelativos);
+								list_iterate(archivoxnodo->bloquesRelativos, contabilizarTamanioBloques );
+
+								int tamaniototalNodos=0;
+								void contabilizarTamanioNodo(void* elemento){
+									t_nodoxbloques* nodo= ((t_nodoxbloques*)elemento);
+
+									tamaniototalNodos+= (strlen(((t_nodoxbloques*)elemento)->idNodo)+1 +sizeof(int)/*cant bloques*/  + list_size(nodo->bloques)*3* sizeof(int)/*cada bloque tiene 3 int*/ );
+								};
+
+								int cantidadElementosNodos=list_size(archivoxnodo->nodos);
+								list_iterate(archivoxnodo->nodos, contabilizarTamanioNodo );
+
+								//Serializacion
+								int desplazamiento=0;
+								int longitudNombre=strlen(pathArchivo) +1 ;
+								void* buffer = malloc( sizeof(int) + longitudNombre + tamanioTotalBloques + tamaniototalNodos);
+
+								memcpy(buffer+ desplazamiento,&longitudNombre ,sizeof(int));
+								desplazamiento+= sizeof(int);
+								memcpy(buffer+ desplazamiento, archivoxnodo->pathArchivo,longitudNombre);
+								desplazamiento+= longitudNombre;
+
+								//Lista bloques
+								memcpy(buffer+ desplazamiento,&cantidadElementosBloques ,sizeof(int));
+								desplazamiento+= sizeof(int);
+
+								void copiarABufferBloques(void* elemento){
+									memcpy(buffer+desplazamiento,  elemento, sizeof(int));
+									desplazamiento+= sizeof(int);
+								};
+
+								list_iterate(archivoxnodo->bloquesRelativos,copiarABufferBloques);
+
+								//Lista nodos
+								memcpy(buffer+ desplazamiento,&cantidadElementosNodos ,sizeof(int));
+								desplazamiento+= sizeof(int);
+
+								void copiarABufferNodos(void* elemento){
+									int longitudNombreNodo=strlen(((t_nodoxbloques*)elemento)->idNodo)+1;
+									memcpy(buffer+desplazamiento,  ((t_nodoxbloques*)elemento)->idNodo, longitudNombreNodo);
+									desplazamiento+= longitudNombreNodo;
+
+									int cantidadelementos=list_size(((t_nodoxbloques*)elemento)->bloques);
+									memcpy(buffer+ desplazamiento, &cantidadelementos,sizeof(int));
+									desplazamiento+= sizeof(int);
+
+									void copiarABufferNodosBloques(void* nodobloq){
+
+										t_infobloque* infobloque = ((t_infobloque*)nodobloq);
+										memcpy(buffer+ desplazamiento,&infobloque->bloqueAbsoluto ,sizeof(int));
+										desplazamiento+= sizeof(int);
+
+										memcpy(buffer+ desplazamiento,&infobloque->bloqueRelativo ,sizeof(int));
+										desplazamiento+= sizeof(int);
+
+										memcpy(buffer+ desplazamiento,&infobloque->finBloque ,sizeof(int));
+										desplazamiento+= sizeof(int);
+
+									}
+									list_iterate(((t_nodoxbloques*)elemento)->bloques, copiarABufferNodosBloques);
+								}
+
+								list_iterate(archivoxnodo->nodos,copiarABufferNodos);
+								enviar(socketActual, cop_yama_info_fs,desplazamiento, buffer);
+							}
+							else {
+								//todo handlear error
+							}
+						}
+						break;
 						}
 					}
 				}
 		}
 	}
 	return EXIT_SUCCESS;
+}
+
+void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_bloque* bloque){
+	t_nodoxbloques* nodo;
+
+	bool buscarNodo(void* elem){
+		return string_equals_ignore_case(((t_nodoxbloques*)elem)->idNodo ,  bloque->copia1->nroNodo);
+	}
+	nodo=list_find(archivoxnodo->nodos, buscarNodo);
+	if(nodo == NULL){
+		nodo= malloc(sizeof(t_nodoxbloques));
+		nodo->bloques= list_create();
+		nodo->idNodo = bloque->copia1->nroNodo;
+		list_add(archivoxnodo->nodos, nodo);
+	}
+
+	t_infobloque* infobloque = malloc(sizeof(t_infobloque));
+
+	infobloque->bloqueRelativo = bloque->nroBloque;
+	infobloque->finBloque = bloque->finBloque;
+	infobloque->bloqueAbsoluto = bloque->copia1->nroBloque;
+
+	list_add(nodo->bloques, infobloque);
 }
 
 // CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
@@ -637,7 +765,7 @@ void ls(char*path){
 
 	t_list* listaDirectorios=obtenerSubdirectorios(indicePadre);
 	bool buscarArchivoPorPath(void* elem){
-		        char* partial_string=str_replace(((t_archivo*)elem)->path, path);
+		        char* partial_string=str_replace(((t_archivo*)elem)->path, path,"");
 				return string_equals_ignore_case(partial_string, ((t_archivo*)elem)->nombre);
 			};
 
@@ -662,7 +790,7 @@ t_list* obtenerSubdirectorios(int indicePadre){
 	for(x=0; x<100;x++){
 
 		if(tablaDeDirectorios[x]->padre == indicePadre)
-			list_add( tablaDeDirectorios[x]);
+			list_add( listaDirectorios, tablaDeDirectorios[x]);
 	}
 
 	return listaDirectorios;
