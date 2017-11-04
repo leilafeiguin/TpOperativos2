@@ -205,7 +205,7 @@ int main(void) {
 							break;
 							case cop_yama_info_fs:
 							{
-								//deserializar
+								//Deserializacion
 								t_archivoxnodo* archivoNodo=malloc(sizeof(t_archivoxnodo));
 								archivoNodo->bloquesRelativos =  list_create();
 								archivoNodo->nodos =  list_create();
@@ -219,7 +219,7 @@ int main(void) {
 								memcpy(archivoNodo->pathArchivo, paqueteRecibido->data + desplazamiento, longitudNombre);
 								desplazamiento+=longitudNombre;
 
-								//lista bloques relativos
+								//Lista bloques relativos
 								int cantidadElementosBloques = 0;
 								memcpy(&cantidadElementosBloques ,paqueteRecibido->data + desplazamiento,sizeof(int));
 								desplazamiento+= sizeof(int);
@@ -231,7 +231,7 @@ int main(void) {
 									list_add(archivoNodo->bloquesRelativos, bloque);
 								}
 
-								//lista nodos (t_nodoxbloques)
+								//Lista nodos (t_nodoxbloques)
 								int cantidadElementosNodos = 0;
 								memcpy(&cantidadElementosNodos ,paqueteRecibido->data + desplazamiento,sizeof(int));
 								desplazamiento+= sizeof(int);
@@ -273,9 +273,7 @@ int main(void) {
 									}
 
 									archivoNodo->nodos = nodoBloques;
-
 								}
-
 
 								//Evalua y planifica en base al archivo que tiene que transaformar
 								void planificarBloques(void* bloque){

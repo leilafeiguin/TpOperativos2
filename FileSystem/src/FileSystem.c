@@ -285,7 +285,7 @@ int main(void) {
 								memcpy(buffer+ desplazamiento, archivoxnodo->pathArchivo,longitudNombre);
 								desplazamiento+= longitudNombre;
 
-								//Lista bloques
+								//Lista bloques relativos
 								memcpy(buffer+ desplazamiento,&cantidadElementosBloques ,sizeof(int));
 								desplazamiento+= sizeof(int);
 
