@@ -163,3 +163,10 @@ int main(void) {
 	}
 	return EXIT_SUCCESS;
 }
+
+void transformacion(char* script, char* bloque){
+	char* func;
+	//falta pasar el script a un archivo temporal y desp eliminarlo.
+	sprintf(func, "%s %s", script, bloque);
+	system(func);
+}
