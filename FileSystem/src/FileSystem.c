@@ -996,6 +996,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				crear_subcarpeta(parametros[0]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
@@ -1120,6 +1121,9 @@ void crear_subcarpeta(char* nombre){
 	struct stat st = {0};
 	if (stat(nombre, &st) == -1) {
 	    mkdir(nombre, 0700);
+	}
+	else{
+		printf("El directorio ya existe \n");
 	}
 }
 
