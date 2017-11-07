@@ -83,3 +83,5 @@ t_job* crearJob(t_job datos);
 int availability();
 
 void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxnodo* bloquesxnodo);
+
+char* generarDirectorioTemporal();

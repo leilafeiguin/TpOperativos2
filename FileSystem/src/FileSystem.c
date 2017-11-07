@@ -566,7 +566,7 @@ t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo){
 			list_add(archivoPartido->bloquesPartidos, bloquePartido);
 		}
 		archivoPartido->cantidadBloques=cantidadBloques;
-
+		return archivoPartido;
 	}
 	else
 	{
@@ -745,6 +745,29 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 	}
 }
 
+void YAMA_mkdir(char* path){
+	path= str_replace(path, "yamafs://","");
+		if(!string_ends_with(path, "/"))
+			string_append(&path, "/");
+
+		int cantidadDirectorios=countOccurrences(path, "/");
+		char** directorios=string_split(path, "/");
+		int i=0;
+		int indicePadre=0;
+		t_directory* directorioActual=NULL;
+		for(;i<cantidadDirectorios-1;i++){
+			if(directorios[i] == NULL) break;
+			directorioActual=buscarDirectorio(indicePadre, directorios[i]);
+			if(directorioActual == NULL){
+				printf("El directorio %s no existe para el padre %i", directorios[i], indicePadre);
+				return;
+			}
+			indicePadre= directorioActual->index;
+		}
+
+
+}
+
 void ls(char*path){
 	path= str_replace(path, "yamafs://","");
 	if(!string_ends_with(path, "/"))
@@ -753,7 +776,7 @@ void ls(char*path){
 	int cantidadDirectorios=countOccurrences(path, "/");
 	char** directorios=string_split(path, "/");
 	int i=0;
-	int indicePadre=-1;
+	int indicePadre=0;
 	t_directory* directorioActual=NULL;
 	for(;i<cantidadDirectorios;i++){
 		if(directorios[i] == NULL) break;
@@ -764,6 +787,7 @@ void ls(char*path){
 		}
 		indicePadre= directorioActual->index;
 	}
+
 
 	t_list* listaDirectorios=obtenerSubdirectorios(indicePadre);
 	bool buscarArchivoPorPath(void* elem){
@@ -998,7 +1022,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				crear_subcarpeta(parametros[1]);
+				YAMA_mkdir(parametros[1]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
@@ -1129,16 +1153,16 @@ void crear_subcarpeta(char* nombre){
 	}
 }
 
-void actualizarBitmap(t_nodo unNodo){
+void actualizarBitmap(t_nodo* unNodo){
 	crear_subcarpeta("metadata/bitmaps/");
 	char* aux;
 	aux = "";
 	strcat(aux, "metadata/bitmaps/");
-	strcat(aux, unNodo.nroNodo);
+	strcat(aux, unNodo->nroNodo);
 	strcat(aux, ".dat");
 	FILE * file= fopen(aux, "wb");
 	if (file != NULL) {
-		fwrite(unNodo.bitmap->bitarray,strlen(unNodo.bitmap->bitarray),1,file);
+		fwrite(unNodo->bitmap->bitarray,strlen(unNodo->bitmap->bitarray),1,file);
 		fclose(file);
 		}
 }

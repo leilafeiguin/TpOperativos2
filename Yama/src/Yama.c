@@ -209,6 +209,7 @@ int main(void) {
 								t_archivoxnodo* archivoNodo=malloc(sizeof(t_archivoxnodo));
 								archivoNodo->bloquesRelativos =  list_create();
 								archivoNodo->nodos =  list_create();
+								archivoNodo->workersAsignados= list_create();
 
 								int longitudNombre = 0;
 								int desplazamiento = 0;
@@ -285,9 +286,36 @@ int main(void) {
 
 								//Devuelve lista con los workers
 								//Ahora lo debe sacar de archivoNodo workersAsignados
-								char* listaWorkers;
-								listaWorkers = "127.0.0.1|3000,127.0.0.1|3001,127.0.0.1|3002";
-								enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
+
+								int cantidadWorkers = list_size(archivoNodo->workersAsignados);
+								desplazamiento=0;
+								void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+4+sizeof(int) + sizeof(int)+15));
+								memcpy(buffer, &cantidadWorkers, sizeof(int));
+								desplazamiento+=sizeof(int);
+
+								void datosWorker(void* worker){
+									memcpy(buffer+desplazamiento, ((t_clock*)worker)->ip, 15);
+									desplazamiento+=15;
+
+									memcpy(buffer+desplazamiento, ((t_clock*)worker)->puerto,4);
+									desplazamiento+=4;
+
+									memcpy(buffer+desplazamiento, 0, sizeof(int));//todo ver seba como refactorizamos esto
+									desplazamiento+=sizeof(int);
+
+									memcpy(buffer+desplazamiento, 0, sizeof(int));
+									desplazamiento+=sizeof(int);
+
+									char* dirTemp=generarDirectorioTemporal();
+									memcpy(buffer+desplazamiento,  dirTemp, 15);
+									desplazamiento+=15;
+								}
+
+								list_iterate(archivoNodo->workersAsignados, datosWorker);
+
+								//falta terminar de enviar la estructura archivoNodo
+								//enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
+
 
 							}
 								break;
@@ -349,6 +377,10 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+char* generarDirectorioTemporal(){
+
+	return "/tmp/";//todo buscar una funcion que te genere X cantidad de caracteres aleatorios
+}
 
 void sig_handler(int signo){
     if (signo == SIGUSR1){
