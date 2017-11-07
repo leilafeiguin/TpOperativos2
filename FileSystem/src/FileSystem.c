@@ -34,20 +34,21 @@ int main(void) {
 	log_trace(logger, "Archivo de configuracion levantado");
 
 	//Inciializacion de estructuras
-	int x;
-	for(x=0; x<100;x++){
-		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
-		tablaDeDirectorios[x]->index = -2;
-		sprintf(tablaDeDirectorios[x]->nombre, "");
-		tablaDeDirectorios[x]->padre = 0;
-	}
 
 	if( access("directorios.txt", F_OK) != -1 ){
 	    // El archivo existe, recupero la informacion
+		//todo levantar estructuras del archivo
 	} else {
 	    // El archivo no existe
+		int x;
+			for(x=0; x<100;x++){
+				tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
+				tablaDeDirectorios[x]->index = -2;
+				tablaDeDirectorios[x]->nombre= "";
+				tablaDeDirectorios[x]->padre = 0;
+			}
 	}
-	actualizarArchivoDeDirectorios();
+
 
 	fileSystem.ListaNodos = list_create(); //Se le deben cargar estructuras de tipo t_nodo
 	fileSystem.libre = 0;
@@ -383,7 +384,7 @@ void CP_FROM(char* origen, char* destino, char tipoArchivo){
 
     int j=0;
     int padre=0;
-    int cantidadDirectorios = countOccurrences(path, "/")+1;
+    int cantidadDirectorios = countOccurrences(path, "/")+1;//todo marco corregir. no debe crear un directorio, sino que debe verificar si existe
     for(;j<cantidadDirectorios;j++){
     	t_directory* directorio= buscarDirectorio(padre, listaDirectorios[cantidadDirectorios]);
     	if(directorio != NULL)
@@ -401,7 +402,7 @@ void CP_FROM(char* origen, char* destino, char tipoArchivo){
 			nodo1->ocupado=true;
 
 		bitarray_set_bit(nodo1->bitmap,respuesta->bloque1 );
-
+		actualizarBitmap(nodo1);
 
 		t_nodo* nodo2= buscar_nodo(respuesta->nodo2);
 		nodo2->libre--;
@@ -409,12 +410,13 @@ void CP_FROM(char* origen, char* destino, char tipoArchivo){
 			nodo2->ocupado=true;
 
 		bitarray_set_bit(nodo2->bitmap,respuesta->bloque2 );
-
+		actualizarBitmap(nodo2);
 
 	}
 
-	//todo tabla de dir
-	//todo tabla archivos
+
+	//todo agregar info del archivo a la tabla de archivos
+	//todo implementar actualizarTablaArchivos()
 
 }
 
@@ -996,7 +998,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				crear_subcarpeta(parametros[0]);
+				crear_subcarpeta(parametros[1]);
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
@@ -1127,7 +1129,6 @@ void crear_subcarpeta(char* nombre){
 	}
 }
 
-//Revisar
 void actualizarBitmap(t_nodo unNodo){
 	crear_subcarpeta("metadata/bitmaps/");
 	char* aux;
@@ -1137,7 +1138,7 @@ void actualizarBitmap(t_nodo unNodo){
 	strcat(aux, ".dat");
 	FILE * file= fopen(aux, "wb");
 	if (file != NULL) {
-		fwrite(unNodo.bitmap,sizeof(unNodo.bitmap),1,file);
+		fwrite(unNodo.bitmap->bitarray,strlen(unNodo.bitmap->bitarray),1,file);
 		fclose(file);
 		}
 }
@@ -1151,7 +1152,7 @@ void actualizarArchivoTablaNodos(){
 		int tamanioTotal;
 		tamanioTotal = 0;
 		int cantidadNodos;
-		cantidadNodos = list_count_satisfying(fileSystem.ListaNodos ,true);
+		cantidadNodos = list_size(fileSystem.ListaNodos);
 		int libresPorNodo[cantidadNodos];
 		int tamanioPorNodo[cantidadNodos];
 		char* nodos[cantidadNodos];

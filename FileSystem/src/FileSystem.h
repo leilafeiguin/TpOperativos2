@@ -55,11 +55,10 @@ typedef struct t_bloque{
 }t_bloque;
 
 typedef struct t_archivo{
-	char* nombre;
-	char* path;
+	char* nombre; //solo el nombre de archivo
+	char* path; // escribir todo menos yamafs://
 	t_tipo_archivo tipoArchivo;
 	unsigned long int tamanio;
-	bool estado; //Disponible o no - true o false
 	t_list* bloques; // se le deben agregar struct t_bloque
 }t_archivo;
 
