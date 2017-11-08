@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 
 typedef enum {
-
 	TEXTO=0,
 	BINARIO=1
 }t_tipo_archivo;
@@ -124,8 +123,8 @@ t_fs fileSystem;
 void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
 
-void CP_FROM(char* origen, char* destino, char tipoArchivo);
-t_archivo_partido* LeerArchivo(char* archivo, char tipoArchivo);
+void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo);
+t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo);
 void CP_TO (char* origen, char* destino);
 
 
@@ -153,3 +152,4 @@ void ls(char*path);
 t_list* obtenerSubdirectorios(int indicePadre);
 void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_bloque* bloque);
 void YAMA_mkdir(char* path);
+int es_el_archivo(t_archivo);
