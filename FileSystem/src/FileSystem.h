@@ -153,3 +153,8 @@ t_list* obtenerSubdirectorios(int indicePadre);
 void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_bloque* bloque);
 void YAMA_mkdir(char* path);
 int es_el_archivo(t_archivo);
+void actualizarTablaArchivos();
+void actualizarArchivo(t_archivo*);
+
+
+

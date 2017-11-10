@@ -427,7 +427,6 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 
 		list_add(nuevoArchivo->bloques, unBloqueAux);
 	}
-	//todo falta calcular el tamanio
 	list_add(fileSystem.listaArchivos, nuevoArchivo);
 	//todo implementar actualizarTablaArchivos()
 
@@ -1202,5 +1201,46 @@ void actualizarArchivoTablaNodos(){
 		}
 		fclose(file);
 		}
+}
+
+void actualizarTablaArchivos(){
+	//limpiar todas las metadata
+	int i =0;
+	for(i;i<list_size(fileSystem.listaArchivos);i++){
+		actualizarArchivo(list_get(fileSystem.listaArchivos,i));
+	}
+}
+
+void actualizarArchivo(t_archivo* unArchivo){
+//	char* path;
+//	char* file;
+//	split_path_file(&path, &file, unArchivo->path); //el path posee el nombre del archivo?
+//	int cantidadDirectorios = countOccurrences(path, "/")+1;
+//
+//	int padre;
+//	int j;
+//	for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
+//		t_directory* directorio = buscarDirectorio(padre, tablaDeDirectorios[cantidadDirectorios]);
+//		padre= directorio->index;
+//	}
+//
+	char* ubicacion = "metadata/archivos/";
+//  strcat(ubicacion, (char*)cantidadDirectorios);
+	crear_subcarpeta(ubicacion);
+
+	FILE * fp= fopen(ubicacion, "w");
+	fprintf(fp,"%s",unArchivo->path);
+	fprintf(fp,"TAMANIO=%i\n",unArchivo->tamanio);
+	fprintf(fp, "TIPO=%i", unArchivo->tipoArchivo);
+	int cantBloques = list_size(unArchivo->bloques);
+	int i = 0;
+	for(i; i<cantBloques; i++){
+		t_bloque* unBloque = list_get(unArchivo->bloques,i);
+		ubicacionBloque* ubicBloque1 = unBloque->copia1;
+		ubicacionBloque* ubicBloque2 = unBloque->copia2;
+		fprintf(fp,"BLOQUE%iCOPIA0=[Nodo%i,%i]\n",i,ubicBloque1->nroNodo,ubicBloque1->nroBloque);
+		fprintf(fp,"BLOQUE%iCOPIA1=[Nodo%i,%i]\n",i,ubicBloque1->nroNodo,ubicBloque1->nroBloque);
+		fprintf(fp,"BLOQUE%iBYTES=%i\n",i,unBloque->tamanioBloque);
+	}
 }
 
