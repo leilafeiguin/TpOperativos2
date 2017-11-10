@@ -93,7 +93,7 @@ typedef struct t_bloque_particion {
 
 typedef struct t_archivo_partido {
 	int cantidadBloques;//en cuantos bloques se parte
-	t_list* bloquesPartidos;
+	t_list* bloquesPartidos; //lista de t_bloque_particion
 }t_archivo_partido;
 
 static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap, un_socket socket, char* ipWorker, int puertoWorker, int tamanio){
@@ -121,39 +121,94 @@ t_directory* tablaDeDirectorios[99];
 t_fs fileSystem;
 
 void hiloFileSystem_Consola();
+
 t_bitarray leerBitmap(char*);
 
+// Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.
 void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo);
+
+//
 t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo);
+
+// Copiar un archivo local desde el yamafs
 void CP_TO (char* origen, char* destino);
 
-
+//
 t_nodo* buscar_nodo_libre (int nodoAnterior);
+
+// Busca un nodo a partir del nombre del mismo y devuelce el t_nodo
 t_nodo* buscar_nodo (char* nombreNodo);
+
+// Evalia si un nodo esta ocupado y en caso de no estarlo devuelve el nro de bloque libre
 int buscarBloque (t_nodo*);
+
+// Envia a un nodo un bloque en el data.bin a ser escrito
 void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
+
+// Le pide a un nodo el contenido de un bloque especifico en su data.bin
 void* getbloque (int, t_nodo*);
+
+//
 t_nodoasignado* escribir_bloque (void* bloque);
+
+// Recibe donde dejar el path, donde dejar el file y el path/file concatenado
 void split_path_file(char** p, char** f, char *pf);
+
+// Actualiza el temporal en metadata que posee la info sobre la estructura tablaDeDirectorios
 void actualizarArchivoDeDirectorios();
+
+// Remplaza rep que exista en orig con with
 char *str_replace(char *orig, char *rep, char *with);
+
+// Contabiliza la cantidad de veces que sucede toSearch en str
 int countOccurrences(char * str, char * toSearch);
+
+// Crea un directorio nuevo en la primera posicion libre de tablaDeDirectorios[99]
 t_directory* crearDirectorio(int padre, char* nombre);
+
+// Busca un directorio en tablaDeDirectorios[99]
 t_directory* buscarDirectorio(int padre, char* nombre);
+
+// Crea una subcarpeta (fisica)
 void crear_subcarpeta(char* nombre);
+
+//
 void actualizarBitmap(t_nodo* unNodo);
+
+//
 void actualizarArchivoTablaNodos();
+
+// Muestra el contenido del archivo como texto plano (del fs)
 void cat (char*);
+
+//
 void imprimirPorPantallaContenidoBloque(void* elem);
+
+//
 bool buscarArchivoPorPath(void* elem);
+
+// Crea una copia de un bloque de un archivo en el nodo dado.
 void cp_block(char* path, int numeroBloque, char* nombreNodo);
+
+// Calcula un Hash
 void calcular_md5(char* path);
+
+// Lista los archivos de un directorio
 void ls(char*path);
+
+// Trae todos los subdirectorios a partir de un indice basandose en la tablaDeDirectorios[99]
 t_list* obtenerSubdirectorios(int indicePadre);
+
+//
 void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_bloque* bloque);
+
+// Crea un directorio. Si el directorio ya existe, el comando deberá informarlo. //todo revisar
 void YAMA_mkdir(char* path);
-int es_el_archivo(t_archivo);
+
+// Actualiza los temporales que persisten las estructuras de t_archivo pertenecientes a listaArchivos (fs)
 void actualizarTablaArchivos();
+
+// Actualiza el temporal que persiste la estructura de un t_archivo perteneciente a la lista listaArchivos (fs)
 void actualizarArchivo(t_archivo*);
 
 
