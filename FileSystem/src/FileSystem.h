@@ -134,7 +134,7 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo);
 void CP_TO (char* origen, char* destino);
 
 //
-t_nodo* buscar_nodo_libre (int nodoAnterior);
+t_nodo* buscar_nodo_libre (char* nodoAnterior);
 
 // Busca un nodo a partir del nombre del mismo y devuelce el t_nodo
 t_nodo* buscar_nodo (char* nombreNodo);
