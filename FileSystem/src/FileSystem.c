@@ -405,7 +405,7 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 
 		t_nodo* nodo1= buscar_nodo(respuesta->nodo1);
 		unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
-		//unBloqueAux->copia1->nroBloque = respuesta->nodo1; todo como consigo ese valor pq es el nro de bloque en el nodo
+		unBloqueAux->copia1->nroBloque = respuesta->bloque1;
 
 		nodo1->libre--;
 		if(nodo1->libre ==0)
@@ -416,7 +416,7 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 
 		t_nodo* nodo2= buscar_nodo(respuesta->nodo2);
 		unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
-		//unBloqueAux->copia2->nroBloque = respuesta->nodo2;
+		unBloqueAux->copia2->nroBloque = respuesta->bloque2;
 
 		nodo2->libre--;
 		if(nodo2->libre ==0)
@@ -1067,7 +1067,7 @@ t_nodo* buscar_nodo (char* nombreNodo){
 	return list_find(fileSystem.ListaNodos, buscarNodo);
 }
 
-t_nodo* buscar_nodo_libre (int nodoAnterior){
+t_nodo* buscar_nodo_libre (char* nodoAnterior){
 	bool buscarLibre(void* elemento){
 		return !((t_nodo*)elemento)->ocupado && (nodoAnterior ==0 || ((t_nodo*)elemento)->nroNodo!=nodoAnterior);
 	}
@@ -1114,6 +1114,7 @@ void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
 }
 
 t_nodoasignado* escribir_bloque (void* bloque){
+	t_nodoasignado* respuesta= malloc(sizeof(t_nodoasignado));
 	t_bloque_particion* bloque_partido= (t_bloque_particion*)bloque;
 	void* buffer = malloc(1024*1024);
 	memcpy(buffer, bloque_partido->contenido, bloque_partido->ultimoByteValido);
@@ -1121,12 +1122,16 @@ t_nodoasignado* escribir_bloque (void* bloque){
 	t_nodo* nodolibre =	buscar_nodo_libre (0);
 	int numBloque = buscarBloque(nodolibre);
 	enviar_bloque_a_escribir(numBloque,buffer,nodolibre );
+	respuesta->nodo1=string_duplicate(nodolibre->nroNodo);
+	respuesta->bloque1=numBloque;
 
 	nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
 	numBloque = buscarBloque(nodolibre);
 	enviar_bloque_a_escribir(numBloque,buffer,nodolibre );
+	respuesta->bloque2=numBloque;
+	respuesta->nodo1=string_duplicate(nodolibre->nroNodo);
 
-	return NULL;//todo mati gg aca crea la estructura nodo asignado y asignale los valores que corresponden.
+	return respuesta;
 }
 
 void actualizarArchivoDeDirectorios(){
