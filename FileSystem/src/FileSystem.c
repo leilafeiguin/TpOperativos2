@@ -376,7 +376,7 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 
 	t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
 
-	t_archivo* nuevoArchivo;
+	t_archivo* nuevoArchivo=malloc(sizeof(t_archivo));
 
 	char* path= malloc(255);
 	char* file= malloc(255);
@@ -386,11 +386,15 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 
     int j=0;
     int padre=0;
-    int cantidadDirectorios = countOccurrences(path, "/")+1;
-    for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
-    	t_directory* directorio = buscarDirectorio(padre, listaDirectorios[cantidadDirectorios]);
-    	padre= directorio->index;
+    int cantidadDirectorios = countOccurrences(path, "/");
+    if(cantidadDirectorios > 0)
+    {
+		 for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
+				t_directory* directorio = buscarDirectorio(padre, listaDirectorios[cantidadDirectorios]);
+				padre= directorio->index;
+		 }
     }
+
     nuevoArchivo->nombre = file;
     nuevoArchivo->path = destino;
 	int i=0;
@@ -550,7 +554,7 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 	struct stat sb;
 	int fd = open(archivo, O_RDONLY);
 	fstat(fd, &sb);
-	void* archivoMapeado = mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	void* archivoMapeado = mmap(NULL,sb.st_size,PROT_READ,  MAP_SHARED,fd,0);
 
 	t_archivo_partido* archivoPartido= malloc(sizeof(t_archivo_partido));
 	archivoPartido->bloquesPartidos = list_create();
@@ -582,24 +586,27 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 	}
 	else
 	{
+		char* contenidoArchivo=(char*)archivoMapeado;
 		int cantidadBloques=0;
 		t_bloque_particion* bloquePartido=NULL;
-		int cantidadRenglones=countOccurrences(archivo, "\n");
-		char** renglones=string_split(archivo, "\n");
+		int cantidadRenglones=countOccurrences(contenidoArchivo, "\n")+1;
+		char** renglones=string_split(contenidoArchivo, "\n");
 		int tamanioBloque = 0;
 		int i=0;
 		while(cantidadRenglones != i){
 
 			string_append(& renglones[i], "\n");
 			if(bloquePartido == NULL || tamanioBloque + strlen(renglones[i]) > 1024 *1024){
-				tamanioBloque=0;
+
 				cantidadBloques++;
 				if(bloquePartido != NULL)
 				{
 					bloquePartido->ultimoByteValido = tamanioBloque;
-					list_add(archivoPartido->bloquesPartidos, bloquePartido);
 				}
+				tamanioBloque=0;
 				bloquePartido = malloc(sizeof(t_bloque_particion));
+				list_add(archivoPartido->bloquesPartidos, bloquePartido);
+				bloquePartido->contenido = malloc(1);
 			}
 
 			bloquePartido->contenido = realloc(bloquePartido->contenido, tamanioBloque + strlen(renglones[i]));
@@ -608,6 +615,11 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 			i++;
 
 		}
+
+		if(bloquePartido != NULL)
+						{
+							bloquePartido->ultimoByteValido = tamanioBloque;
+						}
 
 		archivoPartido->cantidadBloques = cantidadBloques;
 		return archivoPartido;
@@ -658,9 +670,9 @@ char** validaCantParametrosComando(char* comando, int cantParametros){
 	for (i = 1; *(parametros + i); i++){
 		printf("parametros= %s \n", *(parametros + i));
 	}
-	free(parametros);
+
 	if(i != cantParametros+1){
-		printf("rm necesita %i parametro/s. \n", cantParametros);
+		printf("%s necesita %i parametro/s. \n", comando, cantParametros);
 		return 0;
 	}else{
 		printf("Cantidad de parametros correcta. \n");
@@ -730,7 +742,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 		if(nodoDestino->libre ==0)
 			nodoDestino->ocupado=true;
 		bitarray_set_bit(nodoDestino->bitmap,numBloqueDestino);
-		enviar_bloque_a_escribir(numBloqueDestino, contenido, nodoDestino);
+		enviar_bloque_a_escribir(numBloqueDestino, contenido, nodoDestino, 1024*1024); //todo verificar si funciona ok con 1024*1024
 
 		ubicacionBloque* bloqueAsignado=malloc(sizeof(ubicacionBloque));
 		bloqueAsignado->nroBloque =numBloqueDestino;
@@ -1028,6 +1040,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
 				parametros = validaCantParametrosComando(linea, 3);
+				CP_FROM(parametros[1],parametros[2],atoi(parametros[3]));
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpto") == 0){
 				printf("Copiar un archivo local al yamafs\n");
@@ -1056,6 +1069,9 @@ void hiloFileSystem_Consola(void * unused){
 				printf("Opcion no valida.\n");
 				free(linea);
 			}
+
+			free(lineaCopia);
+			free(parametros);
 		}
 	}
 }
@@ -1099,18 +1115,18 @@ void* getbloque (int numBloque, t_nodo* nodo){
 
 }
 
-void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo){
+void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo* nodo, int ultimoByteValido){
 	t_setbloque* bloque = malloc(sizeof(t_setbloque));
 	bloque->numero_bloque = numBloque;
 	bloque->datos_bloque = malloc(1024*1024);
-	memcpy(bloque->datos_bloque, contenido, 1024*1024);
+	memcpy(bloque->datos_bloque, contenido, ultimoByteValido);
 	void* buffer = malloc(sizeof(int) + 1024*1024);//numero bloque
 	int desplazamiento=0;
 	memcpy(buffer, &bloque->numero_bloque, sizeof(int));
 	desplazamiento+= sizeof(int);
 	memcpy(buffer + desplazamiento,  bloque->datos_bloque, 1024*1024);//datos->bloque
 	desplazamiento+= 1024*1024;
-	enviar(nodo->socket, cop_datanode_setbloque,desplazamiento, bloque);
+	enviar(nodo->socket, cop_datanode_setbloque,desplazamiento, buffer);
 }
 
 t_nodoasignado* escribir_bloque (void* bloque){
@@ -1121,13 +1137,13 @@ t_nodoasignado* escribir_bloque (void* bloque){
 
 	t_nodo* nodolibre =	buscar_nodo_libre (0);
 	int numBloque = buscarBloque(nodolibre);
-	enviar_bloque_a_escribir(numBloque,buffer,nodolibre );
+	enviar_bloque_a_escribir(numBloque,buffer,nodolibre , bloque_partido->ultimoByteValido);
 	respuesta->nodo1=string_duplicate(nodolibre->nroNodo);
 	respuesta->bloque1=numBloque;
 
 	nodolibre =	buscar_nodo_libre (nodolibre->nroNodo);
 	numBloque = buscarBloque(nodolibre);
-	enviar_bloque_a_escribir(numBloque,buffer,nodolibre );
+	enviar_bloque_a_escribir(numBloque,buffer,nodolibre ,bloque_partido->ultimoByteValido);
 	respuesta->bloque2=numBloque;
 	respuesta->nodo1=string_duplicate(nodolibre->nroNodo);
 

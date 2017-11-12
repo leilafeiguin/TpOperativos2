@@ -143,7 +143,7 @@ t_nodo* buscar_nodo (char* nombreNodo);
 int buscarBloque (t_nodo*);
 
 // Envia a un nodo un bloque en el data.bin a ser escrito
-void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*);
+void enviar_bloque_a_escribir (int numBloque, void* contenido, t_nodo*,int ultimoByteValido);
 
 // Le pide a un nodo el contenido de un bloque especifico en su data.bin
 void* getbloque (int, t_nodo*);
