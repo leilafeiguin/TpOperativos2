@@ -20,7 +20,6 @@
 
 int main(void) {
 	int socketYama;
-	int socketDataNode;
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -182,6 +181,8 @@ int main(void) {
 								list_iterate(fileSystem.ListaNodos,copiarABuffer);
 
 								enviar(socketActual, cop_datanode_info,desplazamiento, buffer);
+
+								socketYama = socketActual;
 							}
 
 							//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
