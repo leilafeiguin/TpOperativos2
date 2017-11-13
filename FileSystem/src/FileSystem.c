@@ -1084,6 +1084,7 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "info") == 0){
 				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				info_archivo(parametros[1]);
 				free(linea);
 			}else {
 				printf("Opcion no valida.\n");
@@ -1283,5 +1284,64 @@ void actualizarArchivo(t_archivo* unArchivo){
 		fprintf(fp,"BLOQUE%iCOPIA1=[Nodo%i,%i]\n",i,ubicBloque1->nroNodo,ubicBloque1->nroBloque);
 		fprintf(fp,"BLOQUE%iBYTES=%i\n",i,unBloque->tamanioBloque);
 	}
+}
+
+void info_archivo(char* path) {
+	path=str_replace(path, "yamafs://","");
+	bool buscarArchivoPorPath(void* elem){
+			return string_equals_ignore_case(((t_archivo*)elem)->path,path);
+		};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+	if(archivoEncontrado != NULL)
+	{
+		char* tipoArchivo;
+		if(archivoEncontrado->tipoArchivo == TEXTO)
+			tipoArchivo="TEXTO";
+		else
+			tipoArchivo ="BINARIO";
+
+		printf("Nombre Archivo: %s \n Tamaño archivo: %i \n Tipo Archivo: %s \n", archivoEncontrado->nombre, archivoEncontrado->tamanio, tipoArchivo);
+		//imprimir nombre, tamanio y tipo de archivo
+
+		void imprimirInfoBloque(void* elem){
+			t_bloque* bloque= (t_bloque*)elem;
+
+			printf("Bloque numero %i  ---- Fin Bloque %i", bloque->nroBloque, bloque->finBloque);
+			//imprimir numero bloque y fin bloque
+
+			if(bloque->copia1 != NULL)
+			{
+				//imprimir numero bloque y nodo
+				printf("       Copia 1- Nodo %s  - Numero Bloque %i ", bloque->copia1->nroNodo, bloque->copia1->nroBloque);
+			}
+			else
+			{
+				printf("       Copia 1 - NO EXISTE!");
+			}
+
+			if(bloque->copia2 != NULL)
+			{
+				//imprimir numero bloque y nodo
+				printf("       Copia 2- Nodo %s  - Numero Bloque %i ", bloque->copia2->nroNodo, bloque->copia2->nroBloque);
+			}
+			else
+			{
+				printf("       Copia 2 - NO EXISTE!");
+			}
+
+		}
+
+		list_iterate(archivoEncontrado->bloques, imprimirInfoBloque);
+	}
+	else
+	{
+		//imprimir por pantalla que no existe el archivo
+	}
+}
+
+
+
+
 }
 
