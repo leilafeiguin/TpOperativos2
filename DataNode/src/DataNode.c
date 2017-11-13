@@ -28,8 +28,17 @@ int main(void) {
 	dataNode_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
+
 	//MMAP
 	struct stat sb;
+	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
+		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+"); //dudoso el r+
+		fseek(fd, 20971520, SEEK_SET);
+		fputc('\0',fd);
+		fclose(fd);
+
+		}
+
 	int fd=open(configuracion.RUTA_DATABIN, O_RDWR);
 	fstat(fd, &sb);
 	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
