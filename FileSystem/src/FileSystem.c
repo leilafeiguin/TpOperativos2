@@ -19,7 +19,8 @@
 #include <unistd.h>
 
 int main(void) {
-
+	int socketYama;
+	int socketDataNode;
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -331,6 +332,22 @@ int main(void) {
 							}
 							else {
 								//todo handlear error
+							}
+						}
+						break;
+						case -1:
+						{
+							if(socketActual == socketYama)
+							{
+							    exit(-1);
+							}
+							else
+							{
+								bool buscarNodoXSocket(void* elem){
+										return (((t_nodo*)elem)->socket ==  socketActual);
+									}
+								t_nodo* nodo = list_find(fileSystem.ListaNodos,buscarNodoXSocket);
+								list_remove(fileSystem.ListaNodos, nodo);
 							}
 						}
 						break;
