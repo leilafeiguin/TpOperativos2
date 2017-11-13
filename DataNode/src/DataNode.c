@@ -90,7 +90,11 @@ int main(void) {
 				free(paquete);
 			}
 			break;
-		break;
+			case -1:
+			{
+				exit(-1);
+			}
+			break;
 		}
 	}
 	return EXIT_SUCCESS;
