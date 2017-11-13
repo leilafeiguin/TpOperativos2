@@ -16,8 +16,7 @@ typedef struct fileSystem_configuracion {
 	char* IP_FS;
 	char* PUERTO_FS;
 } fileSystem_configuracion;
-
-const char* path =
+ char* path =
 		"/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
 char* estado = "Estable";
 bool existeYama = false;
@@ -61,6 +60,7 @@ typedef struct t_archivo {
 	t_tipo_archivo tipoArchivo;
 	unsigned long int tamanio;
 	t_list* bloques; // se le deben agregar struct t_bloque
+	int indiceDirectorioPadre;
 } t_archivo;
 
 typedef struct t_nodo {
@@ -98,7 +98,7 @@ typedef struct t_archivo_partido {
 	t_list* bloquesPartidos; //lista de t_bloque_particion
 } t_archivo_partido;
 
-static t_nodo *nodo_create(int nroNodo, bool ocupado, t_bitarray* bitmap,
+static t_nodo *nodo_create(char* nroNodo, bool ocupado, t_bitarray* bitmap,
 		un_socket socket, char* ipWorker, int puertoWorker, int tamanio) {
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
@@ -216,3 +216,11 @@ void actualizarTablaArchivos();
 // Actualiza el temporal que persiste la estructura de un t_archivo perteneciente a la lista listaArchivos (fs)
 void actualizarArchivo(t_archivo*);
 
+//Imprime por pantalla nombre tamaño bloques e info de bloques de un archivo
+void info_archivo(char* path);
+
+//Mueve un archivo o directorio ubicado en path_origen a path_destino
+void yama_mv(char* path_origen, char* path_destino, char tipo );
+
+//mueve un archivo a path destino
+void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado);
