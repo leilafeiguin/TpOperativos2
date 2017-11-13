@@ -92,6 +92,7 @@ int main(void) {
 			break;
 			case -1:
 			{
+				printf("Se cayo FS, finaliza DataNode.");
 				exit(-1);
 			}
 			break;

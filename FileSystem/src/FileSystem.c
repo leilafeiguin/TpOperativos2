@@ -340,10 +340,12 @@ int main(void) {
 						{
 							if(socketActual == socketYama)
 							{
+								printf("Se cayo Yama, finaliza FS.");
 							    exit(-1);
 							}
 							else
 							{
+								printf("Se cayo un DataNode, se elimina de la lista de nodos.");
 								bool buscarNodoXSocket(void* elem){
 										return (((t_nodo*)elem)->socket ==  socketActual);
 									}
