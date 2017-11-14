@@ -1038,10 +1038,28 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "rm") == 0){
 				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				if(parametros != NULL)
+				{
+
+				}
+				else
+				{
+					printf("El rm debe recibir el path_archivo. \n"); // hay otros casos como rm-d o rm-b
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "rename") == 0){
 				printf("Renombra un Archivo o Directorio\n");
 				parametros = validaCantParametrosComando(linea, 2);
+				if(parametros != NULL)
+				{
+
+				}
+				else
+				{
+					printf("El rename debe recibir path_original nombre_final. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "mv") == 0){
 				printf("Mueve un Archivo o Directorio\n");
@@ -1051,49 +1069,114 @@ void hiloFileSystem_Consola(void * unused){
 					yama_mv(parametros[1], parametros[2], (char)parametros[3][0]);
 				}
 				else
-				{//todo JAZ hacer esto mismo en cada uno de los comandos
-					printf("El mv debe recibir path_origen path_destino y tipo ( 'a' o 'd')\n");
+				{
+					printf("El mv debe recibir path_origen path_destino y tipo ('a' o 'd')\n");
 				}
 
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cat") == 0){
 				printf("Muestra el contenido del archivo como texto plano.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				cat(parametros[1]);
+				if(parametros != NULL)
+				{
+					cat(parametros[1]);
+				}
+				else
+				{
+					printf("El cat debe recibir path archivo. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				YAMA_mkdir(parametros[1]);
+				if(parametros != NULL)
+				{
+					YAMA_mkdir(parametros[1]);
+				}
+				else
+				{
+					printf("El mkdir debe recibir el path del directorio. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
 				parametros = validaCantParametrosComando(linea, 3);
-				CP_FROM(parametros[1],parametros[2],atoi(parametros[3]));
+				if(parametros != NULL)
+				{
+					CP_FROM(parametros[1],parametros[2],atoi(parametros[3]));
+				}
+				else
+				{
+					printf("El cpfrom debe recibir el path del archivo y el directorio de fs. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpto") == 0){
 				printf("Copiar un archivo local al yamafs\n");
 				parametros = validaCantParametrosComando(linea, 2);
+				if(parametros != NULL)
+				{
+
+				}
+				else
+				{
+					printf("El cpto debe recibir el path_archivo_yamafs y el directorio_filesystem. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpblock") == 0){
 				printf("Crea una copia de un bloque de un archivo en el nodo dado.\n");
 				parametros = validaCantParametrosComando(linea, 3);
-				CP_FROM(parametros[0], parametros[1], (char)parametros[2][0]);
+				if(parametros != NULL)
+				{
+					CP_FROM(parametros[0], parametros[1], (char)parametros[2][0]);
+				}
+				else
+				{
+					printf("El cpblock debe recibir el path_archivo, el nro_bloque y el id_nodo. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "md5") == 0){
 				printf("Solicitar el MD5 de un archivo en yamafs\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				calcular_md5(parametros[1]);
+				if(parametros != NULL)
+				{
+					calcular_md5(parametros[1]);
+				}
+				else
+				{
+					printf("El mds5 debe recibir el path_archivo_yamafs. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "ls") == 0){
 				printf("Lista los archivos de un directorio\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				ls(parametros[1]);
+				if(parametros != NULL)
+				{
+					ls(parametros[1]);
+				}
+				else
+				{
+					printf("El ls debe recibir el path_directorio. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "info") == 0){
 				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				info_archivo(parametros[1]);
+				if(parametros != NULL)
+				{
+					info_archivo(parametros[1]);
+				}
+				else
+				{
+					printf("El info debe recibir el path_archivo. \n");
+				}
+
 				free(linea);
 			}else {
 				printf("Opcion no valida.\n");
