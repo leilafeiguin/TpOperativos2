@@ -386,7 +386,70 @@ void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_
 
 // CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
 void CP_TO (char* origen, char*destino){
-	//desarrolar
+	//buscar el archivo de origen en la tabla de archivos
+	bool buscarArchivoPorPath(void* elem){
+		return string_equals_ignore_case(((t_archivo*)elem)->path,origen);
+	};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+
+	if(archivoEncontrado == NULL)
+	{
+		printf("El path %s no se encuentra en el FS", path);
+		return;
+	}
+
+	FILE* fd=fopen(destino, "w");
+
+	//crear el archivo de destino si no existe (si existe pisarlo)
+
+
+	void escribirContenidoBloqueaArchivoDestino(void* elem){
+			t_bloque* bloque= (t_bloque*)elem;
+
+			//pedir los bloques del archivo (idem CAT)
+
+			t_nodo* nodo=NULL;
+			if(bloque->copia1 != NULL)
+				nodo=buscar_nodo(bloque->copia1->nroNodo);
+			if(nodo != NULL)
+			{
+				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
+				fwrite(contenido, bloque->finBloque,1,fd);
+				free(contenido);
+				return;
+			}
+			else{
+				if(bloque->copia2 != NULL)
+					nodo=buscar_nodo(bloque->copia2->nroNodo);
+
+				if(nodo== NULL)
+				{
+					char* nombre1="";
+					char* nombre2="";
+					if(bloque->copia1 != NULL)
+						nombre1=bloque->copia1->nroNodo;
+
+					if(bloque->copia2 != NULL)
+						nombre2=bloque->copia2->nroNodo;
+
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					return;
+				}
+
+				void* contenido=getbloque(bloque->copia2->nroBloque, nodo);
+				fwrite(contenido, bloque->finBloque,1,fd);
+				free(contenido);
+				return;
+			}
+
+		}
+
+	list_iterate(archivoEncontrado->bloques,escribirContenidoBloqueaArchivoDestino);
+
+	fclose(fd);
+
+	//por cada bloque voy haciendo un fwrite
 }
 
 
@@ -601,6 +664,7 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 			tamanio+=(tamanioBloque);
 			list_add(archivoPartido->bloquesPartidos, bloquePartido);
 		}
+		free(archivoMapeado);
 		archivoPartido->cantidadBloques=cantidadBloques;
 		return archivoPartido;
 	}
@@ -636,10 +700,12 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 
 		}
 
+		free(renglones);
+		free(archivoMapeado);
 		if(bloquePartido != NULL)
-						{
-							bloquePartido->ultimoByteValido = tamanioBloque;
-						}
+		{
+			bloquePartido->ultimoByteValido = tamanioBloque;
+		}
 
 		archivoPartido->cantidadBloques = cantidadBloques;
 		return archivoPartido;
@@ -703,7 +769,11 @@ char** validaCantParametrosComando(char* comando, int cantParametros){
 
 void formatearFileSystem(){
 	int i;
-	list_destroy(fileSystem.ListaNodos);
+	void liberar(void* elem){
+		free(elem);
+	}
+	list_destroy_and_destroy_elements(fileSystem.ListaNodos, liberar);
+	list_destroy_and_destroy_elements(fileSystem.listaArchivos, liberar);
 	t_list* nodos = list_create();
 	fileSystem.ListaNodos = nodos;
 
@@ -962,17 +1032,7 @@ void cat(char* path){
 			if(nodo != NULL)
 			{
 				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
-				if(archivoEncontrado->tipoArchivo == BINARIO)
-				{
-
-				}
-				else{
-					char* buffer = malloc(bloque->finBloque);
-					memcpy(buffer, contenido, bloque->finBloque);
-					printf("%s",buffer);
-				}
-				//imprimir contenido
-
+				fwrite(contenido, bloque->finBloque,1,stdout);
 				return;
 			}
 			else{
@@ -994,16 +1054,7 @@ void cat(char* path){
 				}
 
 				void* contenido=getbloque(bloque->copia2->nroBloque, nodo);
-				if(archivoEncontrado->tipoArchivo == BINARIO)
-				{
-
-				}
-				else{
-					char* buffer = malloc(bloque->finBloque);
-					memcpy(buffer, contenido, bloque->finBloque);
-					printf("%s", buffer);
-				}
-
+				fwrite(contenido, bloque->finBloque,1,stdout);
 				return;
 			}
 
@@ -1184,7 +1235,8 @@ void hiloFileSystem_Consola(void * unused){
 			}
 
 			free(lineaCopia);
-			free(parametros);
+			if(parametros != NULL)
+				free(parametros);
 		}
 	}
 }

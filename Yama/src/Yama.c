@@ -287,34 +287,53 @@ int main(void) {
 								//Devuelve lista con los workers
 								//Ahora lo debe sacar de archivoNodo workersAsignados
 
+								int cantidadBloquesTotales =list_size(archivoNodo->bloquesRelativos);
 								int cantidadWorkers = list_size(archivoNodo->workersAsignados);
 								desplazamiento=0;
-								void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+4+sizeof(int) + sizeof(int)+15));
-								memcpy(buffer, &cantidadWorkers, sizeof(int));
+								void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+sizeof(int)+sizeof(int))+cantidadBloquesTotales*(sizeof(int) + sizeof(int)+15));
+								memcpy(buffer, &cantidadWorkers, sizeof(int)); //int que dice cuantos nodos hay en la lista
 								desplazamiento+=sizeof(int);
 
 								void datosWorker(void* worker){
+									//por cada nodo mando IP (15)
 									memcpy(buffer+desplazamiento, ((t_clock*)worker)->ip, 15);
 									desplazamiento+=15;
 
-									memcpy(buffer+desplazamiento, ((t_clock*)worker)->puerto,4);
-									desplazamiento+=4;
-
-									memcpy(buffer+desplazamiento, 0, sizeof(int));//todo ver seba como refactorizamos esto
+									//puerto (4)
+									memcpy(buffer+desplazamiento, ((t_clock*)worker)->puerto,sizeof(int));
 									desplazamiento+=sizeof(int);
 
-									memcpy(buffer+desplazamiento, 0, sizeof(int));
+
+									int cantidadBloques=list_size(((t_clock*)worker)->bloques);
+									memcpy(buffer+desplazamiento,&cantidadBloques ,sizeof(int));
 									desplazamiento+=sizeof(int);
 
-									char* dirTemp=generarDirectorioTemporal();
-									memcpy(buffer+desplazamiento,  dirTemp, 15);
-									desplazamiento+=15;
+									void datosBloques(void* bloque){
+										//por cada bloque a pedir a cada worker mando
+
+										t_infobloque* infobloque=((t_infobloque*)bloque);
+										//int bloque absoluto (donde esta dentro del nodo)
+										memcpy(buffer+desplazamiento, infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
+										desplazamiento+=sizeof(int);
+
+										//int fin de bloque
+										memcpy(buffer+desplazamiento, infobloque->finBloque, sizeof(int));
+										desplazamiento+=sizeof(int);
+
+										char* dirTemp=generarDirectorioTemporal();
+										//directorio temporal (15)
+										memcpy(buffer+desplazamiento,  dirTemp, 15);
+										desplazamiento+=15;
+
+									}
+
+									list_iterate(((t_clock*)worker)->bloques, datosBloques);
 								}
 
 								list_iterate(archivoNodo->workersAsignados, datosWorker);
 
 								//falta terminar de enviar la estructura archivoNodo
-								//enviar(socketActual,cop_yama_lista_de_workers,sizeof(char*)*strlen(listaWorkers),listaWorkers);
+								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 
 
 							}
@@ -450,9 +469,19 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
+	bool buscarNodoWorker(void*elem){
+		return string_equals_ignore_case(((t_clock*)tabla.clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
+	}
+	t_nodoxbloques* nodoWorker=list_find(archivo->nodos, buscarNodoWorker);
+
+
+
 	bool existeBloqueEnWorker(void* elem){
 		return numeroBloque == ((t_infobloque*)elem)->bloqueRelativo;
 	}
+
+
+	t_infobloque* infoBloque = list_find(nodoWorker->bloques,existeBloqueEnWorker);
 
 	bool workerContieneBloque(void* elem){
 		return string_equals_ignore_case(((t_clock*)tabla.clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo) &&
@@ -462,7 +491,7 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 	void asignarBloqueAWorker(t_clock* worker,int* numeroBloque, t_archivoxnodo* archivo){
 		worker->disponibilidad--;
 
-		list_add(worker->bloques, numBloqueParaLista);
+		list_add(worker->bloques, infoBloque);
 
 		bool existeWorkerAsignado(void* elem){
 			return string_equals_ignore_case(((t_clock*)elem)->worker_id , worker->worker_id);

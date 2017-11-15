@@ -44,7 +44,7 @@ typedef struct t_clock{
 	char* worker_id;
 	char* ip;
 	int puerto;
-	t_list* bloques; //(int)
+	t_list* bloques; //(t_infobloque)
 } t_clock;
 
 typedef struct t_tabla_planificacion{

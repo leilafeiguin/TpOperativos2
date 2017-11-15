@@ -82,7 +82,10 @@ int main(void) {
 		switch (paquete-> codigo_operacion){
 			case cop_datanode_get_bloque:
 			{
-				int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
+
+				int numeroBloque;
+
+				memcpy(&numeroBloque, paquete->data, sizeof(int));
 				void* bloqueAenviar = malloc(1024*1024);
 				leer_bloque(numeroBloque, bloqueAenviar);
 				enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
@@ -92,8 +95,12 @@ int main(void) {
 			break;
 			case cop_datanode_setbloque:
 			{
-				int numeroBloque = ((t_setbloque*)paquete->data)->numero_bloque;
-				void* bloqueArecibir = ((t_setbloque*)paquete->data) -> datos_bloque;
+				int numeroBloque;
+				int desplazamiento=0;
+				memcpy(&numeroBloque, paquete->data, sizeof(int));
+				desplazamiento += sizeof(int);
+				void* bloqueArecibir =malloc(1024*1024);
+				memcpy(bloqueArecibir, paquete->data + desplazamiento, 1024*1024);
 				escribir_bloque (numeroBloque, bloqueArecibir);
 				free(bloqueArecibir);
 				free(paquete);
