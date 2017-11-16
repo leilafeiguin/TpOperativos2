@@ -33,6 +33,11 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 
 	log_trace(logger, "Recibi datos de workers de Yama");
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
+
+	if(paqueteRecibido->codigo_operacion == -1){
+		printf("Se cayo Yama, finaliza Master.");
+		exit(-1);
+	}
 	//preguntar a seba tema malloc y memoria
 	char* buffer = malloc(paqueteRecibido->tamanio);
 
