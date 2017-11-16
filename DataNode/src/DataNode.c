@@ -82,9 +82,7 @@ int main(void) {
 		switch (paquete-> codigo_operacion){
 			case cop_datanode_get_bloque:
 			{
-
 				int numeroBloque;
-
 				memcpy(&numeroBloque, paquete->data, sizeof(int));
 				void* bloqueAenviar = malloc(1024*1024);
 				leer_bloque(numeroBloque, bloqueAenviar);
