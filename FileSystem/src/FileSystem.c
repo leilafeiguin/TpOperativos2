@@ -1542,7 +1542,7 @@ void yama_rename (char* path_origen, char* nuevo_nombre){
 		}
 	}
 
-	t_archivo* unArchivo = list_find(fileSystem.listaArchivos, esElNombreDeArchivo());
+	t_archivo* unArchivo = list_find(fileSystem.listaArchivos, (void*)esElNombreDeArchivo);
 
 	if(unArchivo != NULL){
 		path_origen = str_replace(path_origen, directorios[cantidadDirectorios], nuevo_nombre);
