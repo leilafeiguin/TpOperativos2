@@ -224,3 +224,6 @@ void yama_mv(char* path_origen, char* path_destino, char tipo );
 
 //mueve un archivo a path destino
 void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado);
+
+// Renombra un archivo en yama
+void yama_rename(char*, char*);

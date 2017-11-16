@@ -851,6 +851,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 }
 
 void YAMA_mkdir(char* path){
+	//todo arreglar, la segunda vez no anda
 	path= str_replace(path, "yamafs://","");
 		if(!string_ends_with(path, "/"))
 			string_append(&path, "/");
@@ -869,6 +870,20 @@ void YAMA_mkdir(char* path){
 			}
 			indicePadre= directorioActual->index;
 		}
+		t_directory* nuevoDirectorio;
+		nuevoDirectorio->nombre = directorios[cantidadDirectorios];
+		nuevoDirectorio->padre = indicePadre;
+		int libre = 0;
+		while(tablaDeDirectorios[libre]->index != -2 && libre<100){
+			libre++;
+		}
+		if(libre==100){
+			printf("La tabla de directorios esta llena");
+		}else{
+			tablaDeDirectorios[libre] = nuevoDirectorio;
+			printf("Se creo el directorio");
+		}
+		return;
 }
 
 void ls(char*path){
@@ -1104,7 +1119,7 @@ void hiloFileSystem_Consola(void * unused){
 				parametros = validaCantParametrosComando(linea, 2);
 				if(parametros != NULL)
 				{
-
+					yama_rename(parametros[1], parametros[2]);
 				}
 				else
 				{
@@ -1510,6 +1525,33 @@ void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado) {
 	archivoEncontrado->path = string_duplicate(path_destino);
 	archivoEncontrado->indiceDirectorioPadre = indicePadre;
 	//fijarse si cambia el nombre, si cambia actualizar el t_archivo path, y nombre, indiceDirectorioPadre
+
+}
+
+
+void yama_rename (char* path_origen, char* nuevo_nombre){
+	path_origen = str_replace(path_origen, "yamafs://", "");
+
+	int cantidadDirectorios = countOccurrences(path_origen, "/")+1;
+	char** directorios = string_split(path_origen, "/");
+	int esElNombreDeArchivo(t_archivo* archivo){
+		if(archivo->nombre == directorios[cantidadDirectorios]){
+			return 1;
+		}else{
+			return 0;
+		}
+	}
+
+	t_archivo* unArchivo = list_find(fileSystem.listaArchivos, esElNombreDeArchivo());
+
+	if(unArchivo != NULL){
+		path_origen = str_replace(path_origen, directorios[cantidadDirectorios], nuevo_nombre);
+		unArchivo->path = path_origen;
+		unArchivo->nombre = nuevo_nombre;
+	}else{
+		printf("El archivo no existe");
+	}
+
 
 }
 
