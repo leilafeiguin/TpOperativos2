@@ -19,6 +19,8 @@
 t_list* tabla_estados;
 yama_configuracion configuracion;
 int main(void) {
+	int socketFS;
+	int socketMaster;
 	t_log* logger;
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
@@ -198,6 +200,7 @@ int main(void) {
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
+								socketMaster = socketActual;
 							break;
 							case cop_archivo_programa:
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
@@ -334,7 +337,7 @@ int main(void) {
 
 								//falta terminar de enviar la estructura archivoNodo
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
-
+								socketFS = socketActual;
 
 							}
 								break;
@@ -386,6 +389,16 @@ int main(void) {
 										list_add(tabla.workers,worker);
 									}
 									tabla.clock_actual = (t_clock*)tabla.workers->head;
+								}
+								break;
+								case -1:
+								{
+									if(socketActual == socketFS){
+										printf("Se cayo FS, finaliza Yama.");
+										exit(-1);
+									}else if (socketActual == socketMaster){
+										//todo eliminar job y planif
+									}
 								}
 								break;
 								}
