@@ -858,41 +858,42 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 
 void YAMA_mkdir(char* path){
 	path= str_replace(path, "yamafs://","");
-		if(!string_ends_with(path, "/"))
-			string_append(&path, "/");
+	if(!string_ends_with(path, "/")){
+		string_append(&path, "/");
+	}
 
-		int cantidadDirectorios=countOccurrences(path, "/");
-		char** directorios=string_split(path, "/");
-		int i=0;
-		int indicePadre=0;
-		t_directory* directorioActual=NULL;
-		if(cantidadDirectorios == 1){
-			indicePadre = 0;
-		}else{
-			for(;i<cantidadDirectorios-1;i++){
-				if(directorios[i] == NULL) break;
-				directorioActual=buscarDirectorio(indicePadre, directorios[i]);
-				if(directorioActual == NULL){
-					printf("El directorio %s no existe para el padre %i\n", directorios[i], indicePadre);
-					return;
-				}
-				indicePadre= directorioActual->index;
+	int cantidadDirectorios=countOccurrences(path, "/");
+	char** directorios=string_split(path, "/");
+	int i=0;
+	int indicePadre=0;
+	t_directory* directorioActual=NULL;
+	if(cantidadDirectorios == 1){
+		indicePadre = 0;
+	}else{//revisar para el caso que crean multiples directorios
+		for(;i<cantidadDirectorios-1;i++){
+			if(directorios[i] == NULL) break;
+			directorioActual=buscarDirectorio(indicePadre, directorios[i]);
+			if(directorioActual == NULL){
+				printf("El directorio %s no existe para el padre %i\n", directorios[i], indicePadre);
+				return;
 			}
+			indicePadre= directorioActual->index;
 		}
+	}
 
-		int libre = 0;
-		while(tablaDeDirectorios[libre]->index != -2 && libre<100){
-			libre++;
-		}
-		if(libre==100){
-			printf("La tabla de directorios esta llena\n");
-		}else{
-			tablaDeDirectorios[libre]->index= libre;
-			tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios-1];
-			tablaDeDirectorios[libre]->padre = indicePadre;
-			printf("Se creo el directorio\n");
-		}
-		return;
+	int libre = 0;
+	while(tablaDeDirectorios[libre]->index != -2 && libre<100){
+		libre++;
+	}
+	if(libre==100){
+		printf("La tabla de directorios esta llena\n");
+	}else{
+		tablaDeDirectorios[libre]->index= libre;
+		tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios-1];
+		tablaDeDirectorios[libre]->padre = indicePadre;
+		printf("Se creo el directorio\n");
+	}
+	return;
 }
 
 void ls(char*path){
