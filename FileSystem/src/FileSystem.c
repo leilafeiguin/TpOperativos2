@@ -673,7 +673,7 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 		char* contenidoArchivo=(char*)archivoMapeado;
 		int cantidadBloques=0;
 		t_bloque_particion* bloquePartido=NULL;
-		int cantidadRenglones=countOccurrences(contenidoArchivo, "\n")+1;
+		int cantidadRenglones=countOccurrences(contenidoArchivo, "\n");
 		char** renglones=string_split(contenidoArchivo, "\n");
 		int tamanioBloque = 0;
 		int i=0;
