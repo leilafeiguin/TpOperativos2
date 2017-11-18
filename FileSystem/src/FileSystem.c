@@ -17,9 +17,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+ #include <pthread.h>
 
 int main(void) {
-
+	int socketYama;
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -64,13 +65,9 @@ int main(void) {
 	int fdmax;        // maximum file descriptor number
 	int listener;     // listening socket descriptor
 	int newfd;        // newly accept()ed socket descriptor
-	struct sockaddr_storage remoteaddr; // client address
-	socklen_t addrlen;
-	char buf[256];    // buffer for client data
-	int nbytes;
-	char remoteIP[INET6_ADDRSTRLEN];
+
 	int yes=1;        // for setsockopt() SO_REUSEADDR, below
-	int i, j, rv;
+	int  rv;
 	struct addrinfo hints, *ai, *p;
 	FD_ZERO(&master);    // clear the master and temp sets
 	FD_ZERO(&read_fds);
@@ -181,6 +178,8 @@ int main(void) {
 								list_iterate(fileSystem.ListaNodos,copiarABuffer);
 
 								enviar(socketActual, cop_datanode_info,desplazamiento, buffer);
+
+								socketYama = socketActual;
 							}
 
 							//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
@@ -221,7 +220,7 @@ int main(void) {
 							desplazamiento+=longitudNombre;
 
 							t_bitarray* unBitmap;
-							char* data[] = {00000000000000000000};
+							char* data = {00000000000000000000};
 							unBitmap = bitarray_create(data, 3);
 							t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap, socketActual , infoNodo->ip, infoNodo->puertoWorker, infoNodo->tamanio);
 							list_add(fileSystem.ListaNodos, unNodo);
@@ -334,6 +333,26 @@ int main(void) {
 							}
 						}
 						break;
+						case -1:
+						{
+							if(socketActual == socketYama)
+							{
+								printf("Se cayo Yama, finaliza FS.");
+							    exit(-1);
+							}
+							else
+							{
+								printf("Se cayo un DataNode, se elimina de la lista de nodos.");
+								bool eliminarNodoXSocket(void* elem){
+										return (((t_nodo*)elem)->socket ==  socketActual);
+									}
+
+
+								t_nodo* nodo =list_remove_by_condition(fileSystem.ListaNodos, eliminarNodoXSocket);
+								free(nodo);
+							}
+						}
+						break;
 						}
 					}
 				}
@@ -367,7 +386,70 @@ void recopilarInfoCopia(ubicacionBloque* copia, t_archivoxnodo* archivoxnodo, t_
 
 // CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
 void CP_TO (char* origen, char*destino){
-	//desarrolar
+	//buscar el archivo de origen en la tabla de archivos
+	bool buscarArchivoPorPath(void* elem){
+		return string_equals_ignore_case(((t_archivo*)elem)->path,origen);
+	};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+
+	if(archivoEncontrado == NULL)
+	{
+		printf("El path %s no se encuentra en el FS", path);
+		return;
+	}
+
+	FILE* fd=fopen(destino, "w");
+
+	//crear el archivo de destino si no existe (si existe pisarlo)
+
+
+	void escribirContenidoBloqueaArchivoDestino(void* elem){
+			t_bloque* bloque= (t_bloque*)elem;
+
+			//pedir los bloques del archivo (idem CAT)
+
+			t_nodo* nodo=NULL;
+			if(bloque->copia1 != NULL)
+				nodo=buscar_nodo(bloque->copia1->nroNodo);
+			if(nodo != NULL)
+			{
+				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
+				fwrite(contenido, bloque->finBloque,1,fd);
+				free(contenido);
+				return;
+			}
+			else{
+				if(bloque->copia2 != NULL)
+					nodo=buscar_nodo(bloque->copia2->nroNodo);
+
+				if(nodo== NULL)
+				{
+					char* nombre1="";
+					char* nombre2="";
+					if(bloque->copia1 != NULL)
+						nombre1=bloque->copia1->nroNodo;
+
+					if(bloque->copia2 != NULL)
+						nombre2=bloque->copia2->nroNodo;
+
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					return;
+				}
+
+				void* contenido=getbloque(bloque->copia2->nroBloque, nodo);
+				fwrite(contenido, bloque->finBloque,1,fd);
+				free(contenido);
+				return;
+			}
+
+		}
+
+	list_iterate(archivoEncontrado->bloques,escribirContenidoBloqueaArchivoDestino);
+
+	fclose(fd);
+
+	//por cada bloque voy haciendo un fwrite
 }
 
 
@@ -395,12 +477,13 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 		 }
     }
 
+    nuevoArchivo->indiceDirectorioPadre = padre;
     nuevoArchivo->nombre = file;
     nuevoArchivo->path = destino;
 	int i=0;
 	for(;i<archivoPartido->cantidadBloques;i++){
 		t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos,i));
-		t_bloque* unBloqueAux;
+		t_bloque* unBloqueAux=malloc(sizeof(t_bloque*));
 		unBloqueAux->nroBloque = i;
 		t_bloque_particion* bloqueParticion = list_get(archivoPartido->bloquesPartidos, i);
 		unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
@@ -517,7 +600,7 @@ char *str_replace(char *orig, char *rep, char *with) {
 
     // count the number of replacements needed
     ins = orig;
-    for (count = 0; tmp = strstr(ins, rep); ++count) {
+    for (count = 0; (tmp = strstr(ins, rep)); ++count) {
         ins = tmp + len_rep;
     }
 
@@ -581,6 +664,7 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 			tamanio+=(tamanioBloque);
 			list_add(archivoPartido->bloquesPartidos, bloquePartido);
 		}
+		free(archivoMapeado);
 		archivoPartido->cantidadBloques=cantidadBloques;
 		return archivoPartido;
 	}
@@ -616,10 +700,12 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 
 		}
 
+		free(renglones);
+		free(archivoMapeado);
 		if(bloquePartido != NULL)
-						{
-							bloquePartido->ultimoByteValido = tamanioBloque;
-						}
+		{
+			bloquePartido->ultimoByteValido = tamanioBloque;
+		}
 
 		archivoPartido->cantidadBloques = cantidadBloques;
 		return archivoPartido;
@@ -673,17 +759,21 @@ char** validaCantParametrosComando(char* comando, int cantParametros){
 
 	if(i != cantParametros+1){
 		printf("%s necesita %i parametro/s. \n", comando, cantParametros);
-		return 0;
+		return NULL;
 	}else{
 		printf("Cantidad de parametros correcta. \n");
 		return parametros;
 	}
-	return 0;
+	return NULL;
 }
 
 void formatearFileSystem(){
 	int i;
-	list_destroy(fileSystem.ListaNodos);
+	void liberar(void* elem){
+		free(elem);
+	}
+	list_destroy_and_destroy_elements(fileSystem.ListaNodos, liberar);
+	list_destroy_and_destroy_elements(fileSystem.listaArchivos, liberar);
 	t_list* nodos = list_create();
 	fileSystem.ListaNodos = nodos;
 
@@ -761,6 +851,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 }
 
 void YAMA_mkdir(char* path){
+	//todo arreglar, la segunda vez no anda
 	path= str_replace(path, "yamafs://","");
 		if(!string_ends_with(path, "/"))
 			string_append(&path, "/");
@@ -779,6 +870,20 @@ void YAMA_mkdir(char* path){
 			}
 			indicePadre= directorioActual->index;
 		}
+		t_directory* nuevoDirectorio;
+		nuevoDirectorio->nombre = directorios[cantidadDirectorios];
+		nuevoDirectorio->padre = indicePadre;
+		int libre = 0;
+		while(tablaDeDirectorios[libre]->index != -2 && libre<100){
+			libre++;
+		}
+		if(libre==100){
+			printf("La tabla de directorios esta llena");
+		}else{
+			tablaDeDirectorios[libre] = nuevoDirectorio;
+			printf("Se creo el directorio");
+		}
+		return;
 }
 
 void ls(char*path){
@@ -942,17 +1047,7 @@ void cat(char* path){
 			if(nodo != NULL)
 			{
 				void* contenido=getbloque(bloque->copia1->nroBloque, nodo);
-				if(archivoEncontrado->tipoArchivo == BINARIO)
-				{
-
-				}
-				else{
-					char* buffer = malloc(bloque->finBloque);
-					memcpy(buffer, contenido, bloque->finBloque);
-					printf(buffer);
-				}
-				//imprimir contenido
-
+				fwrite(contenido, bloque->finBloque,1,stdout);
 				return;
 			}
 			else{
@@ -974,16 +1069,7 @@ void cat(char* path){
 				}
 
 				void* contenido=getbloque(bloque->copia2->nroBloque, nodo);
-				if(archivoEncontrado->tipoArchivo == BINARIO)
-				{
-
-				}
-				else{
-					char* buffer = malloc(bloque->finBloque);
-					memcpy(buffer, contenido, bloque->finBloque);
-					printf("%s", buffer);
-				}
-
+				fwrite(contenido, bloque->finBloque,1,stdout);
 				return;
 			}
 
@@ -1003,7 +1089,7 @@ void hiloFileSystem_Consola(void * unused){
 	char * linea;
 	char* primeraPalabra;
 	char* context;
-	int i = 0;
+
 	while(1) {
 		linea = readline(">");
 		if (!linea) {
@@ -1049,48 +1135,132 @@ void hiloFileSystem_Consola(void * unused){
 			}else if (strcmp(primeraPalabra, "rename") == 0){
 				printf("Renombra un Archivo o Directorio\n");
 				parametros = validaCantParametrosComando(linea, 2);
+				if(parametros != NULL)
+				{
+					yama_rename(parametros[1], parametros[2]);
+				}
+				else
+				{
+					printf("El rename debe recibir path_original nombre_final. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "mv") == 0){
 				printf("Mueve un Archivo o Directorio\n");
-				parametros = validaCantParametrosComando(linea, 2);
+				parametros = validaCantParametrosComando(linea, 3);
+				if(parametros != NULL)
+				{
+					yama_mv(parametros[1], parametros[2], (char)parametros[3][0]);
+				}
+				else
+				{
+					printf("El mv debe recibir path_origen path_destino y tipo ('a' o 'd')\n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cat") == 0){
 				printf("Muestra el contenido del archivo como texto plano.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				cat(parametros[1]);
+				if(parametros != NULL)
+				{
+					cat(parametros[1]);
+				}
+				else
+				{
+					printf("El cat debe recibir path archivo. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "mkdir") == 0){
 				printf("Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				YAMA_mkdir(parametros[1]);
+				if(parametros != NULL)
+				{
+					YAMA_mkdir(parametros[1]);
+				}
+				else
+				{
+					printf("El mkdir debe recibir el path del directorio. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpfrom") == 0){
 				printf("Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
 				parametros = validaCantParametrosComando(linea, 3);
-				CP_FROM(parametros[1],parametros[2],atoi(parametros[3]));
+				if(parametros != NULL)
+				{
+					CP_FROM(parametros[1],parametros[2],atoi(parametros[3]));
+				}
+				else
+				{
+					printf("El cpfrom debe recibir el path del archivo y el directorio de fs. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpto") == 0){
 				printf("Copiar un archivo local al yamafs\n");
 				parametros = validaCantParametrosComando(linea, 2);
+				if(parametros != NULL)
+				{
+
+				}
+				else
+				{
+					printf("El cpto debe recibir el path_archivo_yamafs y el directorio_filesystem. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "cpblock") == 0){
 				printf("Crea una copia de un bloque de un archivo en el nodo dado.\n");
 				parametros = validaCantParametrosComando(linea, 3);
-				CP_FROM(parametros[0], parametros[1], (char)parametros[2]);
+				if(parametros != NULL)
+				{
+					CP_FROM(parametros[0], parametros[1], (char)parametros[2][0]);
+				}
+				else
+				{
+					printf("El cpblock debe recibir el path_archivo, el nro_bloque y el id_nodo. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "md5") == 0){
 				printf("Solicitar el MD5 de un archivo en yamafs\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				calcular_md5(parametros[1]);
+				if(parametros != NULL)
+				{
+					calcular_md5(parametros[1]);
+				}
+				else
+				{
+					printf("El mds5 debe recibir el path_archivo_yamafs. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "ls") == 0){
 				printf("Lista los archivos de un directorio\n");
 				parametros = validaCantParametrosComando(linea, 1);
-				ls(parametros[1]);
+				if(parametros != NULL)
+				{
+					ls(parametros[1]);
+				}
+				else
+				{
+					printf("El ls debe recibir el path_directorio. \n");
+				}
+
 				free(linea);
 			}else if (strcmp(primeraPalabra, "info") == 0){
 				printf("Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
 				parametros = validaCantParametrosComando(linea, 1);
+				if(parametros != NULL)
+				{
+					info_archivo(parametros[1]);
+				}
+				else
+				{
+					printf("El info debe recibir el path_archivo. \n");
+				}
+
 				free(linea);
 			}else {
 				printf("Opcion no valida.\n");
@@ -1098,7 +1268,8 @@ void hiloFileSystem_Consola(void * unused){
 			}
 
 			free(lineaCopia);
-			free(parametros);
+			if(parametros != NULL)
+				free(parametros);
 		}
 	}
 }
@@ -1253,7 +1424,7 @@ void actualizarArchivoTablaNodos(){
 void actualizarTablaArchivos(){
 	//limpiar todas las metadata
 	int i =0;
-	for(i;i<list_size(fileSystem.listaArchivos);i++){
+	for(;i<list_size(fileSystem.listaArchivos);i++){
 		actualizarArchivo(list_get(fileSystem.listaArchivos,i));
 	}
 }
@@ -1276,16 +1447,197 @@ void actualizarArchivo(t_archivo* unArchivo){
 	//strcat(ubicacion, itoa(cantidadDirectorios));
 	FILE * fp= fopen(ubicacion, "w");
 	fprintf(fp,"%s",unArchivo->path);
-	fprintf(fp,"TAMANIO=%i\n",unArchivo->tamanio);
+	fprintf(fp,"TAMANIO=%lu\n",unArchivo->tamanio);
 	fprintf(fp, "TIPO=%i", unArchivo->tipoArchivo);
 	int cantBloques = list_size(unArchivo->bloques);
 	int i = 0;
-	for(i; i<cantBloques; i++){
+	for(; i<cantBloques; i++){
 		t_bloque* unBloque = list_get(unArchivo->bloques,i);
 		ubicacionBloque* ubicBloque1 = unBloque->copia1;
 		ubicacionBloque* ubicBloque2 = unBloque->copia2;
-		fprintf(fp,"BLOQUE%iCOPIA0=[Nodo%i,%i]\n",i,ubicBloque1->nroNodo,ubicBloque1->nroBloque);
-		fprintf(fp,"BLOQUE%iCOPIA1=[Nodo%i,%i]\n",i,ubicBloque1->nroNodo,ubicBloque1->nroBloque);
-		fprintf(fp,"BLOQUE%iBYTES=%i\n",i,unBloque->tamanioBloque);
+		fprintf(fp,"BLOQUE%iCOPIA0=[Nodo%s,%i]\n",i,ubicBloque1->nroNodo,ubicBloque1->nroBloque);
+		fprintf(fp,"BLOQUE%iCOPIA1=[Nodo%s,%i]\n",i,ubicBloque2->nroNodo,ubicBloque2->nroBloque);
+		fprintf(fp,"BLOQUE%iBYTES=%lu\n",i,unBloque->tamanioBloque);
+	}
+}
+
+void info_archivo(char* path) {
+	path=str_replace(path, "yamafs://","");
+	bool buscarArchivoPorPath(void* elem){
+			return string_equals_ignore_case(((t_archivo*)elem)->path,path);
+		};
+
+	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+	if(archivoEncontrado != NULL)
+	{
+		char* tipoArchivo;
+		if(archivoEncontrado->tipoArchivo == TEXTO)
+			tipoArchivo="TEXTO";
+		else
+			tipoArchivo ="BINARIO";
+
+		printf("Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n", archivoEncontrado->nombre, archivoEncontrado->tamanio, tipoArchivo);
+		//imprimir nombre, tamanio y tipo de archivo
+
+		void imprimirInfoBloque(void* elem){
+			t_bloque* bloque= (t_bloque*)elem;
+
+			printf("Bloque numero %i  ---- Fin Bloque %lu", bloque->nroBloque, bloque->finBloque);
+			//imprimir numero bloque y fin bloque
+
+			if(bloque->copia1 != NULL)
+			{
+				//imprimir numero bloque y nodo
+				printf("       Copia 1- Nodo %s  - Numero Bloque %i ", bloque->copia1->nroNodo, bloque->copia1->nroBloque);
+			}
+			else
+			{
+				printf("       Copia 1 - NO EXISTE!");
+			}
+
+			if(bloque->copia2 != NULL)
+			{
+				//imprimir numero bloque y nodo
+				printf("       Copia 2- Nodo %s  - Numero Bloque %i ", bloque->copia2->nroNodo, bloque->copia2->nroBloque);
+			}
+			else
+			{
+				printf("       Copia 2 - NO EXISTE!");
+			}
+
+		}
+
+		list_iterate(archivoEncontrado->bloques, imprimirInfoBloque);
+	}
+	else
+	{
+		//imprimir por pantalla que no existe el archivo
+
+		printf("El archivo %s no existe", path);
+	}
+}
+
+void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado) {
+	//buscar entrada de directorio de destino
+	path_destino = str_replace(path_destino, "yamafs://", "");
+	int cantidadDirectorios = countOccurrences(path_destino, "/");
+	char** directorios = string_split(path_destino, "/");
+	int i = 0;
+	int indicePadre = 0;
+	t_directory* directorioActual = NULL;
+	for (; i < cantidadDirectorios - 1; i++) {
+		if (directorios[i] == NULL)
+			break;
+		directorioActual = buscarDirectorio(indicePadre, directorios[i]);
+		if (directorioActual == NULL) {
+			printf("El directorio %s no existe para el padre %i",
+					directorios[i], indicePadre);
+
+		}
+		indicePadre = directorioActual->index;
+	}
+	archivoEncontrado->nombre = string_duplicate(
+			directorios[cantidadDirectorios - 1]);
+	archivoEncontrado->path = string_duplicate(path_destino);
+	archivoEncontrado->indiceDirectorioPadre = indicePadre;
+	//fijarse si cambia el nombre, si cambia actualizar el t_archivo path, y nombre, indiceDirectorioPadre
+
+}
+
+
+void yama_rename (char* path_origen, char* nuevo_nombre){
+	path_origen = str_replace(path_origen, "yamafs://", "");
+
+	int cantidadDirectorios = countOccurrences(path_origen, "/")+1;
+	char** directorios = string_split(path_origen, "/");
+	int esElNombreDeArchivo(t_archivo* archivo){
+		if(archivo->nombre == directorios[cantidadDirectorios]){
+			return 1;
+		}else{
+			return 0;
+		}
+	}
+
+	t_archivo* unArchivo = list_find(fileSystem.listaArchivos, (void*)esElNombreDeArchivo);
+
+	if(unArchivo != NULL){
+		path_origen = str_replace(path_origen, directorios[cantidadDirectorios], nuevo_nombre);
+		unArchivo->path = path_origen;
+		unArchivo->nombre = nuevo_nombre;
+	}else{
+		printf("El archivo no existe");
+	}
+
+
+}
+
+void yama_mv(char* path_origen, char* path_destino , char tipo){
+
+	if(tipo == 'd') {
+
+		//buscar entrada de directorio de destino
+		path_origen = str_replace(path_origen, "yamafs://", "");
+		if(!string_ends_with(path_origen, "/"))
+			string_append(&path_origen, "/");
+
+		int cantidadDirectorios = countOccurrences(path_origen, "/");
+		char** directorios = string_split(path_origen, "/");
+		int i = 0;
+		int indicePadre = 0;
+		t_directory* directorioOrigen = NULL;
+		for (; i < cantidadDirectorios; i++) {
+			if (directorios[i] == NULL)
+				break;
+			directorioOrigen = buscarDirectorio(indicePadre, directorios[i]);
+			if (directorioOrigen == NULL) {
+				printf("El directorio %s no existe para el padre %i",
+						directorios[i], indicePadre);
+
+			}
+			indicePadre = directorioOrigen->index;
+		}
+
+		path_destino = str_replace(path_destino, "yamafs://", "");
+		if(!string_ends_with(path_destino, "/"))
+			string_append(&path_destino, "/");
+
+	     cantidadDirectorios = countOccurrences(path_destino, "/");
+		 directorios = string_split(path_destino, "/");
+		 i = 0;
+		 indicePadre = 0;
+		t_directory* directorioDestino = NULL;
+		for (; i < cantidadDirectorios; i++) {
+			if (directorios[i] == NULL)
+				break;
+			directorioDestino = buscarDirectorio(indicePadre, directorios[i]);
+			if (directorioDestino == NULL) {
+				printf("El directorio %s no existe para el padre %i",
+						directorios[i], indicePadre);
+
+			}
+			indicePadre = directorioDestino->index;
+		}
+
+		directorioOrigen->nombre = directorios[cantidadDirectorios-1];
+		directorioOrigen->padre = directorioDestino->index;
+	}
+	else
+	{
+		//buscar archivo origen tabla de archivos
+		path_origen=str_replace(path_origen, "yamafs://","");
+		bool buscarArchivoPorPath(void* elem){
+				return string_equals_ignore_case(((t_archivo*)elem)->path,path_origen);
+			};
+
+		t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
+		if(archivoEncontrado != NULL)
+		{
+			Mover_Archivo(path_destino, archivoEncontrado);
+
+		}
+		else
+		{
+			printf("El archivo %s no existe", path_origen);
+		}
 	}
 }

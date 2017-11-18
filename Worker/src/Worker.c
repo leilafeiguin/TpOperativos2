@@ -155,6 +155,12 @@ int main(void) {
 							break;
 							case cop_worker_reduccionGlobal:
 							break;
+							case -1:
+							{
+								printf("Se cayo Master, finaliza Worker.");
+								exit(-1);
+							}
+							break;
 						}
 					}
 				break;

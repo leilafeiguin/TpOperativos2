@@ -28,8 +28,17 @@ int main(void) {
 	dataNode_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
+
 	//MMAP
 	struct stat sb;
+	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
+		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+"); //dudoso el r+
+		fseek(fd, 20971520, SEEK_SET);
+		fputc('\0',fd);
+		fclose(fd);
+
+		}
+
 	int fd=open(configuracion.RUTA_DATABIN, O_RDWR);
 	fstat(fd, &sb);
 	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
@@ -73,7 +82,8 @@ int main(void) {
 		switch (paquete-> codigo_operacion){
 			case cop_datanode_get_bloque:
 			{
-				int numeroBloque = ((t_getbloque*)paquete->data)->numero_bloque;
+				int numeroBloque;
+				memcpy(&numeroBloque, paquete->data, sizeof(int));
 				void* bloqueAenviar = malloc(1024*1024);
 				leer_bloque(numeroBloque, bloqueAenviar);
 				enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
@@ -83,14 +93,23 @@ int main(void) {
 			break;
 			case cop_datanode_setbloque:
 			{
-				int numeroBloque = ((t_setbloque*)paquete->data)->numero_bloque;
-				void* bloqueArecibir = ((t_setbloque*)paquete->data) -> datos_bloque;
+				int numeroBloque;
+				int desplazamiento=0;
+				memcpy(&numeroBloque, paquete->data, sizeof(int));
+				desplazamiento += sizeof(int);
+				void* bloqueArecibir =malloc(1024*1024);
+				memcpy(bloqueArecibir, paquete->data + desplazamiento, 1024*1024);
 				escribir_bloque (numeroBloque, bloqueArecibir);
 				free(bloqueArecibir);
 				free(paquete);
 			}
 			break;
-		break;
+			case -1:
+			{
+				printf("Se cayo FS, finaliza DataNode.");
+				exit(-1);
+			}
+			break;
 		}
 	}
 	return EXIT_SUCCESS;
