@@ -5,6 +5,7 @@
 #include "socketConfig.h"
 #include <sys/stat.h>
 
+
 #define MAX_LINE 4096
 
 //---------------------------------FUNCIONES---------------------------------------------
@@ -170,9 +171,11 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-void transformacion(char* script, char* bloque){
+void transformacion(char* script, char* bloque, char* nombreTransf){
 	char* func;
-	//falta pasar el script a un archivo temporal y desp eliminarlo.
-	sprintf(func, "%s %s", script, bloque);
+	FILE *fp = fopen(nombreTransf, "wb");
+	fwrite(bloque,sizeof(char*)*strlen(bloque),1,fp);
+	sprintf(func, "%s %s", script, nombreTransf);
 	system(func);
+	return;
 }
