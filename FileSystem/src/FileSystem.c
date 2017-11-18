@@ -668,7 +668,7 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 			tamanio+=(tamanioBloque);
 			list_add(archivoPartido->bloquesPartidos, bloquePartido);
 		}
-		free(archivoMapeado);
+		munmap(archivoMapeado, sb.st_size);
 		archivoPartido->cantidadBloques=cantidadBloques;
 		return archivoPartido;
 	}
@@ -705,7 +705,8 @@ t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo){
 		}
 
 		free(renglones);
-		free(archivoMapeado);
+		munmap(archivoMapeado, sb.st_size);
+
 		if(bloquePartido != NULL)
 		{
 			bloquePartido->ultimoByteValido = tamanioBloque;
