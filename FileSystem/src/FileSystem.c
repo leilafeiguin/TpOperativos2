@@ -41,13 +41,17 @@ int main(void) {
 		//todo levantar estructuras del archivo
 	} else {
 	    // El archivo no existe
-		int x;
-			for(x=0; x<100;x++){
-				tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
-				tablaDeDirectorios[x]->index = -2;
-				tablaDeDirectorios[x]->nombre= "";
-				tablaDeDirectorios[x]->padre = 0;
-			}
+		int x=0;
+		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
+		tablaDeDirectorios[x]->index = 0;
+		tablaDeDirectorios[x]->nombre= "/";
+		tablaDeDirectorios[x]->padre = -1;
+		for(x=1; x<100;x++){
+			tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
+			tablaDeDirectorios[x]->index = -2;
+			tablaDeDirectorios[x]->nombre= "";
+			tablaDeDirectorios[x]->padre = 0;
+		}
 	}
 
 
@@ -851,7 +855,6 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 }
 
 void YAMA_mkdir(char* path){
-	//todo arreglar, la segunda vez no anda
 	path= str_replace(path, "yamafs://","");
 		if(!string_ends_with(path, "/"))
 			string_append(&path, "/");
@@ -861,18 +864,20 @@ void YAMA_mkdir(char* path){
 		int i=0;
 		int indicePadre=0;
 		t_directory* directorioActual=NULL;
-		for(;i<cantidadDirectorios-1;i++){
-			if(directorios[i] == NULL) break;
-			directorioActual=buscarDirectorio(indicePadre, directorios[i]);
-			if(directorioActual == NULL){
-				printf("El directorio %s no existe para el padre %i", directorios[i], indicePadre);
-				return;
+		if(cantidadDirectorios == 1){
+			indicePadre = 0;
+		}else{
+			for(;i<cantidadDirectorios-1;i++){
+				if(directorios[i] == NULL) break;
+				directorioActual=buscarDirectorio(indicePadre, directorios[i]);
+				if(directorioActual == NULL){
+					printf("El directorio %s no existe para el padre %i", directorios[i], indicePadre);
+					return;
+				}
+				indicePadre= directorioActual->index;
 			}
-			indicePadre= directorioActual->index;
 		}
-		t_directory* nuevoDirectorio;
-		nuevoDirectorio->nombre = directorios[cantidadDirectorios];
-		nuevoDirectorio->padre = indicePadre;
+
 		int libre = 0;
 		while(tablaDeDirectorios[libre]->index != -2 && libre<100){
 			libre++;
@@ -880,7 +885,9 @@ void YAMA_mkdir(char* path){
 		if(libre==100){
 			printf("La tabla de directorios esta llena");
 		}else{
-			tablaDeDirectorios[libre] = nuevoDirectorio;
+			tablaDeDirectorios[libre]->index= libre;
+			tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios-1];
+			tablaDeDirectorios[libre]->padre = indicePadre;
 			printf("Se creo el directorio");
 		}
 		return;
@@ -916,11 +923,13 @@ void ls(char*path){
 	t_list* listaArchivos=list_filter(fileSystem.listaArchivos,buscarArchivoPorPath);
 
 	void imprimirDirectorios(void* elem){
-		printf("Directorio: %s", ((t_directory*)elem)->nombre);
+		if(((t_directory*)elem)->index != -2){
+			printf("Directorio: %s\n", ((t_directory*)elem)->nombre);
+		}
 	}
 
 	void imprimirArchivos(void* elem){
-			printf("Archivo: %s", ((t_archivo*)elem)->nombre);
+			printf("Archivo: %s\n", ((t_archivo*)elem)->nombre);
 		}
 
 	list_iterate(listaDirectorios, imprimirDirectorios);
