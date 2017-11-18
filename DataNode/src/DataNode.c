@@ -52,6 +52,7 @@ int main(void) {
 	strcpy(paquete->ip,ip);
 	paquete->puertoWorker = atoi(configuracion.PUERTO_WORKER);
 	paquete->tamanio = sb.st_size;
+
 	paquete->nombreNodo = malloc(strlen( configuracion.NOMBRE_NODO )+1);
 	strcpy(paquete->nombreNodo, configuracion.NOMBRE_NODO);
 

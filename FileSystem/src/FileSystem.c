@@ -194,6 +194,7 @@ int main(void) {
 						break;
 						case cop_handshake_datanode:
 							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_datanode);
+							printf("Se conecto un nodo");
 							//Falta la consideracion si se levanta de un estado anterior
 							break;
 						case cop_datanode_info:
@@ -867,47 +868,49 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 
 void YAMA_mkdir(char* path){
 	path= str_replace(path, "yamafs://","");
-		if(!string_ends_with(path, "/"))
-			string_append(&path, "/");
+	if(!string_ends_with(path, "/")){
+		string_append(&path, "/");
+	}
 
-		int cantidadDirectorios=countOccurrences(path, "/");
-		char** directorios=string_split(path, "/");
-		int i=0;
-		int indicePadre=0;
-		t_directory* directorioActual=NULL;
-		if(cantidadDirectorios == 1){
-			indicePadre = 0;
-		}else{
-			for(;i<cantidadDirectorios-1;i++){
-				if(directorios[i] == NULL) break;
-				directorioActual=buscarDirectorio(indicePadre, directorios[i]);
-				if(directorioActual == NULL){
-					printf("El directorio %s no existe para el padre %i", directorios[i], indicePadre);
-					return;
-				}
-				indicePadre= directorioActual->index;
+	int cantidadDirectorios=countOccurrences(path, "/");
+	char** directorios=string_split(path, "/");
+	int i=0;
+	int indicePadre=0;
+	t_directory* directorioActual=NULL;
+	if(cantidadDirectorios == 1){
+		indicePadre = 0;
+	}else{//revisar para el caso que crean multiples directorios
+		for(;i<cantidadDirectorios-1;i++){
+			if(directorios[i] == NULL) break;
+			directorioActual=buscarDirectorio(indicePadre, directorios[i]);
+			if(directorioActual == NULL){
+				printf("El directorio %s no existe para el padre %i\n", directorios[i], indicePadre);
+				return;
 			}
+			indicePadre= directorioActual->index;
 		}
+	}
 
-		int libre = 0;
-		while(tablaDeDirectorios[libre]->index != -2 && libre<100){
-			libre++;
-		}
-		if(libre==100){
-			printf("La tabla de directorios esta llena");
-		}else{
-			tablaDeDirectorios[libre]->index= libre;
-			tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios-1];
-			tablaDeDirectorios[libre]->padre = indicePadre;
-			printf("Se creo el directorio");
-		}
-		return;
+	int libre = 0;
+	while(tablaDeDirectorios[libre]->index != -2 && libre<100){
+		libre++;
+	}
+	if(libre==100){
+		printf("La tabla de directorios esta llena\n");
+	}else{
+		tablaDeDirectorios[libre]->index= libre;
+		tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios-1];
+		tablaDeDirectorios[libre]->padre = indicePadre;
+		printf("Se creo el directorio\n");
+	}
+	return;
 }
 
 void ls(char*path){
 	path= str_replace(path, "yamafs://","");
-	if(!string_ends_with(path, "/"))
+	if(!string_ends_with(path, "/")){
 		string_append(&path, "/");
+	}
 
 	int cantidadDirectorios=countOccurrences(path, "/");
 	char** directorios=string_split(path, "/");
@@ -934,7 +937,7 @@ void ls(char*path){
 	t_list* listaArchivos=list_filter(fileSystem.listaArchivos,buscarArchivoPorPath);
 
 	void imprimirDirectorios(void* elem){
-		if(((t_directory*)elem)->index != -2){
+		if(((t_directory*)elem)->nombre != "" && ((t_directory*)elem)->index != -2){
 			printf("Directorio: %s\n", ((t_directory*)elem)->nombre);
 		}
 	}
@@ -952,8 +955,7 @@ t_list* obtenerSubdirectorios(int indicePadre){
 	int x;
 	t_list* listaDirectorios=list_create();
 	for(x=0; x<100;x++){
-
-		if(tablaDeDirectorios[x]->padre == indicePadre)
+		if(tablaDeDirectorios[x]->padre == indicePadre && tablaDeDirectorios[x]->index != -2)
 			list_add( listaDirectorios, tablaDeDirectorios[x]);
 	}
 

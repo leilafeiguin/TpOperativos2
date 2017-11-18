@@ -29,4 +29,4 @@ worker_configuracion get_configuracion() {
 }
 
 char* apareo (char* paths []);
-void transformacion(char* , char*);
+void transformacion(char* , char*, char*);
