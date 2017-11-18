@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+char* archivo;
 int main(void) {
 	t_log* logger;
 	char* fileLog;
@@ -33,15 +34,14 @@ int main(void) {
 	struct stat sb;
 	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+"); //dudoso el r+
-		fseek(fd, 20971520, SEEK_SET);
-		fputc('\0',fd);
+		ftruncate(fileno(fd), 20*1024*1024);
 		fclose(fd);
 
 		}
 
 	int fd=open(configuracion.RUTA_DATABIN, O_RDWR);
 	fstat(fd, &sb);
-	char* archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	 archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
 
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
@@ -52,7 +52,7 @@ int main(void) {
 	strcpy(paquete->ip,ip);
 	paquete->puertoWorker = atoi(configuracion.PUERTO_WORKER);
 	paquete->tamanio = sb.st_size;
-	paquete->nombreNodo = malloc(strlen(paquete->nombreNodo )+1);
+	paquete->nombreNodo = malloc(strlen( configuracion.NOMBRE_NODO )+1);
 	strcpy(paquete->nombreNodo, configuracion.NOMBRE_NODO);
 
 	int longitudIp=strlen(paquete->ip)+1;
@@ -85,7 +85,7 @@ int main(void) {
 				int numeroBloque;
 				memcpy(&numeroBloque, paquete->data, sizeof(int));
 				void* bloqueAenviar = malloc(1024*1024);
-				leer_bloque(numeroBloque, bloqueAenviar);
+				leer_bloque_datanode(numeroBloque, bloqueAenviar);
 				enviar(fileSystemSocket, cop_datanode_get_bloque_respuesta, 1024*1024, bloqueAenviar);
 				free(bloqueAenviar);
 				free(paquete);
@@ -99,7 +99,7 @@ int main(void) {
 				desplazamiento += sizeof(int);
 				void* bloqueArecibir =malloc(1024*1024);
 				memcpy(bloqueArecibir, paquete->data + desplazamiento, 1024*1024);
-				escribir_bloque (numeroBloque, bloqueArecibir);
+				escribir_bloque_datanode (numeroBloque, bloqueArecibir);
 				free(bloqueArecibir);
 				free(paquete);
 			}
@@ -115,4 +115,19 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+
+
+void leer_bloque_datanode(int numeroBloque, void* bloqueAleer) {
+	int posicion = (numeroBloque *1024*1024);
+	memcpy (bloqueAleer, archivo[numeroBloque*1024*1024], 1024*1024);
+	return;
+}
+
+void escribir_bloque_datanode(int numeroBloque, void* bloqueAescribir) {
+	int posicion= (numeroBloque *1024*1024);
+	memcpy (archivo[numeroBloque*1024*1024],bloqueAescribir,1024*1024);
+	return;
+
+
+}
 

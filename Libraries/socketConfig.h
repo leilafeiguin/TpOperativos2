@@ -113,7 +113,7 @@ typedef struct t_infobloque
 	int finBloque;
 }t_infobloque;
 
-char* archivo;
+
 
 /**	@NAME: conectar_a
  * 	@DESC: Intenta conectarse.
@@ -192,8 +192,9 @@ bool comprobar_archivo(char* path);
  */
 char* obtener_mi_ip();
 
+void leer_bloque_datanode(int numeroBloque, void* bloqueAleer);
 
-
+void escribir_bloque_datanode(int numeroBloque, void* bloqueAescribir) ;
 
 
 

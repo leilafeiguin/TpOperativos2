@@ -283,19 +283,6 @@ void enviar_archivo(un_socket socket, char* path){
 	free(archivo);
 }
 
-void leer_bloque(int numeroBloque, void* bloqueAleer) {
-	int posicion = (numeroBloque *1024*1024);
-	memcpy (bloqueAleer, archivo[numeroBloque*1024*1024], 1024*1024);
-	return;
-}
-
-void escribir_bloque(int numeroBloque, void* bloqueAescribir) {
-	int posicion= (numeroBloque *1024*1024);
-	memcpy (archivo[numeroBloque*1024*1024],bloqueAescribir,1024*1024);
-	return;
-
-
-}
 
 
 bool comprobar_archivo(char* path){

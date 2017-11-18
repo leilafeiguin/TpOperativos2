@@ -398,6 +398,8 @@ int main(void) {
 										exit(-1);
 									}else if (socketActual == socketMaster){
 										//todo eliminar job y planif
+									}else{//DataNode
+
 									}
 								}
 								break;

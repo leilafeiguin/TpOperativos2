@@ -223,9 +223,18 @@ int main(void) {
 							memcpy(infoNodo->nombreNodo, paqueteRecibido->data + desplazamiento, longitudNombre);
 							desplazamiento+=longitudNombre;
 
+							int cantidad = (infoNodo->tamanio / (1024*1024)) / 8;
+							if( (infoNodo->tamanio / (1024*1024)) % 8 != 0)
+								cantidad++;
+
+							char data[cantidad];
 							t_bitarray* unBitmap;
-							char* data = {00000000000000000000};
-							unBitmap = bitarray_create(data, 3);
+							int i=0;
+							for(; i<cantidad; i++){
+								data[i] = 0b00000000;
+							}
+
+							unBitmap = bitarray_create(data, cantidad);
 							t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap, socketActual , infoNodo->ip, infoNodo->puertoWorker, infoNodo->tamanio);
 							list_add(fileSystem.ListaNodos, unNodo);
 						}
@@ -491,10 +500,10 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 		unBloqueAux->nroBloque = i;
 		t_bloque_particion* bloqueParticion = list_get(archivoPartido->bloquesPartidos, i);
 		unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
-		unsigned long int tamanioBloque = strlen(bloqueParticion->contenido) * sizeof(char*);
-		unBloqueAux->tamanioBloque = tamanioBloque;
+
 
 		t_nodo* nodo1= buscar_nodo(respuesta->nodo1);
+		unBloqueAux->copia1 = malloc(sizeof(ubicacionBloque));
 		unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
 		unBloqueAux->copia1->nroBloque = respuesta->bloque1;
 
@@ -506,6 +515,7 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
 		actualizarBitmap(nodo1);
 
 		t_nodo* nodo2= buscar_nodo(respuesta->nodo2);
+		unBloqueAux->copia2 = malloc(sizeof(ubicacionBloque));
 		unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
 		unBloqueAux->copia2->nroBloque = respuesta->bloque2;
 
@@ -1352,7 +1362,7 @@ t_nodoasignado* escribir_bloque (void* bloque){
 	numBloque = buscarBloque(nodolibre);
 	enviar_bloque_a_escribir(numBloque,buffer,nodolibre ,bloque_partido->ultimoByteValido);
 	respuesta->bloque2=numBloque;
-	respuesta->nodo1=string_duplicate(nodolibre->nroNodo);
+	respuesta->nodo2=string_duplicate(nodolibre->nroNodo);
 
 	return respuesta;
 }
@@ -1384,16 +1394,19 @@ void crear_subcarpeta(char* nombre){
 
 void actualizarBitmap(t_nodo* unNodo){
 	crear_subcarpeta("metadata/bitmaps/");
-	char* aux;
-	aux = "";
-	strcat(aux, "metadata/bitmaps/");
-	strcat(aux, unNodo->nroNodo);
-	strcat(aux, ".dat");
+
+	char* aux=malloc(200);
+
+	string_append(&aux, "metadata/bitmaps/");
+	string_append(&aux, unNodo->nroNodo);
+	string_append(&aux, ".dat");
 	FILE * file= fopen(aux, "wb");
 	if (file != NULL) {
 		fwrite(unNodo->bitmap->bitarray,strlen(unNodo->bitmap->bitarray),1,file);
 		fclose(file);
 		}
+
+	free(aux);
 }
 
 void actualizarArchivoTablaNodos(){
