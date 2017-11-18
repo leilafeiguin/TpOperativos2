@@ -211,5 +211,8 @@ void actualizarTablaArchivos();
 // Actualiza el temporal que persiste la estructura de un t_archivo perteneciente a la lista listaArchivos (fs)
 void actualizarArchivo(t_archivo*);
 
+// Elimina de manera logica un archivo
+void eliminar_archivo(char*);
+
 
 

@@ -992,6 +992,12 @@ void cat(char* path){
 	list_iterate(archivoEncontrado->bloques,imprimirPorPantallaContenidoBloque);
 }
 
+void eliminar_archivo(char* path){
+	// Eliminar archivo de forma logica
+	return;
+}
+
+
 void hiloFileSystem_Consola(void * unused){
 	printf("Consola Iniciada. Ingrese una opcion \n");
 	char * linea;
@@ -1017,7 +1023,28 @@ void hiloFileSystem_Consola(void * unused){
 				free(linea);
 			}else if (strcmp(primeraPalabra, "rm") == 0){
 				printf("Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
-				parametros = validaCantParametrosComando(linea, 1);
+				if(validaCantParametrosComando(linea, 1) != 0){
+					//Elimina un archivo
+					parametros = validaCantParametrosComando(linea, 1);
+					eliminar_archivo(parametros[1]);
+
+				}else if(validaCantParametrosComando(linea, 2) != 0){
+					parametros = validaCantParametrosComando(linea, 2);
+					if(parametros[1] == "-d"){
+						//Elimina un Directorio
+					}else{
+						printf("El primer parametro es invalido");
+					}
+				}else if(validaCantParametrosComando(linea, 4) != 0){
+					parametros = validaCantParametrosComando(linea, 4);
+					if(parametros[1] == "-b"){
+						//Elimina un Bloque
+					}else{
+						printf("El primer parametro es invalido");
+					}
+				}else{
+					//La cantidad de params es incorrecta
+				}
 				free(linea);
 			}else if (strcmp(primeraPalabra, "rename") == 0){
 				printf("Renombra un Archivo o Directorio\n");
@@ -1089,7 +1116,6 @@ t_nodo* buscar_nodo_libre (char* nodoAnterior){
 	}
 	return list_find(fileSystem.ListaNodos, buscarLibre);
 }
-
 
 int buscarBloque(t_nodo* nodo){
 	int tamanio= bitarray_get_max_bit (nodo->bitmap);
@@ -1246,9 +1272,8 @@ void actualizarArchivo(t_archivo* unArchivo){
 //	}
 //
 	char* ubicacion = "metadata/archivos/";
-//  strcat(ubicacion, (char*)cantidadDirectorios);
 	crear_subcarpeta(ubicacion);
-
+	//strcat(ubicacion, itoa(cantidadDirectorios));
 	FILE * fp= fopen(ubicacion, "w");
 	fprintf(fp,"%s",unArchivo->path);
 	fprintf(fp,"TAMANIO=%i\n",unArchivo->tamanio);
@@ -1264,4 +1289,3 @@ void actualizarArchivo(t_archivo* unArchivo){
 		fprintf(fp,"BLOQUE%iBYTES=%i\n",i,unBloque->tamanioBloque);
 	}
 }
-
