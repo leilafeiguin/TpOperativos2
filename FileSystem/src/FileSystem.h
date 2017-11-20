@@ -48,7 +48,7 @@ typedef struct ubicacionBloque {
 
 typedef struct t_bloque {
 	int nroBloque;
-	unsigned long int tamanioBloque; //todo marco revisa si hace falta este campo
+
 	ubicacionBloque* copia1;
 	ubicacionBloque* copia2;
 	unsigned long int finBloque;
