@@ -26,6 +26,7 @@ dataNode_configuracion get_configuracion() {
 	configuracion.IP_NODO = get_campo_config_string(archivo_configuracion, "IP_NODO");
 	configuracion.PUERTO_DATANODE = get_campo_config_string(archivo_configuracion, "PUERTO_DATANODE");
 	configuracion.RUTA_DATABIN = get_campo_config_string(archivo_configuracion, "RUTA_DATABIN");
+	configuracion.PUERTO_WORKER = get_campo_config_string(archivo_configuracion, "PUERTO_WORKER");
 	return configuracion;
 }
 

@@ -16,7 +16,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-char* archivo;
+void* archivo;
 int main(void) {
 	t_log* logger;
 	char* fileLog;
@@ -47,7 +47,7 @@ int main(void) {
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
 	realizar_handshake(fileSystemSocket, cop_handshake_datanode);
 	t_paquete_datanode_info_list* paquete = malloc(sizeof(t_paquete_datanode_info_list));
-	char*ip=obtener_mi_ip();
+	char*ip=configuracion.IP_NODO;
 	paquete->ip= malloc(strlen(ip)+1);
 	strcpy(paquete->ip,ip);
 	paquete->puertoWorker = atoi(configuracion.PUERTO_WORKER);
@@ -120,13 +120,13 @@ int main(void) {
 
 void leer_bloque_datanode(int numeroBloque, void* bloqueAleer) {
 	int posicion = (numeroBloque *1024*1024);
-	memcpy (bloqueAleer, archivo[numeroBloque*1024*1024], 1024*1024);
+	memcpy (bloqueAleer, archivo + posicion, 1024*1024);
 	return;
 }
 
 void escribir_bloque_datanode(int numeroBloque, void* bloqueAescribir) {
 	int posicion= (numeroBloque *1024*1024);
-	memcpy (archivo[numeroBloque*1024*1024],bloqueAescribir,1024*1024);
+	memcpy (archivo+ posicion,bloqueAescribir,1024*1024);
 	return;
 
 

@@ -236,7 +236,7 @@ int main(void) {
 							}
 
 							unBitmap = bitarray_create(data, cantidad);
-							t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap, socketActual , infoNodo->ip, infoNodo->puertoWorker, infoNodo->tamanio);
+							t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap, socketActual , infoNodo->ip, infoNodo->puertoWorker, infoNodo->tamanio, cantidad);
 							list_add(fileSystem.ListaNodos, unNodo);
 						}
 							//falta agregar otras estructuras administrativas
@@ -356,13 +356,14 @@ int main(void) {
 							}
 							else
 							{
-								printf("Se cayo un DataNode, se elimina de la lista de nodos.");
+								printf("Se cayo un DataNode, se elimina de la lista de nodos.\n");
 								bool eliminarNodoXSocket(void* elem){
 										return (((t_nodo*)elem)->socket ==  socketActual);
 									}
 
 
 								t_nodo* nodo =list_remove_by_condition(fileSystem.ListaNodos, eliminarNodoXSocket);
+								FD_CLR(nodo->socket, &master); //Agregar al master SET
 								free(nodo);
 							}
 						}
@@ -494,10 +495,11 @@ void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo){
     nuevoArchivo->indiceDirectorioPadre = padre;
     nuevoArchivo->nombre = file;
     nuevoArchivo->path = destino;
+    nuevoArchivo->bloques = list_create();
 	int i=0;
 	for(;i<archivoPartido->cantidadBloques;i++){
 		t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos,i));
-		t_bloque* unBloqueAux=malloc(sizeof(t_bloque*));
+		t_bloque* unBloqueAux=malloc(sizeof(t_bloque));
 		unBloqueAux->nroBloque = i;
 		t_bloque_particion* bloqueParticion = list_get(archivoPartido->bloquesPartidos, i);
 		unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
@@ -965,6 +967,7 @@ t_list* obtenerSubdirectorios(int indicePadre){
 
 
 void calcular_md5(char* path){
+	path= str_replace(path, "yamafs://","");
 	bool buscarArchivoPorPath(void* elem){
 			return string_equals_ignore_case(((t_archivo*)elem)->path,path);
 		};
@@ -1046,6 +1049,7 @@ void calcular_md5(char* path){
 }
 
 void cat(char* path){
+	path= str_replace(path, "yamafs://","");
 	bool buscarArchivoPorPath(void* elem){
 		return string_equals_ignore_case(((t_archivo*)elem)->path,path);
 	};
@@ -1114,8 +1118,8 @@ void hiloFileSystem_Consola(void * unused){
 
 	while(1) {
 		linea = readline(">");
-		if (!linea) {
-			break;
+		if (!linea || string_equals_ignore_case(linea, "")) {
+			continue;
 		}else{
 			add_history(linea);
 			char** parametros;
