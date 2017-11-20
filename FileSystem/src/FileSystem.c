@@ -44,7 +44,7 @@ int main(void) {
 		int x=0;
 		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 		tablaDeDirectorios[x]->index = 0;
-		tablaDeDirectorios[x]->nombre= "/";
+		tablaDeDirectorios[x]->nombre= "root";
 		tablaDeDirectorios[x]->padre = -1;
 		for(x=1; x<100;x++){
 			tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
@@ -937,7 +937,7 @@ void ls(char*path){
 	t_list* listaArchivos=list_filter(fileSystem.listaArchivos,buscarArchivoPorPath);
 
 	void imprimirDirectorios(void* elem){
-		if(((t_directory*)elem)->nombre != "" && ((t_directory*)elem)->index != -2){
+		if(((t_directory*)elem)->nombre != NULL && ((t_directory*)elem)->index != -2){
 			printf("Directorio: %s\n", ((t_directory*)elem)->nombre);
 		}
 	}

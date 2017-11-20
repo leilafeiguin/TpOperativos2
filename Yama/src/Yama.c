@@ -394,7 +394,7 @@ int main(void) {
 								case -1:
 								{
 									if(socketActual == socketFS){
-										printf("Se cayo FS, finaliza Yama.");
+										printf("Se cayo FS, finaliza Yama.\n");
 										exit(-1);
 									}else if (socketActual == socketMaster){
 										//todo eliminar job y planif
