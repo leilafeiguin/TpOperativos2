@@ -20,7 +20,7 @@ t_list* tabla_estados;
 yama_configuracion configuracion;
 int main(void) {
 	int socketFS;
-	int socketMaster;
+
 	t_log* logger;
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
@@ -34,7 +34,7 @@ int main(void) {
 
 	t_tabla_planificacion tabla;
 	tabla.workers = list_create();
-	t_job job;
+	/*t_job job;
 	job.master = 1;
 	job.nodo = 1;
 	job.bloque = 8;
@@ -102,7 +102,7 @@ int main(void) {
 	job3.estado = error;
 	procesar_job(2, job3);
 
-
+*/
 	fd_set master;    // master file descriptor list
 	fd_set read_fds;  // temp file descriptor list for select()
 	int fd_max;        // maximum file descriptor number
@@ -200,7 +200,7 @@ int main(void) {
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
-								socketMaster = socketActual;
+
 							break;
 							case cop_archivo_programa:
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
@@ -335,7 +335,8 @@ int main(void) {
 
 								list_iterate(archivoNodo->workersAsignados, datosWorker);
 
-								//falta terminar de enviar la estructura archivoNodo
+								//todo leila falta agregar por cada nodo resultante de la planif
+								// agregar un elemento a t_estados. Refactoriza como quieras la estructura t_job
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								socketFS = socketActual;
 
@@ -396,11 +397,10 @@ int main(void) {
 									if(socketActual == socketFS){
 										printf("Se cayo FS, finaliza Yama.\n");
 										exit(-1);
-									}else if (socketActual == socketMaster){
+									}/*else if (socketActual == socketMaster){
 										//todo eliminar job y planif
-									}else{//DataNode
-
-									}
+									}*/ // todo leila, aca tenes que  marcar como error - desconexion todos los t_job que tienen socketMaster == socketActual.
+									// buscar todos los t_clock que tienen workerId == a todos los worker id que eliminaste recien
 								}
 								break;
 								}
@@ -436,7 +436,7 @@ void procesar_job(int jobId, t_job datos){
 		list_add(job->contenido, nuevoJob);
 		list_add(tabla_estados, job);
 	}else{
-		t_job* nodo = buscar_por_nodo(datos.nodo, registro->contenido);
+		t_job* nodo = buscar_por_nodo(datos.worker_id, registro->contenido);
 		if (nodo == NULL){
 			t_job* nuevoJob= crearJob(datos);
 			list_add(registro->contenido, nuevoJob);
@@ -454,8 +454,8 @@ t_job* crearJob(t_job datos){
 
 void setearJob(t_job* nuevoJob, t_job datos){
 	nuevoJob->bloque=datos.bloque;
-	nuevoJob->master = datos.master;
-	nuevoJob->nodo = datos.nodo;
+	nuevoJob->socketMaster = datos.socketMaster;
+	nuevoJob->worker_id = datos.worker_id;
 	nuevoJob->cantidadTemporal = datos.cantidadTemporal;
 	nuevoJob->estado=datos.estado;
 	nuevoJob->etapa =datos.etapa;
@@ -466,7 +466,7 @@ void setearJob(t_job* nuevoJob, t_job datos){
 
 void* buscar_por_nodo (int nodo, t_list* listaNodos){
 	int es_el_nodo(t_job* job){
-		return job->nodo == nodo;
+		return job->worker_id == nodo;
 	}
 	return list_find(listaNodos, (void*) es_el_nodo);
 }

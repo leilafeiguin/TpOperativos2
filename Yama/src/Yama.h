@@ -25,8 +25,8 @@ typedef enum t_estado {
 } t_estado;
 
 typedef struct t_job{
-	int master;
-	int nodo;
+	int socketMaster;
+	char* worker_id;//nodo id
 	int bloque;
 	t_etapa etapa;
 	int cantidadTemporal;
