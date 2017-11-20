@@ -44,7 +44,7 @@ int main(void) {
 		int x=0;
 		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 		tablaDeDirectorios[x]->index = 0;
-		tablaDeDirectorios[x]->nombre= "/";
+		tablaDeDirectorios[x]->nombre= "root";
 		tablaDeDirectorios[x]->padre = -1;
 		for(x=1; x<100;x++){
 			tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
@@ -81,7 +81,7 @@ int main(void) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 	if ((rv = getaddrinfo(NULL, configuracion.PUERTO_FS, &hints, &ai)) != 0) {
-		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+		fprintf(stderr, "selectserver: %s", gai_strerror(rv));
 		exit(1);
 	}
 	for(p = ai; p != NULL; p = p->ai_next){
@@ -99,7 +99,7 @@ int main(void) {
 	}
 	// if we got here, it means we didn't get bound
 	if (p == NULL){
-		fprintf(stderr, "selectserver: failed to bind\n");
+		fprintf(stderr, "selectserver: failed to bind");
 		exit(2);
 	}
 	freeaddrinfo(ai); // all done with this
@@ -194,7 +194,7 @@ int main(void) {
 						break;
 						case cop_handshake_datanode:
 							esperar_handshake(socketActual, paqueteRecibido, cop_handshake_datanode);
-							printf("Se conecto un nodo");
+							printf("Se conecto un nodo\n");
 							//Falta la consideracion si se levanta de un estado anterior
 							break;
 						case cop_datanode_info:
@@ -351,7 +351,7 @@ int main(void) {
 						{
 							if(socketActual == socketYama)
 							{
-								printf("Se cayo Yama, finaliza FS.");
+								printf("Se cayo Yama, finaliza FS.\n");
 							    exit(-1);
 							}
 							else
@@ -410,7 +410,7 @@ void CP_TO (char* origen, char*destino){
 
 	if(archivoEncontrado == NULL)
 	{
-		printf("El path %s no se encuentra en el FS", path);
+		printf("El path %s no se encuentra en el FS\n", path);
 		return;
 	}
 
@@ -448,7 +448,7 @@ void CP_TO (char* origen, char*destino){
 					if(bloque->copia2 != NULL)
 						nombre2=bloque->copia2->nroNodo;
 
-					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s\n", bloque->nroBloque,nombre1, nombre2);
 					return;
 				}
 
@@ -805,7 +805,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 	t_nodo* nodoDestino= buscar_nodo(nombreNodo);
 	if(nodoDestino == NULL || nodoDestino->ocupado)
 	{
-		printf("no existe el nodo %s o está ocupado" , nombreNodo);
+		printf("no existe el nodo %s o está ocupado. \n" , nombreNodo);
 		return;
 
 	}
@@ -817,7 +817,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 	t_archivo* archivoEncontrado=list_find(fileSystem.listaArchivos,buscarArchivoPorPath);
 	if(archivoEncontrado == NULL)
 	{
-		printf("El path %s no se encuentra en el FS", path);
+		printf("El path %s no se encuentra en el FS. \n", path);
 		return;
 	}
 
@@ -829,7 +829,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 
 	if(bloque == NULL)
 	{
-		printf("El bloque %i no se encuentra en el FS", numeroBloque);
+		printf("El bloque %i no se encuentra en el FS.\n", numeroBloque);
 		return;
 	}
 
@@ -863,7 +863,7 @@ void cp_block(char* path, int numeroBloque, char* nombreNodo){
 	}
 	else
 	{
-		printf("No tiene ninguna copia para tomar de origen");
+		printf("No tiene ninguna copia para tomar de origen.\n");
 		return;
 	}
 }
@@ -923,7 +923,7 @@ void ls(char*path){
 		if(directorios[i] == NULL) break;
 		directorioActual=buscarDirectorio(indicePadre, directorios[i]);
 		if(directorioActual == NULL){
-			printf("El directorio %s no existe para el padre %i", directorios[i], indicePadre);
+			printf("El directorio %s no existe para el padre %i\n", directorios[i], indicePadre);
 			return;
 		}
 		indicePadre= directorioActual->index;
@@ -939,7 +939,7 @@ void ls(char*path){
 	t_list* listaArchivos=list_filter(fileSystem.listaArchivos,buscarArchivoPorPath);
 
 	void imprimirDirectorios(void* elem){
-		if(((t_directory*)elem)->nombre != "" && ((t_directory*)elem)->index != -2){
+		if(((t_directory*)elem)->nombre != NULL && ((t_directory*)elem)->index != -2){
 			printf("Directorio: %s\n", ((t_directory*)elem)->nombre);
 		}
 	}
@@ -976,7 +976,7 @@ void calcular_md5(char* path){
 
 	if(archivoEncontrado == NULL)
 	{
-		printf("El path %s no se encuentra en el FS", path);
+		printf("El path %s no se encuentra en el FS\n", path);
 		return;
 	}
 
@@ -1017,7 +1017,7 @@ void calcular_md5(char* path){
 					if(bloque->copia2 != NULL)
 						nombre2=bloque->copia2->nroNodo;
 
-					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s\n", bloque->nroBloque,nombre1, nombre2);
 					return;
 				}
 
@@ -1058,7 +1058,7 @@ void cat(char* path){
 
 	if(archivoEncontrado == NULL)
 	{
-		printf("El path %s no se encuentra en el FS", path);
+		printf("El path %s no se encuentra en el FS\n", path);
 		return;
 	}
 
@@ -1090,7 +1090,7 @@ void cat(char* path){
 					if(bloque->copia2 != NULL)
 						nombre2=bloque->copia2->nroNodo;
 
-					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s", bloque->nroBloque,nombre1, nombre2);
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s\n", bloque->nroBloque,nombre1, nombre2);
 					return;
 				}
 
@@ -1145,14 +1145,14 @@ void hiloFileSystem_Consola(void * unused){
 					if(parametros[1] == "-d"){
 						//Elimina un Directorio
 					}else{
-						printf("El primer parametro es invalido");
+						printf("El primer parametro es invalido\n");
 					}
 				}else if(validaCantParametrosComando(linea, 4) != 0){
 					parametros = validaCantParametrosComando(linea, 4);
 					if(parametros[1] == "-b"){
 						//Elimina un Bloque
 					}else{
-						printf("El primer parametro es invalido");
+						printf("El primer parametro es invalido\n");
 					}
 				}else{
 					//La cantidad de params es incorrecta
@@ -1475,9 +1475,9 @@ void actualizarArchivo(t_archivo* unArchivo){
 	crear_subcarpeta(ubicacion);
 	//strcat(ubicacion, itoa(cantidadDirectorios));
 	FILE * fp= fopen(ubicacion, "w");
-	fprintf(fp,"%s",unArchivo->path);
+	fprintf(fp,"%s\n",unArchivo->path);
 	fprintf(fp,"TAMANIO=%lu\n",unArchivo->tamanio);
-	fprintf(fp, "TIPO=%i", unArchivo->tipoArchivo);
+	fprintf(fp, "TIPO=%i\n", unArchivo->tipoArchivo);
 	int cantBloques = list_size(unArchivo->bloques);
 	int i = 0;
 	for(; i<cantBloques; i++){
@@ -1511,27 +1511,27 @@ void info_archivo(char* path) {
 		void imprimirInfoBloque(void* elem){
 			t_bloque* bloque= (t_bloque*)elem;
 
-			printf("Bloque numero %i  ---- Fin Bloque %lu", bloque->nroBloque, bloque->finBloque);
+			printf("Bloque numero %i  ---- Fin Bloque %lu\n", bloque->nroBloque, bloque->finBloque);
 			//imprimir numero bloque y fin bloque
 
 			if(bloque->copia1 != NULL)
 			{
 				//imprimir numero bloque y nodo
-				printf("       Copia 1- Nodo %s  - Numero Bloque %i ", bloque->copia1->nroNodo, bloque->copia1->nroBloque);
+				printf("       Copia 1- Nodo %s  - Numero Bloque %i \n", bloque->copia1->nroNodo, bloque->copia1->nroBloque);
 			}
 			else
 			{
-				printf("       Copia 1 - NO EXISTE!");
+				printf("       Copia 1 - NO EXISTE!\n");
 			}
 
 			if(bloque->copia2 != NULL)
 			{
 				//imprimir numero bloque y nodo
-				printf("       Copia 2- Nodo %s  - Numero Bloque %i ", bloque->copia2->nroNodo, bloque->copia2->nroBloque);
+				printf("       Copia 2- Nodo %s  - Numero Bloque %i \n", bloque->copia2->nroNodo, bloque->copia2->nroBloque);
 			}
 			else
 			{
-				printf("       Copia 2 - NO EXISTE!");
+				printf("       Copia 2 - NO EXISTE!\n");
 			}
 
 		}
@@ -1542,7 +1542,7 @@ void info_archivo(char* path) {
 	{
 		//imprimir por pantalla que no existe el archivo
 
-		printf("El archivo %s no existe", path);
+		printf("El archivo %s no existe\n", path);
 	}
 }
 
@@ -1559,7 +1559,7 @@ void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado) {
 			break;
 		directorioActual = buscarDirectorio(indicePadre, directorios[i]);
 		if (directorioActual == NULL) {
-			printf("El directorio %s no existe para el padre %i",
+			printf("El directorio %s no existe para el padre %i\n",
 					directorios[i], indicePadre);
 
 		}
@@ -1594,7 +1594,7 @@ void yama_rename (char* path_origen, char* nuevo_nombre){
 		unArchivo->path = path_origen;
 		unArchivo->nombre = nuevo_nombre;
 	}else{
-		printf("El archivo no existe");
+		printf("El archivo no existe\n");
 	}
 
 
@@ -1619,7 +1619,7 @@ void yama_mv(char* path_origen, char* path_destino , char tipo){
 				break;
 			directorioOrigen = buscarDirectorio(indicePadre, directorios[i]);
 			if (directorioOrigen == NULL) {
-				printf("El directorio %s no existe para el padre %i",
+				printf("El directorio %s no existe para el padre %i\n",
 						directorios[i], indicePadre);
 
 			}
@@ -1640,7 +1640,7 @@ void yama_mv(char* path_origen, char* path_destino , char tipo){
 				break;
 			directorioDestino = buscarDirectorio(indicePadre, directorios[i]);
 			if (directorioDestino == NULL) {
-				printf("El directorio %s no existe para el padre %i",
+				printf("El directorio %s no existe para el padre %i\n",
 						directorios[i], indicePadre);
 
 			}
@@ -1666,7 +1666,7 @@ void yama_mv(char* path_origen, char* path_destino , char tipo){
 		}
 		else
 		{
-			printf("El archivo %s no existe", path_origen);
+			printf("El archivo %s no existe\n", path_origen);
 		}
 	}
 }
