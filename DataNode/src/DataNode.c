@@ -107,7 +107,7 @@ int main(void) {
 			break;
 			case -1:
 			{
-				printf("Se cayo FS, finaliza DataNode.");
+				printf("Se cayo FS, finaliza DataNode.\n");
 				exit(-1);
 			}
 			break;

@@ -158,7 +158,7 @@ int main(void) {
 							break;
 							case -1:
 							{
-								printf("Se cayo Master, finaliza Worker.");
+								printf("Se cayo Master, finaliza Worker.\n");
 								exit(-1);
 							}
 							break;
