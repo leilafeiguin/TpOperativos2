@@ -48,7 +48,6 @@ typedef struct ubicacionBloque {
 
 typedef struct t_bloque {
 	int nroBloque;
-
 	ubicacionBloque* copia1;
 	ubicacionBloque* copia2;
 	unsigned long int finBloque;
@@ -99,7 +98,7 @@ typedef struct t_archivo_partido {
 } t_archivo_partido;
 
 static t_nodo *nodo_create(char* nroNodo, bool ocupado, t_bitarray* bitmap,
-		un_socket socket, char* ipWorker, int puertoWorker, int tamanio, int cantidadBloques) {
+	un_socket socket, char* ipWorker, int puertoWorker, int tamanio, int cantidadBloques) {
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
 	new->nroNodo = nroNodo;

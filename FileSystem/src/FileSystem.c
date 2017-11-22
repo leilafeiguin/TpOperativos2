@@ -972,19 +972,18 @@ int main(void) {
 		t_list* listaArchivos = list_filter(fileSystem.listaArchivos,
 				buscarArchivoPorPath);
 
-		void imprimirDirectorios(void* elem) {
-			if (((t_directory*) elem)->nombre != NULL
-					&& ((t_directory*) elem)->index != -2) {
-				printf("Directorio: %s\n", ((t_directory*) elem)->nombre);
+		void imprimirDirectorios(t_directory* elem) {
+			if (elem->nombre != NULL && elem->index != -2) {
+				printf("Directorio: %s\n", elem->nombre);
 			}
 		}
 
-		void imprimirArchivos(void* elem) {
-			printf("Archivo: %s\n", ((t_archivo*) elem)->nombre);
+		void imprimirArchivos(t_archivo* elem) {
+			printf("Archivo: %s\n", elem->nombre);
 		}
 
-		list_iterate(listaDirectorios, imprimirDirectorios);
-		list_iterate(listaArchivos, imprimirArchivos);
+		list_iterate(listaDirectorios, (void*) imprimirDirectorios);
+		list_iterate(listaArchivos, (void*) imprimirArchivos);
 
 	}
 
@@ -992,9 +991,9 @@ int main(void) {
 		int x;
 		t_list* listaDirectorios = list_create();
 		for (x = 0; x < 100; x++) {
-			if (tablaDeDirectorios[x]->padre == indicePadre
-					&& tablaDeDirectorios[x]->index != -2)
+			if (tablaDeDirectorios[x]->padre == indicePadre && tablaDeDirectorios[x]->index != -2){
 				list_add(listaDirectorios, tablaDeDirectorios[x]);
+			}
 		}
 
 		return listaDirectorios;
