@@ -44,6 +44,8 @@ typedef struct t_directory {
 typedef struct ubicacionBloque {
 	char* nroNodo;
 	int nroBloque; //en nodo
+	char* ip;
+	int puerto;
 } ubicacionBloque;
 
 typedef struct t_bloque {

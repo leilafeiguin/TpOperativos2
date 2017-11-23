@@ -116,48 +116,6 @@ int main(void) {
 		case cop_handshake_yama: {
 			esperar_handshake(socketNuevo, paqueteRecibido, cop_handshake_yama);
 
-			int tamanioTotal = 0;
-			void contabilizarTamanio(void* elemento) {
-				tamanioTotal += (strlen(((t_nodo*) elemento)->ip) + 1
-						+ 3 * sizeof(int));
-			}
-			;
-
-			int cantidadElementos = list_size(fileSystem.ListaNodos);
-			list_iterate(fileSystem.ListaNodos, contabilizarTamanio);
-
-			int desplazamiento = 0;
-			void* buffer = malloc(sizeof(int) + tamanioTotal);
-			memcpy(buffer, &cantidadElementos, sizeof(int));
-			desplazamiento += sizeof(int);
-
-			void copiarABuffer(void* elemento) {
-				int longitudIp = strlen(((t_nodo*) elemento)->ip) + 1;
-				int longitudNombre = strlen(((t_nodo*) elemento)->nroNodo) + 1;
-
-				memcpy(buffer + desplazamiento, &longitudIp, sizeof(int));
-				desplazamiento += sizeof(int);
-				memcpy(buffer + desplazamiento, ((t_nodo*) elemento)->ip,
-						longitudIp);
-				desplazamiento += longitudIp;
-				memcpy(buffer + desplazamiento,
-						&((t_nodo*) elemento)->puertoWorker, sizeof(int));
-				desplazamiento += sizeof(int);
-				memcpy(buffer + desplazamiento, &((t_nodo*) elemento)->tamanio,
-						sizeof(int));
-				desplazamiento += sizeof(int);
-				memcpy(buffer + desplazamiento, &longitudNombre, sizeof(int));
-				desplazamiento += sizeof(int);
-				memcpy(buffer + desplazamiento, ((t_nodo*) elemento)->nroNodo,
-						longitudNombre);
-				desplazamiento += longitudNombre;
-
-			};
-
-			list_iterate(fileSystem.ListaNodos, copiarABuffer);
-
-			enviar(socketNuevo, cop_datanode_info, desplazamiento, buffer);
-
 			socketYama = socketNuevo;
 
 		}
@@ -301,8 +259,12 @@ int main(void) {
 						t_nodoxbloques* nodo = ((t_nodoxbloques*) elemento);
 
 						tamaniototalNodos +=
-								(strlen(((t_nodoxbloques*) elemento)->idNodo)
-										+ 1 + sizeof(int)/*cant bloques*/
+								(       sizeof(int)
+										+strlen(((t_nodoxbloques*) elemento)->idNodo)+ 1 //Id Nodo
+										+ sizeof(int)
+										+strlen(((t_nodoxbloques*) elemento)->ip)+ 1 //IP
+										+ sizeof(int) //Puerto
+										+ sizeof(int)/*cant bloques*/
 										+ list_size(nodo->bloques) * 3
 												* sizeof(int)/*cada bloque tiene 3 int*/);
 					}
@@ -314,6 +276,7 @@ int main(void) {
 					//Serializacion
 					int desplazamiento = 0;
 					int longitudNombre = strlen(pathArchivo) + 1;
+
 					void* buffer = malloc(
 							sizeof(int) + longitudNombre + tamanioTotalBloques
 									+ tamaniototalNodos);
@@ -345,12 +308,24 @@ int main(void) {
 					desplazamiento += sizeof(int);
 
 					void copiarABufferNodos(void* elemento) {
-						int longitudNombreNodo = strlen(
-								((t_nodoxbloques*) elemento)->idNodo) + 1;
-						memcpy(buffer + desplazamiento,
-								((t_nodoxbloques*) elemento)->idNodo,
-								longitudNombreNodo);
+						int longitudNombreNodo = strlen(((t_nodoxbloques*) elemento)->idNodo) + 1;
+						memcpy(buffer + desplazamiento,	&longitudNombreNodo,sizeof(int));
+						desplazamiento += sizeof(int);
+
+						memcpy(buffer + desplazamiento,	((t_nodoxbloques*) elemento)->idNodo,longitudNombreNodo);
 						desplazamiento += longitudNombreNodo;
+
+						int longitudIP = strlen(((t_nodoxbloques*) elemento)->ip) + 1;
+
+						memcpy(buffer + desplazamiento,	&longitudIP,sizeof(int));
+						desplazamiento += sizeof(int);
+
+						memcpy(buffer + desplazamiento,	(((t_nodoxbloques*) elemento)->ip),longitudIP);
+						desplazamiento += longitudIP;
+
+
+						memcpy(buffer + desplazamiento,	((t_nodoxbloques*) elemento)->puerto,sizeof(int));
+						desplazamiento += sizeof(int);
 
 						int cantidadelementos = list_size(
 								((t_nodoxbloques*) elemento)->bloques);
@@ -410,7 +385,9 @@ int main(void) {
 		if (nodo == NULL) {
 			nodo = malloc(sizeof(t_nodoxbloques));
 			nodo->bloques = list_create();
-			nodo->idNodo = bloque->copia1->nroNodo;
+			nodo->idNodo = copia->nroNodo;
+			nodo->ip = string_duplicate(copia->ip);
+			nodo->puerto = copia->puerto;
 			list_add(archivoxnodo->nodos, nodo);
 		}
 

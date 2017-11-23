@@ -104,6 +104,8 @@ typedef struct t_archivoxnodo{
 typedef struct t_nodoxbloques {
 	char * idNodo;
 	t_list* bloques; //t_infobloque
+	char* ip;
+	int puerto;
 }t_nodoxbloques;
 
 typedef struct t_infobloque
@@ -111,6 +113,7 @@ typedef struct t_infobloque
 	int bloqueRelativo;
 	int bloqueAbsoluto;
 	int finBloque;
+
 }t_infobloque;
 
 

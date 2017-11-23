@@ -45,11 +45,13 @@ typedef struct t_clock{
 	char* ip;
 	int puerto;
 	t_list* bloques; //(t_infobloque)
+
 } t_clock;
 
 typedef struct t_tabla_planificacion{
 	t_link_element* clock_actual; //t_clock*
 	t_list* workers; //(t_clock)*
+	char* archivo;
 }t_tabla_planificacion;
 
 
@@ -74,7 +76,7 @@ void sig_handler(int);
 
 void* buscar_por_jobid(int jobId);
 
-void* buscar_por_nodo (int nodo, t_list* listaNodos);
+void* buscar_por_nodo (char* nodo, t_list* listaNodos);
 
 void setearJob(t_job* nuevoJob, t_job datos);
 
@@ -82,6 +84,12 @@ t_job* crearJob(t_job datos);
 
 int availability();
 
-void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxnodo* bloquesxnodo);
+void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* bloquesxnodo);
 
 char* generarDirectorioTemporal();
+
+int CalcularDisponibilidad(t_clock* worker, t_tabla_planificacion* tabla);
+
+int CalcularWLMax(t_tabla_planificacion* tabla);
+
+int CalcularWLWorker(t_clock* worker);

@@ -32,8 +32,9 @@ int main(void) {
     configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-	t_tabla_planificacion tabla;
-	tabla.workers = list_create();
+	t_list* tablas= list_create();
+
+
 	/*t_job job;
 	job.master = 1;
 	job.nodo = 1;
@@ -208,6 +209,10 @@ int main(void) {
 							break;
 							case cop_yama_info_fs:
 							{
+								t_tabla_planificacion* tabla= malloc(sizeof(t_tabla_planificacion));
+								list_add(tablas, tabla);
+								tabla->workers = list_create();
+
 								//Deserializacion
 								t_archivoxnodo* archivoNodo=malloc(sizeof(t_archivoxnodo));
 								archivoNodo->bloquesRelativos =  list_create();
@@ -223,14 +228,15 @@ int main(void) {
 								memcpy(archivoNodo->pathArchivo, paqueteRecibido->data + desplazamiento, longitudNombre);
 								desplazamiento+=longitudNombre;
 
+								tabla->archivo = string_duplicate(archivoNodo->pathArchivo);
 								//Lista bloques relativos
 								int cantidadElementosBloques = 0;
 								memcpy(&cantidadElementosBloques ,paqueteRecibido->data + desplazamiento,sizeof(int));
 								desplazamiento+= sizeof(int);
 
 								for(i=0;i<cantidadElementosBloques;i++){
-									int bloque = 0;
-									memcpy(&bloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+									int* bloque = malloc(sizeof(int));
+									memcpy(bloque, paqueteRecibido->data + desplazamiento, sizeof(int));
 									desplazamiento+= sizeof(int);
 									list_add(archivoNodo->bloquesRelativos, bloque);
 								}
@@ -246,10 +252,26 @@ int main(void) {
 									memcpy(&longitudNombreNodo, paqueteRecibido->data + desplazamiento, sizeof(int));
 									desplazamiento+=sizeof(int);
 
-									char* idNodo;
-									memcpy(&idNodo ,paqueteRecibido->data + desplazamiento,sizeof(int));
-									desplazamiento+= sizeof(int);
+									char* idNodo= malloc(longitudNombreNodo);
+									memcpy(idNodo ,paqueteRecibido->data + desplazamiento,longitudNombreNodo);
+									desplazamiento+= longitudNombreNodo;
 									nodoBloques->idNodo = idNodo;
+
+									int longitudIp;
+									memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
+									desplazamiento += sizeof(int);
+
+									nodoBloques->ip =  malloc(longitudIp);
+									memcpy(nodoBloques->ip, paqueteRecibido->data + desplazamiento, longitudIp);
+									desplazamiento += longitudIp;
+
+									memcpy(&nodoBloques->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+									desplazamiento += sizeof(int);
+									desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
+
+
+
+
 
 									//cantidad elementos lista bloques (t_infobloque)
 									int cantidadElementos = 0;
@@ -273,11 +295,27 @@ int main(void) {
 										desplazamiento+=sizeof(int);
 										infoBloque->finBloque = finBloque;
 
+
 										list_add(nodoBloques->bloques, infoBloque);
 									}
 
-									archivoNodo->nodos = nodoBloques;
+									list_add(archivoNodo->nodos  ,nodoBloques);
 								}
+
+								void armarListaWorker(void* elem){
+
+									t_nodoxbloques* nodoxbloque = ((t_nodoxbloques*)elem);
+
+									t_clock* clock= malloc(sizeof(t_clock));
+									clock->disponibilidad = configuracion.DISPONIBILIDAD_BASE;
+									clock->worker_id = string_duplicate(nodoxbloque->idNodo);
+									clock->ip = string_duplicate(nodoxbloque->ip);
+									clock->puerto = nodoxbloque->puerto;
+									clock->bloques = nodoxbloque->bloques;
+									list_add(tabla->workers, clock );
+								}
+
+								list_iterate(archivoNodo->nodos, armarListaWorker);
 
 								//Evalua y planifica en base al archivo que tiene que transaformar
 								void planificarBloques(void* bloque){
@@ -303,7 +341,7 @@ int main(void) {
 									desplazamiento+=15;
 
 									//puerto (4)
-									memcpy(buffer+desplazamiento, ((t_clock*)worker)->puerto,sizeof(int));
+									memcpy(buffer+desplazamiento, &((t_clock*)worker)->puerto,sizeof(int));
 									desplazamiento+=sizeof(int);
 
 
@@ -316,11 +354,11 @@ int main(void) {
 
 										t_infobloque* infobloque=((t_infobloque*)bloque);
 										//int bloque absoluto (donde esta dentro del nodo)
-										memcpy(buffer+desplazamiento, infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
+										memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
 										desplazamiento+=sizeof(int);
 
 										//int fin de bloque
-										memcpy(buffer+desplazamiento, infobloque->finBloque, sizeof(int));
+										memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
 										desplazamiento+=sizeof(int);
 
 										char* dirTemp=generarDirectorioTemporal();
@@ -359,39 +397,7 @@ int main(void) {
 								//y mandar nuevos sockets
 
 								break;
-							case cop_datanode_info :
-								{
-									int desplazamiento=0;
-									int cantidadElementos;
-									memcpy(&cantidadElementos, paqueteRecibido->data, sizeof(int));
-									desplazamiento += sizeof(int);
 
-									int i=0;
-									for(;i<cantidadElementos;i++){
-										t_clock* worker = malloc(sizeof(t_clock*));
-										int longitudIp;
-										memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
-										desplazamiento += sizeof(int);
-										worker->ip =  malloc(longitudIp);
-										memcpy(worker->ip, paqueteRecibido->data + desplazamiento, longitudIp);
-										desplazamiento += longitudIp;
-
-										memcpy(worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
-										desplazamiento += sizeof(int);
-										desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
-
-										int longitudNombre;
-										memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento, sizeof(int));
-										desplazamiento += sizeof(int);
-										worker->worker_id =  malloc(longitudNombre);
-										memcpy(worker->worker_id, paqueteRecibido->data + desplazamiento, longitudNombre);
-										desplazamiento += longitudNombre;
-
-										list_add(tabla.workers,worker);
-									}
-									tabla.clock_actual = (t_clock*)tabla.workers->head;
-								}
-								break;
 								case -1:
 								{
 									if(socketActual == socketFS){
@@ -420,7 +426,7 @@ void sig_handler(int signo){
     if (signo == SIGUSR1){
         printf("Se recibio SIGUSR1\n");
     	//log_trace(logger, "Se recibio SIGUSR1");
-    	yama_configuracion configuracion = get_configuracion();
+    	configuracion = get_configuracion();
     	printf("Se cargo nuevamente el archivo de configuracion\n");
     	//log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
     }
@@ -464,9 +470,9 @@ void setearJob(t_job* nuevoJob, t_job datos){
 	//asignar el resto de los camposa
 }
 
-void* buscar_por_nodo (int nodo, t_list* listaNodos){
+void* buscar_por_nodo (char* nodo, t_list* listaNodos){
 	int es_el_nodo(t_job* job){
-		return job->worker_id == nodo;
+		return string_equals_ignore_case(job->worker_id , nodo);
 	}
 	return list_find(listaNodos, (void*) es_el_nodo);
 }
@@ -480,12 +486,12 @@ void* buscar_por_jobid(int jobId){
 
 
 
-void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxnodo* archivo){
+void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo){
 
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
 	bool buscarNodoWorker(void*elem){
-		return string_equals_ignore_case(((t_clock*)tabla.clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
+		return string_equals_ignore_case(((t_clock*)tabla->clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
 	}
 	t_nodoxbloques* nodoWorker=list_find(archivo->nodos, buscarNodoWorker);
 
@@ -499,7 +505,7 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 	t_infobloque* infoBloque = list_find(nodoWorker->bloques,existeBloqueEnWorker);
 
 	bool workerContieneBloque(void* elem){
-		return string_equals_ignore_case(((t_clock*)tabla.clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo) &&
+		return string_equals_ignore_case(((t_clock*)tabla->clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo) &&
 				list_any_satisfy(((t_nodoxbloques*)elem)->bloques, existeBloqueEnWorker);
 	}
 
@@ -520,20 +526,20 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 	}
 
 	if(list_any_satisfy(archivo->nodos, workerContieneBloque)){
-		if(((t_clock*)tabla.clock_actual->data)->disponibilidad > 0)
+		if(CalcularDisponibilidad(((t_clock*)tabla->clock_actual->data), tabla)> 0)
 		{
-			asignarBloqueAWorker(((t_clock*)tabla.clock_actual->data), numBloqueParaLista, archivo);
-			tabla.clock_actual = tabla.clock_actual->next;
-			if(tabla.clock_actual == NULL)
-				tabla.clock_actual = tabla.workers->head;
+			asignarBloqueAWorker(((t_clock*)tabla->clock_actual->data), numBloqueParaLista, archivo);
+			tabla->clock_actual = tabla->clock_actual->next;
+			if(tabla->clock_actual == NULL)
+				tabla->clock_actual = tabla->workers->head;
 
-			if(((t_clock*)tabla.clock_actual->data)->disponibilidad ==0)
+			if(((t_clock*)tabla->clock_actual->data)->disponibilidad ==0)
 			{
-				((t_clock*)tabla.clock_actual->data)->disponibilidad= configuracion.DISPONIBILIDAD_BASE;
+				((t_clock*)tabla->clock_actual->data)->disponibilidad= configuracion.DISPONIBILIDAD_BASE;
 				//Vuelve a mover el clock
-				tabla.clock_actual = tabla.clock_actual->next;
-				if(tabla.clock_actual == NULL)
-					tabla.clock_actual = tabla.workers->head;
+				tabla->clock_actual = tabla->clock_actual->next;
+				if(tabla->clock_actual == NULL)
+					tabla->clock_actual = tabla->workers->head;
 			}
 		}
 		else {
@@ -542,8 +548,8 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 		}
 	}
 	else{ //el worker apuntado por el clock actual no posee ese bloque
-		t_link_element* elementoActual= tabla.clock_actual->next;
-		t_link_element* elementoOriginal = tabla.clock_actual;
+		t_link_element* elementoActual= tabla->clock_actual->next;
+		t_link_element* elementoOriginal = tabla->clock_actual;
 		bool encontro=false;
 		while(!encontro)
 		{
@@ -560,14 +566,14 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 			else{
 				elementoActual = elementoActual->next;
 				if(elementoActual == NULL)
-					elementoActual = tabla.workers->head;
+					elementoActual = tabla->workers->head;
 
 				if(string_equals_ignore_case(((t_clock*)elementoActual->data)->worker_id, ((t_clock*)elementoOriginal->data)->worker_id))
 				{
 					void sumarDisponibilidadBase(void* elem){
 						((t_clock*)elem)->disponibilidad+= configuracion.DISPONIBILIDAD_BASE;
 					}
-					list_iterate(tabla.workers,sumarDisponibilidadBase);
+					list_iterate(tabla->workers,sumarDisponibilidadBase);
 				}
 			}
 
@@ -579,3 +585,24 @@ void planificarBloque(t_tabla_planificacion tabla, int numeroBloque, t_archivoxn
 
 }
 
+int CalcularDisponibilidad(t_clock* worker, t_tabla_planificacion* tabla){
+	if(string_equals_ignore_case(configuracion.ALGORITMO_BALANCEO, "CLOCK")){
+		return worker->disponibilidad;
+	}
+	else {
+		return worker->disponibilidad + CalcularWLMax(tabla) - CalcularWLWorker(worker);
+	}
+}
+
+int CalcularWLMax(t_tabla_planificacion* tabla){
+	int wlMax=0;
+	void SumarWL(void* elem){
+		wlMax+=CalcularWLWorker((t_clock*)elem);
+	}
+	list_iterate(tabla->workers, SumarWL);
+	return wlMax;
+}
+
+int CalcularWLWorker(t_clock* worker){
+	return list_size(worker->bloques);
+}
