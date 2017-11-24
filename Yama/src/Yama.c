@@ -379,7 +379,7 @@ int main(void) {
 								socketFS = socketActual;
 
 
-
+/*
 								//Deserializacion mover a Master
 																archivoNodo->bloquesRelativos =  list_create();
 																archivoNodo->workersAsignados= list_create();
@@ -413,7 +413,7 @@ int main(void) {
 																	}
 																	// agregar a la lista de workers list_add(archivoNodo->bloquesRelativos, worker);
 																}
-
+*/
 
 
 
