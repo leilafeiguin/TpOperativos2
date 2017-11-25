@@ -240,3 +240,5 @@ t_archivo* cargarArchivoDesdeArchivo(char* unPath, int directorioPadre);
 void cargarArchivosEnUnSubdirectorio(int);
 
 void cargarArchivos();
+
+bool cargarDirectoriosDesdeArchivo();
