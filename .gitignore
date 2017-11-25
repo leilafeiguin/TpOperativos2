@@ -3,6 +3,7 @@
 *.metadata
 *.d
 *.cproject
+metadata/
 
 # Object files
 *.o
