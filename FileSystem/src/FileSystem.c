@@ -469,73 +469,78 @@ int main(void) {
 	}
 
 	void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
+		struct stat st;
+		int tamanioArchivo = stat(origen, &st);
+		if(st.st_size == 0){
+			printf("El archivo esta vacio.\n");
+		}else{
+			t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
+			t_archivo* nuevoArchivo = malloc(sizeof(t_archivo));
+			char* path = malloc(255);
+			char* file = malloc(255);
+			destino = str_replace(destino, "yamafs://", "");
+			split_path_file(&path, &file, destino);
+			char** listaDirectorios = string_split(path, "/");
 
-		t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
-
-		t_archivo* nuevoArchivo = malloc(sizeof(t_archivo));
-
-		char* path = malloc(255);
-		char* file = malloc(255);
-		destino = str_replace(destino, "yamafs://", "");
-		split_path_file(&path, &file, destino);
-		char** listaDirectorios = string_split(path, "/");
-
-		int j = 0;
-		int padre = 0;
-		int cantidadDirectorios = countOccurrences(path, "/");
-		if (cantidadDirectorios > 0) {
-			for (; j < cantidadDirectorios; j++) { //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
-				t_directory* directorio = buscarDirectorio(padre,
-						listaDirectorios[cantidadDirectorios]);
-				padre = directorio->index;
+			int j = 0;
+			int padre = 0;
+			int cantidadDirectorios = countOccurrences(path, "/");
+			if (cantidadDirectorios > 0) {
+				for (; j < cantidadDirectorios; j++) { //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
+					t_directory* directorio = buscarDirectorio(padre,
+							listaDirectorios[cantidadDirectorios]);
+					padre = directorio->index;
+				}
 			}
+
+			nuevoArchivo->indiceDirectorioPadre = padre;
+			nuevoArchivo->nombre = file;
+			nuevoArchivo->path = destino;
+			nuevoArchivo->bloques = list_create();
+			nuevoArchivo->tamanio = 0;
+			nuevoArchivo->tipoArchivo = tipoArchivo;
+			int i = 0;
+			for (; i < archivoPartido->cantidadBloques; i++) {
+				t_nodoasignado* respuesta = escribir_bloque(
+						list_get(archivoPartido->bloquesPartidos, i));
+				t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
+				unBloqueAux->nroBloque = i;
+				t_bloque_particion* bloqueParticion = list_get(
+						archivoPartido->bloquesPartidos, i);
+				unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
+				nuevoArchivo->tamanio += unBloqueAux->finBloque;
+
+				t_nodo* nodo1 = buscar_nodo(respuesta->nodo1);
+				unBloqueAux->copia1 = malloc(sizeof(ubicacionBloque));
+				unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
+				unBloqueAux->copia1->nroBloque = respuesta->bloque1;
+
+				nodo1->libre--;
+				if (nodo1->libre == 0)
+					nodo1->ocupado = true;
+
+				bitarray_set_bit(nodo1->bitmap, respuesta->bloque1);
+				actualizarBitmap(nodo1);
+
+				t_nodo* nodo2 = buscar_nodo(respuesta->nodo2);
+				unBloqueAux->copia2 = malloc(sizeof(ubicacionBloque));
+				unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
+				unBloqueAux->copia2->nroBloque = respuesta->bloque2;
+
+				nodo2->libre--;
+				if (nodo2->libre == 0)
+					nodo2->ocupado = true;
+
+				bitarray_set_bit(nodo2->bitmap, respuesta->bloque2);
+				actualizarBitmap(nodo2);
+
+				list_add(nuevoArchivo->bloques, unBloqueAux);
+			}
+			list_add(fileSystem.listaArchivos, nuevoArchivo);
+			//todo implementar actualizarTablaArchivos()
 		}
 
-		nuevoArchivo->indiceDirectorioPadre = padre;
-		nuevoArchivo->nombre = file;
-		nuevoArchivo->path = destino;
-		nuevoArchivo->bloques = list_create();
-		nuevoArchivo->tamanio = 0;
-		nuevoArchivo->tipoArchivo = tipoArchivo;
-		int i = 0;
-		for (; i < archivoPartido->cantidadBloques; i++) {
-			t_nodoasignado* respuesta = escribir_bloque(
-					list_get(archivoPartido->bloquesPartidos, i));
-			t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
-			unBloqueAux->nroBloque = i;
-			t_bloque_particion* bloqueParticion = list_get(
-					archivoPartido->bloquesPartidos, i);
-			unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
-			nuevoArchivo->tamanio += unBloqueAux->finBloque;
 
-			t_nodo* nodo1 = buscar_nodo(respuesta->nodo1);
-			unBloqueAux->copia1 = malloc(sizeof(ubicacionBloque));
-			unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
-			unBloqueAux->copia1->nroBloque = respuesta->bloque1;
-
-			nodo1->libre--;
-			if (nodo1->libre == 0)
-				nodo1->ocupado = true;
-
-			bitarray_set_bit(nodo1->bitmap, respuesta->bloque1);
-			actualizarBitmap(nodo1);
-
-			t_nodo* nodo2 = buscar_nodo(respuesta->nodo2);
-			unBloqueAux->copia2 = malloc(sizeof(ubicacionBloque));
-			unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
-			unBloqueAux->copia2->nroBloque = respuesta->bloque2;
-
-			nodo2->libre--;
-			if (nodo2->libre == 0)
-				nodo2->ocupado = true;
-
-			bitarray_set_bit(nodo2->bitmap, respuesta->bloque2);
-			actualizarBitmap(nodo2);
-
-			list_add(nuevoArchivo->bloques, unBloqueAux);
-		}
-		list_add(fileSystem.listaArchivos, nuevoArchivo);
-		//todo implementar actualizarTablaArchivos()
 
 	}
 
@@ -1594,6 +1599,11 @@ int main(void) {
 	void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado) {
 		//buscar entrada de directorio de destino
 		path_destino = str_replace(path_destino, "yamafs://", "");
+
+		char* path = malloc(255);
+		char* file = malloc(255);
+
+		split_path_file(&path, &file, path_destino);
 		int cantidadDirectorios = countOccurrences(path_destino, "/");
 		char** directorios = string_split(path_destino, "/");
 		int i = 0;
@@ -1610,8 +1620,8 @@ int main(void) {
 			}
 			indicePadre = directorioActual->index;
 		}
-		archivoEncontrado->nombre = string_duplicate(
-				directorios[cantidadDirectorios - 1]);
+
+		archivoEncontrado->nombre = string_duplicate(file);
 		archivoEncontrado->path = string_duplicate(path_destino);
 		archivoEncontrado->indiceDirectorioPadre = indicePadre;
 		//fijarse si cambia el nombre, si cambia actualizar el t_archivo path, y nombre, indiceDirectorioPadre
