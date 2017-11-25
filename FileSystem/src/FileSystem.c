@@ -1113,52 +1113,10 @@ int main(void) {
 				imprimirPorPantallaContenidoBloque);
 	}
 
-	//void eliminar_archivo(char* path) {
-	//	path=str_replace(path, "yamafs://","");
-
-
-
-		//list_remove_and_destroy_by_condition();
-
-
-
-
-		//(t_list *, bool(*condition)(void*), void(*element_destroyer)(void*));
-
-
-
-	//	return;
-	//}
-
-	/*void eliminar_directorio(char* path) {
-			path=str_replace(path, "yamafs://","");
-			if (!string_ends_with(path, "/"))
-				string_append(path, "/");
-			int cantidadDirectorios=countOccurrences(path, "/");
-			char** directorios = string_split(path, "/");
-			t_directory* directorioAEliminar = NULL;
-			int i=0;
-			for (; i < cantidadDirectorios - 1; i++) {
-				if (directorios[i] == NULL)
-					break;
-				directorioAEliminar = buscarDirectorio(directorioAEliminar->padre, directorios[i]);
-			} */
-
-			//void buscarArchivoPorPath(char* path) {
-			//	return string_contains()
-			//}
-
-
-			//(((t_archivo*) elem)->path, origen);
-
-			//falta cambiar el bitmap
-	//}
-
-
-	//void eliminar_bloque(char* path,  ){// [path_archivo] [nro_bloque] [nro_copia]
-
-	//}
-
+	void eliminar_archivo(char* path) {
+		// Eliminar archivo de forma logica
+		return;
+	}
 
 	void hiloFileSystem_Consola(void * unused) {
 		printf("Consola Iniciada. Ingrese una opcion \n");
