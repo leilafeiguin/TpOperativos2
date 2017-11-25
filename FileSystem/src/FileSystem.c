@@ -1062,8 +1062,7 @@ int main(void) {
 		path = str_replace(path, "yamafs://", "");
 		bool buscarArchivoPorPath(void* elem) {
 			return string_equals_ignore_case(((t_archivo*) elem)->path, path);
-		}
-		;
+		}		;
 
 		t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos,
 				buscarArchivoPorPath);
@@ -1115,12 +1114,37 @@ int main(void) {
 
 	void eliminar_archivo(char* path) {
 		path=str_replace(path, "yamafs://","");
+		bool buscarArchivoPorPath(void* elem) {
+					return string_equals_ignore_case(((t_archivo*) elem)->path, path);
+				}		;
 		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+		if(unArchivo == NULL)
+		{
+			printf("El archivo %s no existe", path);
+			return;
+		}
 
+		void liberarBloques(void* elem)
+		{
+			t_bloque* bloque=(t_bloque*)elem;
+			if(bloque->copia1 != NULL){
+				t_nodo* nodo=buscar_nodo(bloque->copia1->nroNodo);
+				bitarray_clean_bit(nodo->bitmap,bloque->copia1->nroBloque);
+				free(bloque->copia1);
+			}
 
+			if(bloque->copia2 != NULL){
+				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
+				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
+				free(bloque->copia1);
+			}
+			free(bloque);
+		}
 
-
-
+		free(unArchivo->nombre);
+		free(unArchivo->path);
+		list_destroy_and_destroy_elements(unArchivo->bloques, liberarBloques);
+		free(unArchivo);
 		return;
 	}
 
@@ -1149,11 +1173,44 @@ int main(void) {
 				}
 		}
 
+		void eliminar_bloque(char* path, int nroBloque, int nroCopia){
+			path=str_replace(path, "yamafs://","");
+			bool buscarArchivoPorPath(void* elem) {
+				return string_equals_ignore_case(((t_archivo*) elem)->path, path);
+			};
+			t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+			if(unArchivo == NULL)
+			{
+				printf("El archivo %s no existe", path);
+				return;
+			}
 
-		//void eliminar_bloque(char* path,  ){// [path_archivo] [nro_bloque] [nro_copia]
+			bool buscarBloque(void* elem) {
+				t_bloque* bloque=(t_bloque*)elem;
+				return bloque->nroBloque == nroBloque;
+			}
 
-
-
+			t_bloque* bloque=list_find(unArchivo->bloques, buscarBloque);
+			if(bloque == NULL)
+			{
+				printf("No existe el numero de bloque \n");
+			}
+			if((bloque->copia1 == NULL && nroCopia == 2)|| (bloque->copia2 == NULL && nroCopia == 1)){
+				printf("No se puede eliminar ya que solo posee una copia \n");
+			}
+			if(nroCopia == 1 && bloque->copia1 != NULL){
+				t_nodo* nodo=buscar_nodo(bloque->copia1->nroNodo);
+				bitarray_clean_bit(nodo->bitmap,bloque->copia1->nroBloque);
+				free(bloque->copia1);
+				printf("Eliminando copia 1 \n");
+			}
+			else if(nroCopia == 2 && bloque->copia2 != NULL) {
+				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
+				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
+				free(bloque->copia2);
+				printf("Eliminando copia 2 \n");
+			}
+	}
 
 	void hiloFileSystem_Consola(void * unused) {
 		printf("Consola Iniciada. Ingrese una opcion \n");
