@@ -221,6 +221,12 @@ void actualizarArchivo(t_archivo*);
 // Elimina de manera logica un archivo
 void eliminar_archivo(char*);
 
+//Elimina de manera logica un directorio
+void eliminar_directorio(char* path);
+
+//Elimina de manera logica un bloque
+void eliminar_bloque(char* path, int nroBloque, int nroCopia);
+
 //Imprime por pantalla nombre tamaño bloques e info de bloques de un archivo
 void info_archivo(char* path);
 
