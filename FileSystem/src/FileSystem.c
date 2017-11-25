@@ -1439,6 +1439,28 @@ int main(void) {
 		}
 	}
 
+	void cargarBitmapDesdeArchivo(t_nodo* unNodo){
+		char* aux = malloc(200);
+		string_append(&aux, "metadata/bitmaps/");
+		string_append(&aux, unNodo->nroNodo);
+		string_append(&aux, ".dat");
+
+		FILE * file = fopen(aux, "r");
+		if (file != NULL) {
+
+			int cantidad = (unNodo->tamanio / (1024 * 1024)) / 8;
+			if ((unNodo->tamanio / (1024 * 1024)) % 8 != 0){
+				cantidad++;
+			}
+			char* bitarray=malloc(cantidad);
+			fread(bitarray, cantidad,1, file);
+			unNodo->bitmap = bitarray_create(bitarray,cantidad);
+
+			fclose(file);
+		}
+		free(aux);
+	}
+
 	void actualizarBitmap(t_nodo* unNodo) {
 		crear_subcarpeta("metadata/bitmaps/");
 
