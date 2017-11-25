@@ -246,4 +246,3 @@ t_archivo* cargarArchivoDesdeArchivo(char* unPath, int directorioPadre);
 void cargarArchivosEnUnSubdirectorio(int);
 
 void cargarArchivos();
->>>>>>> a5113e4ce2f9d6edea8c72ae9f0095a3189a08d0
