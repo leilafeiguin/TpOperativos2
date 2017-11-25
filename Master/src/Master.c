@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Master.h"
+#include <pthread.h>
 
 int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archivoDestino) {
 	t_log* logger;
@@ -38,34 +39,52 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 		printf("Se cayo Yama, finaliza Master.\n");
 		exit(-1);
 	}
-	//preguntar a seba tema malloc y memoria
-	char* buffer = malloc(paqueteRecibido->tamanio);
+	t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
+	archivoNodo->bloquesRelativos =  list_create();
+	archivoNodo->workersAsignados= list_create();
 
-	memcpy(buffer, paqueteRecibido->data, paqueteRecibido->tamanio);
+	int i=0;
+	int cantidadWorkers = 0;
+	int desplazamiento = 0;
+	memcpy(&cantidadWorkers, paqueteRecibido->data + desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
 
-	int cantidadConexionesPendientes = cantidadCaracterEnString(buffer, ',') +1;
-	char** conexionesSplit = str_split(buffer, ',');
-	int i;
-	for(i = 0; i < cantidadConexionesPendientes; i++) {
-		char** auxiliar = str_split(conexionesSplit[i], '|');
-		char* ip_aux = auxiliar[0];
-		char* puerto_aux = auxiliar[1];
+	for(i=0;i<cantidadWorkers;i++){
+		t_clock* worker = malloc(sizeof(t_clock));
+		memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
+		desplazamiento+= 15;
+		memcpy(worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+= sizeof(int);
 
-		un_socket unSocket = conectar_a(ip_aux, puerto_aux);
-		bool estado = realizar_handshake(unSocket, cop_handshake_master);
-		t_worker* unWorker = malloc(sizeof(t_worker));
-		unWorker->IP = malloc(strlen(ip_aux)+1);
-		strcpy(unWorker->IP,ip_aux);
-		unWorker->puerto = malloc(strlen(puerto_aux)+1);
-		strcpy(unWorker->puerto , puerto_aux);
-		unWorker->estado = estado;
-		unWorker->socket = unSocket;
+		int cantidadBloques = 0;
+		memcpy(&cantidadBloques, paqueteRecibido->data + desplazamiento, sizeof(int));
 
-		list_add(workers, unWorker);
-		free(auxiliar);
+		int j=0;
+		for(j=0;j<cantidadBloques;j++){
+			t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
+
+			memcpy(infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
+			desplazamiento+= sizeof(int);
+			memcpy(infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+			desplazamiento+= sizeof(int);
+
+			infoBloque->dirTemporal = malloc(11);
+			memcpy(infoBloque->dirTemporal, paqueteRecibido->data + desplazamiento, 11);
+			desplazamiento+= 11;
+
+			// agregar a la lista de bloques list_add(archivoNodo->bloquesRelativos, worker);
+			list_add(worker->bloques, infoBloque);
+		}
+		// agregar a la lista de workers list_add(archivoNodo->bloquesRelativos, worker);
+		list_add(archivoNodo->workersAsignados, worker);
 	}
 
-	free(buffer);
+	void iniciarHiloWorker(void* elem){
+		pthread_create(NULL,NULL, hiloWorker, elem);
+	}
+
+	list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
+
 	//	NO BORRAR SIRVE PARA PROBAR CONEXIONES AL WORKER
 	//	un_socket w1 = conectar_a("127.0.0.1","5050");
 	//
@@ -91,6 +110,10 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 	//hacer un if para saber si pasa a etapa de transformacion o si hubo error esperar nuevos workers
 
 	return EXIT_SUCCESS;
+}
+
+void hiloWorker(void* infoWorker){
+	t_clock* worker=(t_clock*)infoWorker;
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)

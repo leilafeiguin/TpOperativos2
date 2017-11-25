@@ -16,7 +16,7 @@ typedef struct fileSystem_configuracion {
 	char* IP_FS;
 	char* PUERTO_FS;
 } fileSystem_configuracion;
- char* path =
+ char* pathConfig =
 		"/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
 char* estado = "Estable";
 bool existeYama = false;
@@ -25,7 +25,7 @@ fileSystem_configuracion get_configuracion() {
 	printf("Levantando archivo de configuracion del proceso FileSystem\n");
 	fileSystem_configuracion configuracion;
 	// Obtiene el archivo de configuracion
-	t_config* archivo_configuracion = config_create(path);
+	t_config* archivo_configuracion = config_create(pathConfig);
 	configuracion.IP_FS = get_campo_config_string(archivo_configuracion,
 			"IP_FS");
 	configuracion.PUERTO_FS = get_campo_config_string(archivo_configuracion,
@@ -237,4 +237,13 @@ void yama_mv(char* path_origen, char* path_destino, char tipo );
 void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado);
 
 // Renombra un archivo en yama
-void yama_rename(char*, char*);
+void yama_rename(char*, char*, char*);
+
+
+// Recibe el path de la metadata de un archivo y devuelve la estructura con los respectivos valores
+t_archivo* cargarArchivoDesdeArchivo(char* unPath, int directorioPadre);
+
+void cargarArchivosEnUnSubdirectorio(int);
+
+void cargarArchivos();
+>>>>>>> a5113e4ce2f9d6edea8c72ae9f0095a3189a08d0

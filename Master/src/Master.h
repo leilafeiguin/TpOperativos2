@@ -35,3 +35,5 @@ t_list* workers;
 
 size_t cantidadCaracterEnString(const char *str, char token);
 char** str_split(char* a_str, const char a_delim);
+void iniciarHiloWorker(void* elem);
+void hiloWorker(void* infoWorker);
