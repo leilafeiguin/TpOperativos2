@@ -1114,9 +1114,46 @@ int main(void) {
 	}
 
 	void eliminar_archivo(char* path) {
-		// Eliminar archivo de forma logica
+		path=str_replace(path, "yamafs://","");
+		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+
+
+
+
+
 		return;
 	}
+
+		void eliminar_directorio(char* path) {
+				path=str_replace(path, "yamafs://","");
+				if (!string_ends_with(path, "/"))
+					string_append(path, "/");
+				int cantidadDirectorios=countOccurrences(path, "/");
+				char** directorios = string_split(path, "/");
+				t_directory* directorioAEliminar = NULL;
+				int i=0;
+				for (; i < cantidadDirectorios - 1; i++) {
+					if (directorios[i] == NULL)
+						break;
+					directorioAEliminar = buscarDirectorio(directorioAEliminar->padre, directorios[i]);
+				}
+				bool buscarArchivoPorPath(void* elem) {
+					return string_contains(path, (char*)elem);
+				}
+				if(!list_any_satisfy(fileSystem.listaArchivos, buscarArchivoPorPath)) {
+					free(directorioAEliminar->nombre);
+					directorioAEliminar->padre=-2;
+				}
+				else {
+					printf("No se puede eliminar el directorio porque no esta vacio \n");
+				}
+		}
+
+
+		//void eliminar_bloque(char* path,  ){// [path_archivo] [nro_bloque] [nro_copia]
+
+
+
 
 	void hiloFileSystem_Consola(void * unused) {
 		printf("Consola Iniciada. Ingrese una opcion \n");
