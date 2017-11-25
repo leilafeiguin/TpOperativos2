@@ -37,29 +37,30 @@ int main(void) {
 	log_trace(logger, "Archivo de configuracion levantado");
 
 	//Inciializacion de estructuras
-
-	if (access("directorios.txt", F_OK) != -1) {
-		// El archivo existe, recupero la informacion
-		//todo levantar estructuras del archivo
-	} else {
-		// El archivo no existe
-		int x = 0;
-		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
-		tablaDeDirectorios[x]->index = 0;
-		tablaDeDirectorios[x]->nombre = "root";
-		tablaDeDirectorios[x]->padre = -1;
-		for(x = 1; x < 100; x++) {
-			tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
-			tablaDeDirectorios[x]->index = -2;
-			tablaDeDirectorios[x]->nombre = "";
-			tablaDeDirectorios[x]->padre = 0;
-		}
-	}
-
 	fileSystem.ListaNodos = list_create(); //Se le deben cargar estructuras de tipo t_nodo
 	fileSystem.libre = 0;
 	fileSystem.listaArchivos = list_create(); //Se le deben cargar estructuras de tipo t_archivo
 	fileSystem.tamanio = 0;
+	int x = 0;
+	tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
+	tablaDeDirectorios[x]->index = 0;
+	tablaDeDirectorios[x]->nombre = "root";
+	tablaDeDirectorios[x]->padre = -1;
+	for(x = 1; x < 100; x++) {
+		tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
+		tablaDeDirectorios[x]->index = -2;
+		tablaDeDirectorios[x]->nombre = "";
+		tablaDeDirectorios[x]->padre = 0;
+	}
+	cargarDirectoriosDesdeArchivo();
+	DIR* dir = opendir("/metadata/archivos/");
+	if (dir){
+		cargarArchivos();
+		closedir(dir);
+	}
+
+
+
 
 	// ----------------------------------------------
 	// ----------------------------------------------
@@ -970,10 +971,12 @@ int main(void) {
 		void imprimirArchivos(t_archivo* elem) {
 			printf("Archivo: %s\n", elem->nombre);
 		}
-
-		list_iterate(listaDirectorios, (void*) imprimirDirectorios);
-		list_iterate(listaArchivos, (void*) imprimirArchivos);
-
+		if(list_size(listaDirectorios)!=0){
+			list_iterate(listaDirectorios, (void*) imprimirDirectorios);
+		}
+		if(list_size(listaArchivos)!=0){
+			list_iterate(listaArchivos, (void*) imprimirArchivos);
+		}
 	}
 
 	t_list* obtenerSubdirectorios(int indicePadre) {
@@ -1515,7 +1518,6 @@ int main(void) {
 		}
 	}
 
-
 	void actualizarArchivoDeDirectorios() {
 		crear_subcarpeta("metadata");
 		FILE * file = fopen("metadata/directorios.txt", "w");
@@ -1646,19 +1648,12 @@ int main(void) {
 	void cargarArchivosEnUnSubdirectorio(int subdirectorio){
 		DIR* d;
 		struct dirent *dir;
-		char* aux1="";
-		sprintf(aux1, "%d", subdirectorio);
-		char* aux="";
-		strcat(aux,"./metadata/archivos/");
-		strcat(aux,aux1);
-		strcat(aux,"/");
+		char* aux=string_from_format("./metadata/archivos/%i/",subdirectorio);
 		d = opendir(aux);
 		if (d){
 			while ((dir = readdir(d)) != NULL){
 				if(dir->d_type==DT_REG){
-					char* path="";
-					strcat(path,aux);
-					strcat(path,dir->d_name);
+					char* path=string_from_format("%s%s", aux, dir->d_name);
 					list_add(fileSystem.listaArchivos,cargarArchivoDesdeArchivo(path,subdirectorio));
 				}
 			}
@@ -1702,20 +1697,6 @@ int main(void) {
 			}
 		}
 
-		char* generarBloq(int bloque, int copia){
-			char* aux2="";
-			sprintf(aux2, "%d", bloque);
-			char* aux3="";
-			sprintf(aux3, "%d", copia);
-			char* aux=malloc(6+5+strlen(aux2)+strlen(aux3)+2);
-			strcat(aux,"BLOQUE");
-			strcat(aux,aux2);
-			strcat(aux,"COPIA");
-			strcat(aux,aux3);
-			strcat(aux,"=");
-			return aux;
-		};
-
 		i = 0;
 		t_list* bloques = list_create();
 		for(;i<cantidadBloques;i++){
@@ -1724,7 +1705,8 @@ int main(void) {
 			//copia 0
 			if((read = getline(&line, &len, fp)) != -1){
 				line = str_replace(line,"\n","");
-				line = str_replace(line,generarBloq(i,0),"");
+				char* lineaBloq1=string_from_format("BLOQUE%iCOPIA%i=",i,0);
+				line = str_replace(line,lineaBloq1,"");
 				char** valores = str_split(line,',');
 				unBloque->copia1->nroNodo = str_replace(valores[0],"[","");
 				unBloque->copia1->nroBloque = atoi(str_replace(valores[1],"]",""));
@@ -1732,7 +1714,8 @@ int main(void) {
 			//copia 1
 			if((read = getline(&line, &len, fp)) != -1){
 				line = str_replace(line,"\n","");
-				line = str_replace(line,generarBloq(i,1),"");
+				char* lineaBloq2=string_from_format("BLOQUE%iCOPIA%i=",i,1);
+				line = str_replace(line,lineaBloq2,"");
 				char** valores = str_split(line,',');
 				unBloque->copia2->nroNodo = str_replace(valores[0],"[","");
 				unBloque->copia2->nroBloque = atoi(str_replace(valores[1],"]",""));
@@ -1741,13 +1724,8 @@ int main(void) {
 			//Fin de bloque
 			if((read = getline(&line, &len, fp)) != -1){
 				line = str_replace(line,"\n","");
-				char* aux="";
-				char* aux2="";
-				sprintf(aux2, "%d", i);
-				strcat(aux,"BLOQUE");
-				strcat(aux,aux2);
-				strcat(aux,"BYTES=");
-				unBloque->finBloque = strtoul(str_replace(line,aux,""),NULL,10);
+				char* finDeBloque=string_from_format("BLOQUE%iBYTES=",i);
+				unBloque->finBloque = strtoul(str_replace(line,finDeBloque,""),NULL,10);
 			}
 			list_add(bloques,unBloque);
 		}
@@ -1756,7 +1734,7 @@ int main(void) {
 		if (line){
 			free(line);
 		}
-		char* p="";
+		char* p;
 		split_path_file(&p, &unArchivo->nombre ,path);
 		unArchivo->indiceDirectorioPadre = directorioPadre;
 		return unArchivo;
