@@ -1379,6 +1379,42 @@ int main(void) {
 		return respuesta;
 	}
 
+	bool cargarDirectoriosDesdeArchivo(){
+		if( access("metadata/directorios.txt", F_OK ) != -1 ) {
+		    // file exists
+			FILE * fp;
+			char * line = NULL;
+			size_t len = 0;
+			ssize_t read;
+
+			fp = fopen("metadata/directorios.txt", "r");
+			if (fp == NULL){
+				printf("No se pudo recuperar el estado anterior de la tabla de directorios");
+				return false;
+			}
+			int i = 0;
+			while ((read = getline(&line, &len, fp)) != -1) {
+				line = str_replace(line, "\n", "");
+				char** linea = str_split(line,',');
+				tablaDeDirectorios[i]->index = (int)linea[0];
+				tablaDeDirectorios[i]->nombre = linea[1];
+				tablaDeDirectorios[i]->padre = (int)linea[2];
+				i++;
+			}
+
+			fclose(fp);
+			if (line)
+				free(line);
+			exit(EXIT_SUCCESS);
+			return true;
+		} else {
+		    // file doesn't exist
+			printf("No existe un estado anterior de directorios");
+			return false;
+		}
+	}
+
+
 	void actualizarArchivoDeDirectorios() {
 		crear_subcarpeta("metadata");
 		FILE * file = fopen("metadata/directorios.txt", "w");
@@ -1388,8 +1424,8 @@ int main(void) {
 					tablaDeDirectorios[0]->nombre,
 					tablaDeDirectorios[0]->padre);
 			for (i = 1; i < 100; i++) {
-				if (tablaDeDirectorios[i]->index != 0) {
-					fprintf(file, "/%i,%s,%i", tablaDeDirectorios[i]->index,
+				if (tablaDeDirectorios[i]->index != -2) {
+					fprintf(file, "\n%i,%s,%i", tablaDeDirectorios[i]->index,
 							tablaDeDirectorios[i]->nombre,
 							tablaDeDirectorios[i]->padre);
 				}
@@ -1405,6 +1441,28 @@ int main(void) {
 		} else {
 			printf("El directorio ya existe \n");
 		}
+	}
+
+	void cargarBitmapDesdeArchivo(t_nodo* unNodo){
+		char* aux = malloc(200);
+		string_append(&aux, "metadata/bitmaps/");
+		string_append(&aux, unNodo->nroNodo);
+		string_append(&aux, ".dat");
+
+		FILE * file = fopen(aux, "r");
+		if (file != NULL) {
+
+			int cantidad = (unNodo->tamanio / (1024 * 1024)) / 8;
+			if ((unNodo->tamanio / (1024 * 1024)) % 8 != 0){
+				cantidad++;
+			}
+			char* bitarray=malloc(cantidad);
+			fread(bitarray, cantidad,1, file);
+			unNodo->bitmap = bitarray_create(bitarray,cantidad);
+
+			fclose(file);
+		}
+		free(aux);
 	}
 
 	void actualizarBitmap(t_nodo* unNodo) {

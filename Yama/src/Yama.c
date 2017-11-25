@@ -398,6 +398,45 @@ int main(void) {
 								//si esta todo ok avanza el proceso de forma normal y sino debe replanificar
 								//y mandar nuevos sockets
 
+								int desplazamiento = 0;
+								int longitudIdWorker = 0;
+								memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+								char* idWorker = malloc(longitudIdWorker);
+
+								memcpy(idWorker, paqueteRecibido->data + desplazamiento, longitudIdWorker);
+								desplazamiento+=longitudIdWorker;
+
+								int longitudIdArchivo = 0;
+								memcpy(&longitudIdArchivo, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+								char* idArchivo = malloc(longitudIdArchivo);
+
+								memcpy(idArchivo, paqueteRecibido->data + desplazamiento, longitudIdArchivo);
+								desplazamiento+=longitudIdArchivo;
+
+								int longitudEstadoWorker = 0;
+								memcpy(&longitudEstadoWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+								char* estadoWorker = malloc(longitudEstadoWorker);
+
+								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, longitudEstadoWorker);
+								desplazamiento+=longitudEstadoWorker;
+
+								int longitudMensaje = 0;
+								memcpy(&longitudMensaje, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+								char* mensaje = malloc(longitudMensaje);
+
+								memcpy(mensaje, paqueteRecibido->data + desplazamiento, longitudMensaje);
+								desplazamiento+=longitudMensaje;
+
+								if(string_equals_ignore_case(estadoWorker, "ok")){
+									//avanza el proceso de forma normal
+								}else{
+									//replanificar
+								}
+
 								break;
 
 								case -1:
