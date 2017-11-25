@@ -114,8 +114,6 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 
 void hiloWorker(void* infoWorker){
 	t_clock* worker=(t_clock*)infoWorker;
-
-
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)

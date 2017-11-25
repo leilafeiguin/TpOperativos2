@@ -34,7 +34,6 @@ int main(void) {
 
 	t_list* tablas= list_create();
 
-
 	/*t_job job;
 	job.master = 1;
 	job.nodo = 1;
@@ -394,10 +393,6 @@ int main(void) {
 							}
 							case cop_master_estados_workers:
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
-								//hacer lo que corresponda
-								//si esta todo ok avanza el proceso de forma normal y sino debe replanificar
-								//y mandar nuevos sockets
-
 								int desplazamiento = 0;
 								int longitudIdWorker = 0;
 								memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));

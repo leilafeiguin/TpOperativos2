@@ -18,6 +18,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <dirent.h>
+
 
 int main(void) {
 
@@ -472,73 +474,78 @@ int main(void) {
 	}
 
 	void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
+		struct stat st;
+		int tamanioArchivo = stat(origen, &st);
+		if(st.st_size == 0){
+			printf("El archivo esta vacio.\n");
+		}else{
+			t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
+			t_archivo* nuevoArchivo = malloc(sizeof(t_archivo));
+			char* path = malloc(255);
+			char* file = malloc(255);
+			destino = str_replace(destino, "yamafs://", "");
+			split_path_file(&path, &file, destino);
+			char** listaDirectorios = string_split(path, "/");
 
-		t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
-
-		t_archivo* nuevoArchivo = malloc(sizeof(t_archivo));
-
-		char* path = malloc(255);
-		char* file = malloc(255);
-		destino = str_replace(destino, "yamafs://", "");
-		split_path_file(&path, &file, destino);
-		char** listaDirectorios = string_split(path, "/");
-
-		int j = 0;
-		int padre = 0;
-		int cantidadDirectorios = countOccurrences(path, "/");
-		if (cantidadDirectorios > 0) {
-			for (; j < cantidadDirectorios; j++) { //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
-				t_directory* directorio = buscarDirectorio(padre,
-						listaDirectorios[cantidadDirectorios]);
-				padre = directorio->index;
+			int j = 0;
+			int padre = 0;
+			int cantidadDirectorios = countOccurrences(path, "/");
+			if (cantidadDirectorios > 0) {
+				for (; j < cantidadDirectorios; j++) { //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
+					t_directory* directorio = buscarDirectorio(padre,
+							listaDirectorios[cantidadDirectorios]);
+					padre = directorio->index;
+				}
 			}
+
+			nuevoArchivo->indiceDirectorioPadre = padre;
+			nuevoArchivo->nombre = file;
+			nuevoArchivo->path = destino;
+			nuevoArchivo->bloques = list_create();
+			nuevoArchivo->tamanio = 0;
+			nuevoArchivo->tipoArchivo = tipoArchivo;
+			int i = 0;
+			for (; i < archivoPartido->cantidadBloques; i++) {
+				t_nodoasignado* respuesta = escribir_bloque(
+						list_get(archivoPartido->bloquesPartidos, i));
+				t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
+				unBloqueAux->nroBloque = i;
+				t_bloque_particion* bloqueParticion = list_get(
+						archivoPartido->bloquesPartidos, i);
+				unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
+				nuevoArchivo->tamanio += unBloqueAux->finBloque;
+
+				t_nodo* nodo1 = buscar_nodo(respuesta->nodo1);
+				unBloqueAux->copia1 = malloc(sizeof(ubicacionBloque));
+				unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
+				unBloqueAux->copia1->nroBloque = respuesta->bloque1;
+
+				nodo1->libre--;
+				if (nodo1->libre == 0)
+					nodo1->ocupado = true;
+
+				bitarray_set_bit(nodo1->bitmap, respuesta->bloque1);
+				actualizarBitmap(nodo1);
+
+				t_nodo* nodo2 = buscar_nodo(respuesta->nodo2);
+				unBloqueAux->copia2 = malloc(sizeof(ubicacionBloque));
+				unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
+				unBloqueAux->copia2->nroBloque = respuesta->bloque2;
+
+				nodo2->libre--;
+				if (nodo2->libre == 0)
+					nodo2->ocupado = true;
+
+				bitarray_set_bit(nodo2->bitmap, respuesta->bloque2);
+				actualizarBitmap(nodo2);
+
+				list_add(nuevoArchivo->bloques, unBloqueAux);
+			}
+			list_add(fileSystem.listaArchivos, nuevoArchivo);
+			//todo implementar actualizarTablaArchivos()
 		}
 
-		nuevoArchivo->indiceDirectorioPadre = padre;
-		nuevoArchivo->nombre = file;
-		nuevoArchivo->path = destino;
-		nuevoArchivo->bloques = list_create();
-		nuevoArchivo->tamanio = 0;
-		nuevoArchivo->tipoArchivo = tipoArchivo;
-		int i = 0;
-		for (; i < archivoPartido->cantidadBloques; i++) {
-			t_nodoasignado* respuesta = escribir_bloque(
-					list_get(archivoPartido->bloquesPartidos, i));
-			t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
-			unBloqueAux->nroBloque = i;
-			t_bloque_particion* bloqueParticion = list_get(
-					archivoPartido->bloquesPartidos, i);
-			unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
-			nuevoArchivo->tamanio += unBloqueAux->finBloque;
 
-			t_nodo* nodo1 = buscar_nodo(respuesta->nodo1);
-			unBloqueAux->copia1 = malloc(sizeof(ubicacionBloque));
-			unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
-			unBloqueAux->copia1->nroBloque = respuesta->bloque1;
-
-			nodo1->libre--;
-			if (nodo1->libre == 0)
-				nodo1->ocupado = true;
-
-			bitarray_set_bit(nodo1->bitmap, respuesta->bloque1);
-			actualizarBitmap(nodo1);
-
-			t_nodo* nodo2 = buscar_nodo(respuesta->nodo2);
-			unBloqueAux->copia2 = malloc(sizeof(ubicacionBloque));
-			unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
-			unBloqueAux->copia2->nroBloque = respuesta->bloque2;
-
-			nodo2->libre--;
-			if (nodo2->libre == 0)
-				nodo2->ocupado = true;
-
-			bitarray_set_bit(nodo2->bitmap, respuesta->bloque2);
-			actualizarBitmap(nodo2);
-
-			list_add(nuevoArchivo->bloques, unBloqueAux);
-		}
-		list_add(fileSystem.listaArchivos, nuevoArchivo);
-		//todo implementar actualizarTablaArchivos()
 
 	}
 
@@ -1156,14 +1163,14 @@ int main(void) {
 
 					} else if (validaCantParametrosComando(linea, 2) != 0) {
 						parametros = validaCantParametrosComando(linea, 2);
-						if (parametros[1] == "-d") {
+						if (strcmp(parametros[1],"-d")) {
 							//Elimina un Directorio
 						} else {
 							printf("El primer parametro es invalido\n");
 						}
 					} else if (validaCantParametrosComando(linea, 4) != 0) {
 						parametros = validaCantParametrosComando(linea, 4);
-						if (parametros[1] == "-b") {
+						if (strcmp(parametros[1],"-b")) {
 							//Elimina un Bloque
 						} else {
 							printf("El primer parametro es invalido\n");
@@ -1396,9 +1403,9 @@ int main(void) {
 			while ((read = getline(&line, &len, fp)) != -1) {
 				line = str_replace(line, "\n", "");
 				char** linea = str_split(line,',');
-				tablaDeDirectorios[i]->index = (int)linea[0];
+				tablaDeDirectorios[i]->index = atoi(linea[0]);
 				tablaDeDirectorios[i]->nombre = linea[1];
-				tablaDeDirectorios[i]->padre = (int)linea[2];
+				tablaDeDirectorios[i]->padre = atoi(linea[2]);
 				i++;
 			}
 
@@ -1528,19 +1535,153 @@ int main(void) {
 		}
 	}
 
+	void cargarArchivos(){
+		DIR* d;
+		struct dirent *dir;
+		d = opendir("/metadata/archivos/");
+		if (d){
+			while ((dir = readdir(d)) != NULL){
+				if(dir->d_type==DT_DIR){
+					cargarArchivosEnUnSubdirectorio(atoi(dir->d_name));
+				}
+			}
+		closedir(d);
+		}
+	}
+
+	void cargarArchivosEnUnSubdirectorio(int subdirectorio){
+		DIR* d;
+		struct dirent *dir;
+		char* aux1="";
+		sprintf(aux1, "%d", subdirectorio);
+		char* aux="";
+		strcat(aux,"./metadata/archivos/");
+		strcat(aux,aux1);
+		strcat(aux,"/");
+		d = opendir(aux);
+		if (d){
+			while ((dir = readdir(d)) != NULL){
+				if(dir->d_type==DT_REG){
+					char* path="";
+					strcat(path,aux);
+					strcat(path,dir->d_name);
+					list_add(fileSystem.listaArchivos,cargarArchivoDesdeArchivo(path,subdirectorio));
+				}
+			}
+		closedir(d);
+		}
+	}
+
+	t_archivo* cargarArchivoDesdeArchivo(char* path, int directorioPadre){
+		t_archivo* unArchivo=malloc(sizeof(t_archivo));
+		FILE * fp;
+		char * line = NULL;
+		size_t len = 0;
+		ssize_t read;
+
+		fp = fopen(path, "r");
+		if (fp == NULL){
+			printf("No se pudo recuperar el estado anterior del archivo");
+			exit(EXIT_FAILURE);
+		}
+		int i = 0;
+		int cantidadBloques = 0;
+
+		for(;i<3;i++){
+			if((read = getline(&line, &len, fp)) != -1){
+				line = str_replace(line,"\n","");
+				switch(i){
+					case 0:
+						unArchivo->path = line;
+						break;
+					case 1:
+						unArchivo->tamanio = strtoul(str_replace(line, "TAMANIO=", ""),NULL,10);
+						cantidadBloques = unArchivo->tamanio / (1024 *1024);
+						if(unArchivo->tamanio % (1024 *1024)  != 0){
+							cantidadBloques++;
+						}
+						break;
+					case 2:
+						unArchivo->tipoArchivo = atoi(str_replace(line,"TIPO=",""));
+						break;
+				}
+			}
+		}
+
+		char* generarBloq(int bloque, int copia){
+			char* aux2="";
+			sprintf(aux2, "%d", bloque);
+			char* aux3="";
+			sprintf(aux3, "%d", copia);
+			char* aux=malloc(6+5+strlen(aux2)+strlen(aux3)+2);
+			strcat(aux,"BLOQUE");
+			strcat(aux,aux2);
+			strcat(aux,"COPIA");
+			strcat(aux,aux3);
+			strcat(aux,"=");
+			return aux;
+		};
+
+		i = 0;
+		t_list* bloques = list_create();
+		for(;i<cantidadBloques;i++){
+			t_bloque* unBloque=malloc(sizeof(t_bloque));
+			unBloque->nroBloque = i;
+			//copia 0
+			if((read = getline(&line, &len, fp)) != -1){
+				line = str_replace(line,"\n","");
+				line = str_replace(line,generarBloq(i,0),"");
+				char** valores = str_split(line,',');
+				unBloque->copia1->nroNodo = str_replace(valores[0],"[","");
+				unBloque->copia1->nroBloque = atoi(str_replace(valores[1],"]",""));
+			}
+			//copia 1
+			if((read = getline(&line, &len, fp)) != -1){
+				line = str_replace(line,"\n","");
+				line = str_replace(line,generarBloq(i,1),"");
+				char** valores = str_split(line,',');
+				unBloque->copia2->nroNodo = str_replace(valores[0],"[","");
+				unBloque->copia2->nroBloque = atoi(str_replace(valores[1],"]",""));
+
+			}
+			//Fin de bloque
+			if((read = getline(&line, &len, fp)) != -1){
+				line = str_replace(line,"\n","");
+				char* aux="";
+				char* aux2="";
+				sprintf(aux2, "%d", i);
+				strcat(aux,"BLOQUE");
+				strcat(aux,aux2);
+				strcat(aux,"BYTES=");
+				unBloque->finBloque = strtoul(str_replace(line,aux,""),NULL,10);
+			}
+			list_add(bloques,unBloque);
+		}
+		unArchivo->bloques = bloques;
+		fclose(fp);
+		if (line){
+			free(line);
+		}
+		char* p="";
+		split_path_file(&p, &unArchivo->nombre ,path);
+		unArchivo->indiceDirectorioPadre = directorioPadre;
+		return unArchivo;
+	}
+
+	//consultar con seba
 	void actualizarArchivo(t_archivo* unArchivo) {
-//	char* path;
-//	char* file;
-//	split_path_file(&path, &file, unArchivo->path); //el path posee el nombre del archivo?
-//	int cantidadDirectorios = countOccurrences(path, "/")+1;
-//
-//	int padre;
-//	int j;
-//	for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
-//		t_directory* directorio = buscarDirectorio(padre, tablaDeDirectorios[cantidadDirectorios]);
-//		padre= directorio->index;
-//	}
-//
+		char* path;
+		char* file;
+		split_path_file(&path, &file, unArchivo->path); //el path posee el nombre del archivo?
+		int cantidadDirectorios = countOccurrences(path, "/")+1;
+
+		int padre;
+		int j;
+		for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
+			t_directory* directorio = buscarDirectorio(padre, tablaDeDirectorios[cantidadDirectorios]);
+			padre= directorio->index;
+		}
+
 		char* ubicacion = "metadata/archivos/";
 		crear_subcarpeta(ubicacion);
 		//strcat(ubicacion, itoa(cantidadDirectorios));
@@ -1620,6 +1761,11 @@ int main(void) {
 	void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado) {
 		//buscar entrada de directorio de destino
 		path_destino = str_replace(path_destino, "yamafs://", "");
+
+		char* path = malloc(255);
+		char* file = malloc(255);
+
+		split_path_file(&path, &file, path_destino);
 		int cantidadDirectorios = countOccurrences(path_destino, "/");
 		char** directorios = string_split(path_destino, "/");
 		int i = 0;
@@ -1636,8 +1782,8 @@ int main(void) {
 			}
 			indicePadre = directorioActual->index;
 		}
-		archivoEncontrado->nombre = string_duplicate(
-				directorios[cantidadDirectorios - 1]);
+
+		archivoEncontrado->nombre = string_duplicate(file);
 		archivoEncontrado->path = string_duplicate(path_destino);
 		archivoEncontrado->indiceDirectorioPadre = indicePadre;
 		//fijarse si cambia el nombre, si cambia actualizar el t_archivo path, y nombre, indiceDirectorioPadre
