@@ -232,3 +232,10 @@ void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado);
 
 // Renombra un archivo en yama
 void yama_rename(char*, char*);
+
+// Recibe el path de la metadata de un archivo y devuelve la estructura con los respectivos valores
+t_archivo* cargarArchivoDesdeArchivo(char* unPath, int directorioPadre);
+
+void cargarArchivosEnUnSubdirectorio(int);
+
+void cargarArchivos();
