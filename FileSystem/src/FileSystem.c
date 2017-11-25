@@ -402,6 +402,7 @@ int main(void) {
 
 // CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
 	void CP_TO(char* origen, char*destino) {
+		origen = str_replace(origen, "yamafs://", "");
 		//buscar el archivo de origen en la tabla de archivos
 		bool buscarArchivoPorPath(void* elem) {
 			return string_equals_ignore_case(((t_archivo*) elem)->path, origen);
@@ -433,9 +434,11 @@ int main(void) {
 				fwrite(contenido, bloque->finBloque, 1, fd);
 				free(contenido);
 				return;
-			} else {
-				if (bloque->copia2 != NULL)
+			}
+			else{
+				if (bloque->copia2 != NULL){
 					nodo = buscar_nodo(bloque->copia2->nroNodo);
+				}
 
 				if (nodo == NULL) {
 					char* nombre1 = "";
@@ -702,9 +705,11 @@ int main(void) {
 			int i = 0;
 			while (cantidadRenglones != i) {
 
-				if(string_equals_ignore_case(renglones[i], ""))
+				if(renglones[i] == NULL || string_equals_ignore_case(renglones[i], ""))
+				{
+					i++;
 					continue;
-
+				}
 				string_append(&renglones[i], "\n");
 				if (bloquePartido == NULL
 						|| tamanioBloque + strlen(renglones[i]) > 1024 * 1024) {
@@ -1058,8 +1063,7 @@ int main(void) {
 
 		fwrite(buffer, sizeof(char), archivoEncontrado->tamanio, fp);
 		fclose(fp);
-		char* comando = "md5sum ";
-		string_append(&comando, pathArchivo);
+		char* comando =string_from_format("md5sum %s", pathArchivo);
 		system(comando);
 	}
 
@@ -1236,7 +1240,7 @@ int main(void) {
 					printf("Copiar un archivo local al yamafs\n");
 					parametros = validaCantParametrosComando(linea, 2);
 					if (parametros != NULL) {
-
+						CP_TO(parametros[1], parametros[2]);
 					} else {
 						printf(
 								"El cpto debe recibir el path_archivo_yamafs y el directorio_filesystem. \n");
@@ -1442,6 +1446,28 @@ int main(void) {
 		} else {
 			printf("El directorio ya existe \n");
 		}
+	}
+
+	void cargarBitmapDesdeArchivo(t_nodo* unNodo){
+		char* aux = malloc(200);
+		string_append(&aux, "metadata/bitmaps/");
+		string_append(&aux, unNodo->nroNodo);
+		string_append(&aux, ".dat");
+
+		FILE * file = fopen(aux, "r");
+		if (file != NULL) {
+
+			int cantidad = (unNodo->tamanio / (1024 * 1024)) / 8;
+			if ((unNodo->tamanio / (1024 * 1024)) % 8 != 0){
+				cantidad++;
+			}
+			char* bitarray=malloc(cantidad);
+			fread(bitarray, cantidad,1, file);
+			unNodo->bitmap = bitarray_create(bitarray,cantidad);
+
+			fclose(file);
+		}
+		free(aux);
 	}
 
 	void actualizarBitmap(t_nodo* unNodo) {

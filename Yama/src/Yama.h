@@ -39,14 +39,7 @@ typedef struct t_estados{
 	t_list* contenido;
 } t_estados;
 
-typedef struct t_clock{
-	int disponibilidad;
-	char* worker_id;
-	char* ip;
-	int puerto;
-	t_list* bloques; //(t_infobloque)
 
-} t_clock;
 
 typedef struct t_tabla_planificacion{
 	t_link_element* clock_actual; //t_clock*
@@ -93,3 +86,5 @@ int CalcularDisponibilidad(t_clock* worker, t_tabla_planificacion* tabla);
 int CalcularWLMax(t_tabla_planificacion* tabla);
 
 int CalcularWLWorker(t_clock* worker);
+
+char *randstring(size_t length);

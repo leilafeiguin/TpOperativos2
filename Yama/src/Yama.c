@@ -361,9 +361,9 @@ int main(void) {
 										desplazamiento+=sizeof(int);
 
 										char* dirTemp=generarDirectorioTemporal();
-										//directorio temporal (15)
-										memcpy(buffer+desplazamiento,  dirTemp, 15);
-										desplazamiento+=15;
+										//directorio temporal (11)
+										memcpy(buffer+desplazamiento,  dirTemp, 11);
+										desplazamiento+=11;
 
 									}
 
@@ -376,43 +376,6 @@ int main(void) {
 								// agregar un elemento a t_estados. Refactoriza como quieras la estructura t_job
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								socketFS = socketActual;
-
-
-/*
-								//Deserializacion mover a Master
-																archivoNodo->bloquesRelativos =  list_create();
-																archivoNodo->workersAsignados= list_create();
-
-																int cantidadWorkers = 0;
-																int desplazamiento = 0;
-																memcpy(&cantidadWorkers, paqueteRecibido->data + desplazamiento, sizeof(int));
-																desplazamiento+=sizeof(int);
-
-																for(i=0;i<cantidadWorkers;i++){
-																	t_clock* worker = malloc(sizeof(t_clock));
-																	memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
-																	desplazamiento+= 15;
-																	memcpy(worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
-																	desplazamiento+= sizeof(int);
-
-																	int cantidadBloques = 0;
-																	memcpy(&cantidadBloques, paqueteRecibido->data + desplazamiento, sizeof(int));
-
-																	for(i=0;i<cantidadBloques;i++){
-																		t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
-
-																		memcpy(infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
-																		desplazamiento+= sizeof(int);
-																		memcpy(infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
-																		desplazamiento+= sizeof(int);
-
-																		//falta archivo temporal
-
-																		// agregar a la lista de bloques list_add(archivoNodo->bloquesRelativos, worker);
-																	}
-																	// agregar a la lista de workers list_add(archivoNodo->bloquesRelativos, worker);
-																}
-*/
 
 
 
@@ -492,7 +455,32 @@ int main(void) {
 
 char* generarDirectorioTemporal(){
 
-	return "/tmp/";//todo buscar una funcion que te genere X cantidad de caracteres aleatorios
+	char* dirTemp= malloc(11);
+	string_append(&dirTemp, "/tmp/");
+	string_append(&dirTemp, randstring(5));//todo buscar una funcion que te genere X cantidad de caracteres aleatorios
+	return dirTemp;
+}
+
+char *randstring(size_t length) {
+
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
+    char *randomString = NULL;
+
+    if (length){
+        randomString = malloc(sizeof(char) * (length +1));
+
+        if (randomString){
+        	int n;
+            for ( n = 0;n < length;n++) {
+                int key = rand() % (int)(sizeof(charset) -1);
+                randomString[n] = charset[key];
+            }
+
+            randomString[length] = '\0';
+        }
+    }
+
+    return randomString;
 }
 
 void sig_handler(int signo){
