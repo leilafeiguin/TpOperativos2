@@ -113,9 +113,17 @@ typedef struct t_infobloque
 	int bloqueRelativo;
 	int bloqueAbsoluto;
 	int finBloque;
-
+	char* dirTemporal;
 }t_infobloque;
 
+typedef struct t_clock{
+	int disponibilidad;
+	char* worker_id;
+	char* ip;
+	int puerto;
+	t_list* bloques; //(t_infobloque)
+
+} t_clock;
 
 
 /**	@NAME: conectar_a
