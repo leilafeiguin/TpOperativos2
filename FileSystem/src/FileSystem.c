@@ -46,7 +46,7 @@ int main(void) {
 		tablaDeDirectorios[x]->index = 0;
 		tablaDeDirectorios[x]->nombre = "root";
 		tablaDeDirectorios[x]->padre = -1;
-		for (x = 1; x < 100; x++) {
+		for(x = 1; x < 100; x++) {
 			tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 			tablaDeDirectorios[x]->index = -2;
 			tablaDeDirectorios[x]->nombre = "";
@@ -413,7 +413,7 @@ int main(void) {
 				buscarArchivoPorPath);
 
 		if (archivoEncontrado == NULL) {
-			printf("El path %s no se encuentra en el FS\n", path);
+			printf("El path %s no se encuentra en el FS\n", origen);
 			return;
 		}
 
@@ -1174,9 +1174,9 @@ int main(void) {
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rename") == 0) {
 					printf("Renombra un Archivo o Directorio\n");
-					parametros = validaCantParametrosComando(linea, 2);
+					parametros = validaCantParametrosComando(linea, 3);
 					if (parametros != NULL) {
-						yama_rename(parametros[1], parametros[2]);
+						yama_rename(parametros[1], parametros[2], parametros[3]);
 					} else {
 						printf(
 								"El rename debe recibir path_original nombre_final. \n");
@@ -1644,30 +1644,58 @@ int main(void) {
 
 	}
 
-	void yama_rename(char* path_origen, char* nuevo_nombre) {
+	void yama_rename(char* path_origen, char* nuevo_nombre, char* modo) {
 		path_origen = str_replace(path_origen, "yamafs://", "");
 
-		int cantidadDirectorios = countOccurrences(path_origen, "/") + 1;
-		char** directorios = string_split(path_origen, "/");
-		int esElNombreDeArchivo(t_archivo* archivo) {
-			if (archivo->nombre == directorios[cantidadDirectorios]) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
+		if(string_equals_ignore_case(modo, "a")){
+			bool buscarArchivoPorPath(void* elem) {
+								return string_equals_ignore_case(((t_archivo*) elem)->path, path_origen);
+							};
 
-		t_archivo* unArchivo = list_find(fileSystem.listaArchivos,
-				(void*) esElNombreDeArchivo);
+					t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos,
+							buscarArchivoPorPath);
+					if (archivoEncontrado != NULL) {
+						archivoEncontrado->nombre=string_duplicate(nuevo_nombre);
+						char* path = malloc(255);
+						char* file = malloc(255);
 
-		if (unArchivo != NULL) {
-			path_origen = str_replace(path_origen,
-					directorios[cantidadDirectorios], nuevo_nombre);
-			unArchivo->path = path_origen;
-			unArchivo->nombre = nuevo_nombre;
+						split_path_file(&path, &file, path_origen);
+						string_append(&path, nuevo_nombre);
+						free(archivoEncontrado->path);
+						archivoEncontrado->path=path;
+
+
+					}else {
+						printf("El archivo no existe\n");
+					}
+		} else if(string_equals_ignore_case(modo, "d")){
+					if (!string_ends_with(path_origen, "/")) {
+						string_append(&path_origen, "/");
+					}
+
+					int cantidadDirectorios = countOccurrences(path_origen, "/");
+					char** directorios = string_split(path_origen, "/");
+					int i = 0;
+					int indicePadre = 0;
+					t_directory* directorioActual = NULL;
+					for (; i < cantidadDirectorios; i++) {
+						if (directorios[i] == NULL)
+							break;
+						directorioActual = buscarDirectorio(indicePadre, directorios[i]);
+						if (directorioActual == NULL) {
+							printf("El directorio %s no existe para el padre %i\n",
+									directorios[i], indicePadre);
+							return;
+						}
+						indicePadre = directorioActual->index;
+					}
+
+					directorioActual->nombre =string_duplicate(nuevo_nombre);
+
 		} else {
-			printf("El archivo no existe\n");
+			printf("El modo debe ser 'a' o 'd' \n");
 		}
+
 
 	}
 
