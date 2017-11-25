@@ -24,21 +24,6 @@ typedef enum t_estado {
 	finalizado = 3
 } t_estado;
 
-typedef struct t_job{
-	int socketMaster;
-	char* worker_id;//nodo id
-	int bloque;
-	t_etapa etapa;
-	int cantidadTemporal;
-	char* temporal;
-	t_estado estado;
-} t_job;
-
-typedef struct t_estados{
-	int job;
-	t_list* contenido;
-} t_estados;
-
 
 
 typedef struct t_tabla_planificacion{
@@ -46,6 +31,25 @@ typedef struct t_tabla_planificacion{
 	t_list* workers; //(t_clock)*
 	char* archivo;
 }t_tabla_planificacion;
+
+
+
+typedef struct t_job{
+
+	char* worker_id;//nodo id
+	int bloque;
+	t_etapa etapa;
+
+	char* temporal;
+	t_estado estado;
+	t_tabla_planificacion* planificacion;
+} t_job;
+
+typedef struct t_estados{
+	char* archivo;
+	int socketMaster;
+	t_list* contenido;
+} t_estados;
 
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
@@ -77,7 +81,7 @@ t_job* crearJob(t_job datos);
 
 int availability();
 
-void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* bloquesxnodo);
+void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob);
 
 char* generarDirectorioTemporal();
 

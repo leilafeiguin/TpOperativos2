@@ -32,7 +32,7 @@ int main(void) {
     configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-	t_list* tablas= list_create();
+	t_list* tablas_planificacion= list_create();
 
 	/*t_job job;
 	job.master = 1;
@@ -209,7 +209,7 @@ int main(void) {
 							case cop_yama_info_fs:
 							{
 								t_tabla_planificacion* tabla= malloc(sizeof(t_tabla_planificacion));
-								list_add(tablas, tabla);
+								list_add(tablas_planificacion, tabla);
 								tabla->workers = list_create();
 
 								//Deserializacion
@@ -315,12 +315,15 @@ int main(void) {
 								}
 
 								list_iterate(archivoNodo->nodos, armarListaWorker);
-
+								t_estados* estadosxjob=malloc(sizeof(t_estados));
+								estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
+								estadosxjob->socketMaster = socketActual;
 								//Evalua y planifica en base al archivo que tiene que transaformar
 								void planificarBloques(void* bloque){
 									int* nroBloque = (int*)bloque;
-									planificarBloque(tabla , *nroBloque, archivoNodo );
+									planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob );
 								}
+								list_add(tabla_estados, estadosxjob);
 
 								list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
 
@@ -427,7 +430,47 @@ int main(void) {
 								desplazamiento+=longitudMensaje;
 
 								if(string_equals_ignore_case(estadoWorker, "ok")){
-									//avanza el proceso de forma normal
+
+									bool buscarXArchivoYMaster(void* elem){
+										return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
+												((t_estados*)elem)->socketMaster == socketActual;
+									}
+									t_estados* estado=list_find(tabla_estados, buscarXArchivoYMaster);
+
+									t_list* nuevosJobs= list_create();
+
+
+									void actualizarEstado(void* elem){
+										t_job* job= (t_job*)elem;
+										job->estado= finalizado;
+
+										t_job* nuevoJob=malloc(sizeof(t_job));
+										nuevoJob->bloque = job->bloque;
+										nuevoJob->estado = enProceso;
+										nuevoJob->planificacion = job->planificacion;
+										nuevoJob->temporal = job->temporal;
+										nuevoJob->worker_id = job->worker_id;
+										switch(job->etapa){
+											case transformacion:
+												nuevoJob->etapa = reduccionLocal;
+												break;
+											case reduccionLocal:
+												nuevoJob->etapa = reduccionGlobal;
+												break;
+											case reduccionGlobal:
+												nuevoJob->etapa = almacenamientoFinal;
+												break;
+											case almacenamientoFinal:
+												//Termino
+												nuevoJob->etapa = almacenamientoFinal;
+												break;
+										}
+										list_add(nuevosJobs, nuevoJob);
+									}
+
+									list_iterate(estado->contenido, actualizarEstado);
+									list_add_all(nuevosJobs, estado->contenido);
+
 								}else{
 									//replanificar
 								}
@@ -492,7 +535,7 @@ void sig_handler(int signo){
     	//log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
     }
 }
-
+/*
 void procesar_job(int jobId, t_job datos){
 	t_estados* registro=(t_estados*) buscar_por_jobid(jobId);
 	if(registro == NULL){
@@ -545,9 +588,9 @@ void* buscar_por_jobid(int jobId){
 	return list_find(tabla_estados, (void*) _is_the_one);
 }
 
+*/
 
-
-void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo){
+void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob){
 
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
@@ -573,6 +616,13 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 	void asignarBloqueAWorker(t_clock* worker,int* numeroBloque, t_archivoxnodo* archivo){
 		worker->disponibilidad--;
 
+		t_job* jobBloque=malloc(sizeof(t_job));
+		jobBloque->bloque= *numeroBloque;
+		jobBloque->estado = enProceso;
+		jobBloque->etapa = transformacion;
+		jobBloque->worker_id= string_duplicate(worker->worker_id);
+		jobBloque->temporal = generarDirectorioTemporal();
+		list_add(estadoxjob->contenido, jobBloque);
 		list_add(worker->bloques, infoBloque);
 
 		bool existeWorkerAsignado(void* elem){
@@ -585,6 +635,8 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		}
 
 	}
+
+
 
 	if(list_any_satisfy(archivo->nodos, workerContieneBloque)){
 		if(CalcularDisponibilidad(((t_clock*)tabla->clock_actual->data), tabla)> 0)
