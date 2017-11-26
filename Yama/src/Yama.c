@@ -531,10 +531,10 @@ char *randstring(size_t length) {
 void sig_handler(int signo){
     if (signo == SIGUSR1){
         printf("Se recibio SIGUSR1\n");
-    	//log_trace(logger, "Se recibio SIGUSR1");
+    	log_trace(logger, "Se recibio SIGUSR1");
     	configuracion = get_configuracion();
     	printf("Se cargo nuevamente el archivo de configuracion\n");
-    	//log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
+    	log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
     }
 }
 /*
