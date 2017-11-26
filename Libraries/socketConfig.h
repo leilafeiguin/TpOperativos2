@@ -24,9 +24,6 @@
 #include <commons/collections/list.h>
 
 
-
-
-
 //0 - 9 Handhsake
 //10 - 29 Master
 //30- 49 YAMA

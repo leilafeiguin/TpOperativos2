@@ -677,7 +677,7 @@ int main(void) {
 				cantidadBloques++;
 			int tamanio = 0;
 			int i = 0;
-			for (; i < cantidadBloques; i++) //falta completar casos de archivos de texto
+			for (; i < cantidadBloques; i++)
 					{
 				t_bloque_particion* bloquePartido = malloc(
 						sizeof(t_bloque_particion));
@@ -745,7 +745,6 @@ int main(void) {
 			archivoPartido->cantidadBloques = cantidadBloques;
 			return archivoPartido;
 		}
-
 	}
 
 	char** str_split(char* a_str, const char a_delim) {
@@ -810,15 +809,15 @@ int main(void) {
 			printf("parametros= %s \n", *(parametros + i));
 		}
 
-		if (i == 1) {
+		if (i == 2) {
 			printf("Cantidad de parametros correcta. Elimina archivo. \n");
 			eliminar_archivo(parametros[1]);
-		} else if(i == 2){
+		} else if(i == 3){
 			if(string_equals_ignore_case(parametros[1], "-d")){
 				printf("Cantidad de parametros correcta. Elimina directorio. \n");
 				eliminar_directorio(parametros[2]);
 			}
-		}else if(i == 4){
+		}else if(i == 5){
 			if(string_equals_ignore_case(parametros[1], "-b")){
 				printf("Cantidad de parametros correcta. Elimina bloque. \n");
 				eliminar_bloque(parametros[2], atoi(parametros[3]), atoi(parametros[4]));
@@ -1190,15 +1189,17 @@ int main(void) {
 		void eliminar_directorio(char* path) {
 				path=str_replace(path, "yamafs://","");
 				if (!string_ends_with(path, "/"))
-					string_append(path, "/");
+					string_append(&path, "/");
 				int cantidadDirectorios=countOccurrences(path, "/");
 				char** directorios = string_split(path, "/");
 				t_directory* directorioAEliminar = NULL;
+				int indicePadre=0;
 				int i=0;
-				for (; i < cantidadDirectorios - 1; i++) {
+				for (; i < cantidadDirectorios; i++) {
 					if (directorios[i] == NULL)
 						break;
-					directorioAEliminar = buscarDirectorio(directorioAEliminar->padre, directorios[i]);
+					directorioAEliminar = buscarDirectorio(indicePadre, directorios[i]);
+					indicePadre = directorioAEliminar->padre;
 				}
 				bool buscarArchivoPorPath(void* elem) {
 					return string_contains(path, (char*)elem);
@@ -1258,7 +1259,7 @@ int main(void) {
 		char* context;
 
 		while (1) {
-			linea = readline(">");
+			linea = readline(">")
 			if (!linea || string_equals_ignore_case(linea, "")) {
 				continue;
 			} else {
