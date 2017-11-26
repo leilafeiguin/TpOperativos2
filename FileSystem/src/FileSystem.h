@@ -121,7 +121,7 @@ static void nodo_destroy(t_nodo* nodo) {
 }
 
 //inicializacion de estructuras
-t_directory* tablaDeDirectorios[99];
+t_directory* tablaDeDirectorios[100];
 
 t_fs fileSystem;
 

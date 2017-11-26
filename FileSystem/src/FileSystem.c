@@ -1259,7 +1259,7 @@ int main(void) {
 		char* context;
 
 		while (1) {
-			linea = readline(">")
+			linea = readline(">");
 			if (!linea || string_equals_ignore_case(linea, "")) {
 				continue;
 			} else {
