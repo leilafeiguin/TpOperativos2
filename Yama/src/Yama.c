@@ -9,8 +9,6 @@
  ============================================================================
  */
 
-//leipt
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -325,6 +323,7 @@ int main(void) {
 								void planificarBloques(void* bloque){
 									int* nroBloque = (int*)bloque;
 									planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob );
+									usleep(configuracion.RETARDO_PLANIFICACION);
 								}
 								list_add(tabla_estados, estadosxjob);
 

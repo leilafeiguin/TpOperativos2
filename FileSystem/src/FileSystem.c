@@ -36,7 +36,7 @@ int main(void) {
 	fileSystem_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-	//Inciializacion de estructuras
+	//Incializacion de estructuras
 	int x = 0;
 	tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 	tablaDeDirectorios[x]->index = 0;
@@ -545,7 +545,6 @@ int main(void) {
 				list_add(nuevoArchivo->bloques, unBloqueAux);
 			}
 			list_add(fileSystem.listaArchivos, nuevoArchivo);
-			//todo implementar actualizarTablaArchivos()
 		}
 
 
@@ -1251,7 +1250,7 @@ int main(void) {
 			bool buscarArchivoPorPath(void* elem) {
 				return string_equals_ignore_case(((t_archivo*) elem)->path, path);
 			};
-			t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+			t_archivo* unArchivo = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 			if(unArchivo == NULL)
 			{
 				printf("El archivo %s no existe", path);
@@ -1275,18 +1274,20 @@ int main(void) {
 				t_nodo* nodo=buscar_nodo(bloque->copia1->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia1->nroBloque);
 				free(bloque->copia1);
+				bloque->copia1 = NULL;
 				printf("Eliminando copia 1 \n");
 			}
 			else if(nroCopia == 2 && bloque->copia2 != NULL) {
 				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
 				free(bloque->copia2);
+				bloque->copia2 = NULL;
 				printf("Eliminando copia 2 \n");
 			}
 	}
 
 	void hiloFileSystem_Consola(void * unused) {
-		printf("Consola Iniciada. Ingrese una opcion \n");
+		printf("Consola Iniciada. Ingrese una opcion: \n");
 		char * linea;
 		char* primeraPalabra;
 		char* context;
@@ -1307,7 +1308,6 @@ int main(void) {
 				if (strcmp(linea, "format") == 0) {
 					printf("Formatear el Filesystem\n");
 					formatearFileSystem();
-					actualizarArchivoDeDirectorios();
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
 					printf(
@@ -1433,7 +1433,8 @@ int main(void) {
 					printf("Opcion no valida.\n");
 					free(linea);
 				}
-
+				actualizarArchivoDeDirectorios();
+				actualizarArchivoTablaNodos();
 				free(lineaCopia);
 				if (parametros != NULL)
 					free(parametros);
@@ -1559,17 +1560,20 @@ int main(void) {
 			fclose(fp);
 			if (line)
 				free(line);
-			exit(EXIT_SUCCESS);
 			return true;
 		} else {
 		    // file doesn't exist
-			printf("No existe un estado anterior de directorios");
+			printf("No existe un estado anterior de directorios. \n");
 			return false;
 		}
 	}
 
 	void actualizarArchivoDeDirectorios() {
-		crear_subcarpeta("metadata");
+		DIR* dir = opendir("metadata");
+		if (dir){
+			crear_subcarpeta("metadata");
+			closedir(dir);
+		}
 		FILE * file = fopen("metadata/directorios.txt", "w");
 		int i;
 		if (file != NULL) {
@@ -1829,8 +1833,7 @@ int main(void) {
 		path = str_replace(path, "yamafs://", "");
 		bool buscarArchivoPorPath(void* elem) {
 			return string_equals_ignore_case(((t_archivo*) elem)->path, path);
-		}
-		;
+		};
 
 		t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos,
 				buscarArchivoPorPath);
@@ -1841,8 +1844,7 @@ int main(void) {
 			else
 				tipoArchivo = "BINARIO";
 
-			printf(
-					"Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
+			printf("Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
 					archivoEncontrado->nombre, archivoEncontrado->tamanio,
 					tipoArchivo);
 			//imprimir nombre, tamanio y tipo de archivo

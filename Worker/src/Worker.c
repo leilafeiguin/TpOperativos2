@@ -96,7 +96,6 @@ char* apareo (char* paths []){
 
 void* archivo;
 
-
 int main(void) {
 	t_log* logger;
 	char* fileLog;
@@ -123,7 +122,7 @@ int main(void) {
 //Se abre data bin en modo read
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
 	fstat(fd, &sb);
-	archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0); //PROT_READ ??
+	archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
 
 	un_socket socketServer=socket_escucha("127.0.0.1", configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
@@ -155,7 +154,6 @@ int main(void) {
 
 								int desplazamiento = 0;
 
-								//memcpy(origen, destino, cuantoQuieroCopiar)
 								memcpy(&paquete_transformacion->cant_script, paquete_recibido->data, sizeof(int));
 								desplazamiento += sizeof(int);
 								paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
