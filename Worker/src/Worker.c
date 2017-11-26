@@ -4,6 +4,9 @@
 #include "Worker.h"
 #include "socketConfig.h"
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
 
 #define MAX_LINE 4096
@@ -91,7 +94,8 @@ char* apareo (char* paths []){
 	return "fileTestOrdenado";
 }
 
-//-----------------------------------------MAIN-----------------------------------------------
+void* archivo;
+
 
 int main(void) {
 	t_log* logger;
@@ -107,6 +111,20 @@ int main(void) {
 	log_trace(logger, "Inicializando proceso Worker");
 	worker_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
+
+	struct stat sb;
+	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
+		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
+		ftruncate(fileno(fd), 20*1024*1024);
+		fclose(fd);
+
+		}
+
+//Se abre data bin en modo read
+	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
+	fstat(fd, &sb);
+	archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0); //PROT_READ ??
+
 	un_socket socketServer=socket_escucha("127.0.0.1", configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
 	while(1){
