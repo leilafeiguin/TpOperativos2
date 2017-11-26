@@ -12,8 +12,21 @@
 #include <stdlib.h>
 #include "Master.h"
 #include <pthread.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
-int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archivoDestino) {
+char* SCRIPT_TRANSF;
+char* SCRIPT_REDUC;
+
+int main(int argc, char** argv) {
+
+	char* scriptTransf = argv[0];
+	char* scriptReduc = argv[1];
+    char* archivoOrigen= argv[2];
+	char* archivoDestino=argv[3];
+	SCRIPT_TRANSF=scriptTransf;
+	SCRIPT_REDUC=scriptReduc;
+
 	t_log* logger;
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
@@ -53,7 +66,7 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 		t_clock* worker = malloc(sizeof(t_clock));
 		memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
 		desplazamiento+= 15;
-		memcpy(worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+		memcpy(&worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+= sizeof(int);
 
 		int cantidadBloques = 0;
@@ -63,9 +76,9 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 		for(j=0;j<cantidadBloques;j++){
 			t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
 
-			memcpy(infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
+			memcpy(&infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
-			memcpy(infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+			memcpy(&infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
 
 			infoBloque->dirTemporal = malloc(11);
@@ -112,8 +125,86 @@ int main(char* scriptTransf, char* scriptReduc, char* archivoOrigen, char* archi
 	return EXIT_SUCCESS;
 }
 
+
 void hiloWorker(void* infoWorker){
 	t_clock* worker=(t_clock*)infoWorker;
+	int desplazamiento=0;
+	FILE *fileIN;
+	fileIN = fopen(SCRIPT_TRANSF, "rb");
+	if(!fileIN){
+		printf("No se puede abrir el archivo.\n");
+		exit(-1);
+	}
+
+	struct stat st_script;
+	stat(SCRIPT_TRANSF, &st_script);
+	void* bufferScript = malloc (st_script.st_size);
+
+	int MAX_LINE=4096;
+	char singleline[MAX_LINE];
+	while(fgets(singleline, MAX_LINE, fileIN) != NULL){
+		strcat(bufferScript, singleline);
+	}
+
+	int cantElementos = list_size(worker->bloques);
+
+	//Leer el archivo de script que corresponda segun la etapa (transformacion o reduccion)
+	//Hacer un strlen+1 del buffer donde tenemos el contenido del archivo
+	void* buffer= malloc(sizeof(int) + cantElementos * sizeof(int)+ strlen(bufferScript)+1 + sizeof(int));
+
+	void infoBloque(void* bloque){
+		t_infobloque* infobloque=((t_infobloque*)bloque);
+
+		struct stat st;
+
+		memcpy(buffer+desplazamiento, &st.st_size, sizeof(int));
+		desplazamiento+=sizeof(int);
+
+		memcpy(buffer+desplazamiento, bufferScript, strlen(bufferScript)+1);
+		desplazamiento+=strlen(bufferScript)+1;
+
+		memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));
+		desplazamiento+=sizeof(int);
+
+		memcpy(buffer+desplazamiento, &infobloque->dirTemporal, 11);
+		desplazamiento+=11;
+
+		memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
+		desplazamiento+=sizeof(int);
+	}
+	list_iterate(((t_clock*)worker)->bloques, infoBloque);
+
+	char* puerto = malloc(10);
+
+	 snprintf(puerto , 10, "%i", worker->puerto);
+	un_socket workerSocket = conectar_a(worker->ip, puerto);
+	realizar_handshake(workerSocket, cop_handshake_master);
+	enviar(workerSocket,cop_worker_transformacion,desplazamiento,buffer);
+	t_paquete* paqueteRecibido = recibir(workerSocket);
+
+	char* mensaje = "";
+	if(paqueteRecibido->data == NULL){
+		printf("Se desconecto el nodo /n");
+		mensaje= "ERROR: se desconecto el nodo";
+	}
+	else{
+		int desplazamiento = 0;
+		//void* buffer = malloc();
+
+		//memcpy(buffer+desplazamiento, strlen())
+	}
+
+	//envio yama lei
+//	int desplazamiento = 0;
+//	void* buffer= malloc();
+
+
+
+	int longitudMensaje = strlen(mensaje) + 1;
+	memcpy(buffer+desplazamiento, longitudMensaje , sizeof(int));
+	desplazamiento += sizeof(int);
+	memcpy(buffer+desplazamiento, mensaje , longitudMensaje);
+	desplazamiento += longitudMensaje;
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)

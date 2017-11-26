@@ -101,6 +101,7 @@ typedef struct t_archivoxnodo{
 	t_list* workersAsignados; //t_clock* // no se serializa
 }t_archivoxnodo;
 
+
 typedef struct t_nodoxbloques {
 	char * idNodo;
 	t_list* bloques; //t_infobloque

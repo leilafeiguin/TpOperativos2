@@ -431,6 +431,7 @@ int main(void) {
 								memcpy(mensaje, paqueteRecibido->data + desplazamiento, longitudMensaje);
 								desplazamiento+=longitudMensaje;
 
+
 								if(string_equals_ignore_case(estadoWorker, "ok")){
 
 									bool buscarXArchivoYMaster(void* elem){
