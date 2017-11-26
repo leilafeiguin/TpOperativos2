@@ -22,7 +22,6 @@
 
 
 int main(void) {
-
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -402,7 +401,6 @@ int main(void) {
 		list_add(nodo->bloques, infobloque);
 	}
 
-// CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
 	void CP_TO(char* origen, char*destino) {
 		origen = str_replace(origen, "yamafs://", "");
 		//buscar el archivo de origen en la tabla de archivos
@@ -1748,24 +1746,15 @@ int main(void) {
 		return unArchivo;
 	}
 
-	//consultar con seba
 	void actualizarArchivo(t_archivo* unArchivo) {
-		char* path;
-		char* file;
-		split_path_file(&path, &file, unArchivo->path); //el path posee el nombre del archivo?
+		char* path=malloc(255);
+		char* file=malloc(255);
+		split_path_file(&path, &file, unArchivo->path);
 		int cantidadDirectorios = countOccurrences(path, "/")+1;
-
-		int padre;
-		int j;
-		for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
-			t_directory* directorio = buscarDirectorio(padre, tablaDeDirectorios[cantidadDirectorios]);
-			padre= directorio->index;
-		}
-
-		char* ubicacion = "metadata/archivos/";
-		crear_subcarpeta(ubicacion);
-		//strcat(ubicacion, itoa(cantidadDirectorios));
-		FILE * fp = fopen(ubicacion, "w");
+		char* ubicacionCarpeta = string_from_format("metadata/archivos/%i/",unArchivo->indiceDirectorioPadre);
+		crear_subcarpeta(ubicacionCarpeta);
+		char* ubicacionArchivo = string_from_format("%s%s",ubicacionCarpeta, unArchivo->nombre);
+		FILE * fp = fopen(ubicacionArchivo, "w");
 		fprintf(fp, "%s\n", unArchivo->path);
 		fprintf(fp, "TAMANIO=%lu\n", unArchivo->tamanio);
 		fprintf(fp, "TIPO=%i\n", unArchivo->tipoArchivo);
