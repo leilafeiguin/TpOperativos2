@@ -726,7 +726,7 @@ int main(void) {
 				char* aux=malloc(sb.st_size - archivo);
 				memcpy(aux,contenidoArchivo + archivo,sb.st_size - archivo);
 
-				int ultimoByteValido = sb.st_size - archivo-1;
+				int ultimoByteValido = sb.st_size - archivo;
 				//logica sobre esa parte
 				bloquePartido = malloc(sizeof(t_bloque_particion));
 				bloquePartido->contenido = malloc(ultimoByteValido);
