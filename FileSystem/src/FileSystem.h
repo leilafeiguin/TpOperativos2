@@ -256,3 +256,5 @@ void cargarArchivosEnUnSubdirectorio(int);
 void cargarArchivos();
 
 bool cargarDirectoriosDesdeArchivo();
+
+bool elArchivoPuedeSercargado(int);

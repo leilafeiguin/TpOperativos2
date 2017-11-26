@@ -178,7 +178,7 @@ int main(void) {
 			unBitmap = bitarray_create(data, cantidad);
 			t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap,
 					socketNuevo, infoNodo->ip, infoNodo->puertoWorker,
-					infoNodo->tamanio, cantidad);
+					infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)));
 			list_add(fileSystem.ListaNodos, unNodo);
 		}
 			//falta agregar otras estructuras administrativas
@@ -475,7 +475,7 @@ int main(void) {
 
 	void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
 		struct stat st;
-		int tamanioArchivo = stat(origen, &st);
+		stat(origen, &st);
 		if(st.st_size == 0){
 			printf("El archivo esta vacio.\n");
 		}else{
@@ -505,13 +505,13 @@ int main(void) {
 			nuevoArchivo->tamanio = 0;
 			nuevoArchivo->tipoArchivo = tipoArchivo;
 			int i = 0;
+			if(!elArchivoPuedeSercargado(archivoPartido->cantidadBloques)){
+				printf("No hay suficiente espacio en los nodos para almacenar el archivo.\n");
+				return;
+			}
 			for (; i < archivoPartido->cantidadBloques; i++) {
 				t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos, i));
-				if(respuesta == NULL)
-				{
-					printf("No hay suficiente espacio en los nodos para almacenar el archivo. Error en bloque %i\n", i);
-					return;
-				}
+
 				t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
 				unBloqueAux->nroBloque = i;
 				t_bloque_particion* bloqueParticion = list_get(archivoPartido->bloquesPartidos, i);
@@ -546,8 +546,6 @@ int main(void) {
 			}
 			list_add(fileSystem.listaArchivos, nuevoArchivo);
 		}
-
-
 
 	}
 
@@ -1453,11 +1451,14 @@ int main(void) {
 	t_nodo* buscar_nodo_libre(char* nodoAnterior) {
 		//todo hacer un random para que no asigne en el mismo orden
 		bool buscarLibre(void* elemento) {
-			return !((t_nodo*) elemento)->ocupado
-					&& (nodoAnterior == 0
-							|| ((t_nodo*) elemento)->nroNodo != nodoAnterior);
+			return !((t_nodo*) elemento)->ocupado && (nodoAnterior == 0 || ((t_nodo*) elemento)->nroNodo != nodoAnterior);
 		}
-		return list_find(fileSystem.ListaNodos, buscarLibre);
+
+		t_list* nodosCandidatos=list_filter(fileSystem.ListaNodos, buscarLibre);
+
+		int i=rand() % list_size(nodosCandidatos);
+		return list_get(nodosCandidatos, i);
+
 	}
 
 	int buscarBloque(t_nodo* nodo) {
@@ -2039,3 +2040,13 @@ int main(void) {
 			}
 		}
 	}
+
+	bool elArchivoPuedeSercargado(int cantidadBloques){
+		int libreTotal=0;
+		void bloquesLibres(t_nodo* unNodo){
+			libreTotal += unNodo->libre/2;
+		}
+		list_iterate(fileSystem.ListaNodos,(void*)bloquesLibres);
+		return libreTotal>cantidadBloques;
+	}
+
