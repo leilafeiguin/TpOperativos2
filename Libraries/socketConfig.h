@@ -72,7 +72,7 @@ typedef struct {
 typedef struct {
 	int cant_script; //long script
 	char* script;
-	char* bloq;
+	int bloq;
 	int cant_ocupada_bloque;
 	int cant_archivo_temporal;//long nombre
 	char* archivo_temporal; //nombre archivo

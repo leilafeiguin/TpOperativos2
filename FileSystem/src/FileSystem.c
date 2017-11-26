@@ -119,9 +119,7 @@ int main(void) {
 		switch (paqueteRecibido->codigo_operacion) { //revisar validaciones de habilitados
 		case cop_handshake_yama: {
 			esperar_handshake(socketNuevo, paqueteRecibido, cop_handshake_yama);
-
 			socketYama = socketNuevo;
-
 		}
 
 			//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
@@ -1499,7 +1497,7 @@ int main(void) {
 
 			fp = fopen("metadata/directorios.txt", "r");
 			if (fp == NULL){
-				printf("No se pudo recuperar el estado anterior de la tabla de directorios");
+				printf("No se pudo recuperar el estado anterior de la tabla de directorios.\n");
 				return false;
 			}
 			int i = 0;
