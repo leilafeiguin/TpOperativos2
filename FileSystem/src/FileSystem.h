@@ -73,6 +73,7 @@ typedef struct t_nodo {
 	int puertoWorker;
 	int tamanio;
 	int libre;
+	int cantidadBloques;
 } t_nodo;
 
 typedef struct t_nodoasignado {
@@ -107,6 +108,7 @@ static t_nodo *nodo_create(char* nroNodo, bool ocupado, t_bitarray* bitmap,
 	new->ocupado = ocupado;
 	new->socket = socket;
 	new->libre = cantidadBloques;
+	new->cantidadBloques = cantidadBloques;
 	new->ip = malloc(strlen(ipWorker) + 1);
 	strcpy(new->ip, ipWorker);
 	new->puertoWorker = puertoWorker;
@@ -121,7 +123,7 @@ static void nodo_destroy(t_nodo* nodo) {
 }
 
 //inicializacion de estructuras
-t_directory* tablaDeDirectorios[99];
+t_directory* tablaDeDirectorios[100];
 
 t_fs fileSystem;
 
@@ -254,3 +256,5 @@ void cargarArchivosEnUnSubdirectorio(int);
 void cargarArchivos();
 
 bool cargarDirectoriosDesdeArchivo();
+
+bool elArchivoPuedeSercargado(int);

@@ -22,7 +22,6 @@
 
 
 int main(void) {
-
 	//Logger
 	t_log* logger;
 	char* fileLog;
@@ -36,7 +35,7 @@ int main(void) {
 	fileSystem_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-	//Inciializacion de estructuras
+	//Incializacion de estructuras
 	int x = 0;
 	tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 	tablaDeDirectorios[x]->index = 0;
@@ -178,7 +177,7 @@ int main(void) {
 			unBitmap = bitarray_create(data, cantidad);
 			t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap,
 					socketNuevo, infoNodo->ip, infoNodo->puertoWorker,
-					infoNodo->tamanio, cantidad);
+					infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)));
 			list_add(fileSystem.ListaNodos, unNodo);
 		}
 			//falta agregar otras estructuras administrativas
@@ -402,7 +401,6 @@ int main(void) {
 		list_add(nodo->bloques, infobloque);
 	}
 
-// CP_TO --> igual que CP FROM PERO CAMBIA ORIGEN Y DESITNO
 	void CP_TO(char* origen, char*destino) {
 		origen = str_replace(origen, "yamafs://", "");
 		//buscar el archivo de origen en la tabla de archivos
@@ -475,7 +473,7 @@ int main(void) {
 
 	void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
 		struct stat st;
-		int tamanioArchivo = stat(origen, &st);
+		stat(origen, &st);
 		if(st.st_size == 0){
 			printf("El archivo esta vacio.\n");
 		}else{
@@ -505,13 +503,16 @@ int main(void) {
 			nuevoArchivo->tamanio = 0;
 			nuevoArchivo->tipoArchivo = tipoArchivo;
 			int i = 0;
+			if(!elArchivoPuedeSercargado(archivoPartido->cantidadBloques)){
+				printf("No hay suficiente espacio en los nodos para almacenar el archivo.\n");
+				return;
+			}
 			for (; i < archivoPartido->cantidadBloques; i++) {
-				t_nodoasignado* respuesta = escribir_bloque(
-						list_get(archivoPartido->bloquesPartidos, i));
+				t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos, i));
+
 				t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
 				unBloqueAux->nroBloque = i;
-				t_bloque_particion* bloqueParticion = list_get(
-						archivoPartido->bloquesPartidos, i);
+				t_bloque_particion* bloqueParticion = list_get(archivoPartido->bloquesPartidos, i);
 				unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
 				nuevoArchivo->tamanio += unBloqueAux->finBloque;
 
@@ -542,10 +543,7 @@ int main(void) {
 				list_add(nuevoArchivo->bloques, unBloqueAux);
 			}
 			list_add(fileSystem.listaArchivos, nuevoArchivo);
-			//todo implementar actualizarTablaArchivos()
 		}
-
-
 
 	}
 
@@ -677,7 +675,7 @@ int main(void) {
 				cantidadBloques++;
 			int tamanio = 0;
 			int i = 0;
-			for (; i < cantidadBloques; i++) //falta completar casos de archivos de texto
+			for (; i < cantidadBloques; i++)
 					{
 				t_bloque_particion* bloquePartido = malloc(
 						sizeof(t_bloque_particion));
@@ -701,21 +699,58 @@ int main(void) {
 			char* contenidoArchivo = (char*) archivoMapeado;
 			int cantidadBloques = 0;
 			t_bloque_particion* bloquePartido = NULL;
+			int archivo = 0;
+			while(sb.st_size > archivo + 1024*1024){
+				char* aux=malloc(1024*1024+1);
+				memset(aux,'\0',1024*1024+1);
+				memcpy(aux,contenidoArchivo + archivo,1024*1024);
+				char* finBloque = strrchr(aux, '\n');
+				int ultimoByteValido = finBloque-aux+1;
+				//logica sobre esa parte
+				bloquePartido = malloc(sizeof(t_bloque_particion));
+				bloquePartido->contenido = malloc(ultimoByteValido);
+				memcpy(bloquePartido->contenido, aux, ultimoByteValido);
+				bloquePartido->ultimoByteValido = ultimoByteValido;
+
+				list_add(archivoPartido->bloquesPartidos, bloquePartido);
+
+				cantidadBloques++;
+				archivo += ultimoByteValido;
+				free(aux);
+			}
+
+			if(sb.st_size > archivo)
+			{
+				char* aux=malloc(sb.st_size - archivo);
+				memcpy(aux,contenidoArchivo + archivo,sb.st_size - archivo);
+
+				int ultimoByteValido = sb.st_size - archivo;
+				//logica sobre esa parte
+				bloquePartido = malloc(sizeof(t_bloque_particion));
+				bloquePartido->contenido = malloc(ultimoByteValido-1);
+				memcpy(bloquePartido->contenido, aux, ultimoByteValido);
+				bloquePartido->ultimoByteValido = ultimoByteValido;
+
+				list_add(archivoPartido->bloquesPartidos, bloquePartido);
+
+				cantidadBloques++;
+				archivo += ultimoByteValido;
+				free(aux);
+			}
+
+			/*
 			int cantidadRenglones = countOccurrences(contenidoArchivo, "\n")+1;
 			char** renglones = string_split(contenidoArchivo, "\n");
 			int tamanioBloque = 0;
 			int i = 0;
 			while (cantidadRenglones != i) {
-
 				if(renglones[i] == NULL || string_equals_ignore_case(renglones[i], ""))
 				{
 					i++;
 					continue;
 				}
 				string_append(&renglones[i], "\n");
-				if (bloquePartido == NULL
-						|| tamanioBloque + strlen(renglones[i]) > 1024 * 1024) {
-
+				if (bloquePartido == NULL || tamanioBloque + strlen(renglones[i]) > 1024 * 1024) {
 					cantidadBloques++;
 					if (bloquePartido != NULL) {
 						bloquePartido->ultimoByteValido = tamanioBloque;
@@ -725,7 +760,6 @@ int main(void) {
 					list_add(archivoPartido->bloquesPartidos, bloquePartido);
 					bloquePartido->contenido = malloc(1);
 				}
-
 				bloquePartido->contenido = realloc(bloquePartido->contenido,
 						tamanioBloque + strlen(renglones[i]));
 				memcpy(bloquePartido->contenido + tamanioBloque, renglones[i],
@@ -735,17 +769,11 @@ int main(void) {
 
 			}
 
-			free(renglones);
+			free(renglones);*/
 			munmap(archivoMapeado, sb.st_size);
-
-			if (bloquePartido != NULL) {
-				bloquePartido->ultimoByteValido = tamanioBloque;
-			}
-
 			archivoPartido->cantidadBloques = cantidadBloques;
 			return archivoPartido;
 		}
-
 	}
 
 	char** str_split(char* a_str, const char a_delim) {
@@ -810,15 +838,15 @@ int main(void) {
 			printf("parametros= %s \n", *(parametros + i));
 		}
 
-		if (i == 1) {
+		if (i == 2) {
 			printf("Cantidad de parametros correcta. Elimina archivo. \n");
 			eliminar_archivo(parametros[1]);
-		} else if(i == 2){
+		} else if(i == 3){
 			if(string_equals_ignore_case(parametros[1], "-d")){
 				printf("Cantidad de parametros correcta. Elimina directorio. \n");
 				eliminar_directorio(parametros[2]);
 			}
-		}else if(i == 4){
+		}else if(i == 5){
 			if(string_equals_ignore_case(parametros[1], "-b")){
 				printf("Cantidad de parametros correcta. Elimina bloque. \n");
 				eliminar_bloque(parametros[2], atoi(parametros[3]), atoi(parametros[4]));
@@ -1154,9 +1182,9 @@ int main(void) {
 	void eliminar_archivo(char* path) {
 		path=str_replace(path, "yamafs://","");
 		bool buscarArchivoPorPath(void* elem) {
-					return string_equals_ignore_case(((t_archivo*) elem)->path, path);
-				}		;
-		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+			return string_equals_ignore_case(((t_archivo*) elem)->path, path);
+		};
+		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 		if(unArchivo == NULL)
 		{
 			printf("El archivo %s no existe", path);
@@ -1175,11 +1203,10 @@ int main(void) {
 			if(bloque->copia2 != NULL){
 				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
-				free(bloque->copia1);
+				free(bloque->copia2);
 			}
 			free(bloque);
 		}
-
 		free(unArchivo->nombre);
 		free(unArchivo->path);
 		list_destroy_and_destroy_elements(unArchivo->bloques, liberarBloques);
@@ -1190,15 +1217,17 @@ int main(void) {
 		void eliminar_directorio(char* path) {
 				path=str_replace(path, "yamafs://","");
 				if (!string_ends_with(path, "/"))
-					string_append(path, "/");
+					string_append(&path, "/");
 				int cantidadDirectorios=countOccurrences(path, "/");
 				char** directorios = string_split(path, "/");
 				t_directory* directorioAEliminar = NULL;
+				int indicePadre=0;
 				int i=0;
-				for (; i < cantidadDirectorios - 1; i++) {
+				for (; i < cantidadDirectorios; i++) {
 					if (directorios[i] == NULL)
 						break;
-					directorioAEliminar = buscarDirectorio(directorioAEliminar->padre, directorios[i]);
+					directorioAEliminar = buscarDirectorio(indicePadre, directorios[i]);
+					indicePadre = directorioAEliminar->padre;
 				}
 				bool buscarArchivoPorPath(void* elem) {
 					return string_contains(path, (char*)elem);
@@ -1217,7 +1246,7 @@ int main(void) {
 			bool buscarArchivoPorPath(void* elem) {
 				return string_equals_ignore_case(((t_archivo*) elem)->path, path);
 			};
-			t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+			t_archivo* unArchivo = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 			if(unArchivo == NULL)
 			{
 				printf("El archivo %s no existe", path);
@@ -1241,18 +1270,20 @@ int main(void) {
 				t_nodo* nodo=buscar_nodo(bloque->copia1->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia1->nroBloque);
 				free(bloque->copia1);
+				bloque->copia1 = NULL;
 				printf("Eliminando copia 1 \n");
 			}
 			else if(nroCopia == 2 && bloque->copia2 != NULL) {
 				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
 				free(bloque->copia2);
+				bloque->copia2 = NULL;
 				printf("Eliminando copia 2 \n");
 			}
 	}
 
 	void hiloFileSystem_Consola(void * unused) {
-		printf("Consola Iniciada. Ingrese una opcion \n");
+		printf("Consola Iniciada. Ingrese una opcion: \n");
 		char * linea;
 		char* primeraPalabra;
 		char* context;
@@ -1273,7 +1304,6 @@ int main(void) {
 				if (strcmp(linea, "format") == 0) {
 					printf("Formatear el Filesystem\n");
 					formatearFileSystem();
-					actualizarArchivoDeDirectorios();
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
 					printf(
@@ -1399,7 +1429,8 @@ int main(void) {
 					printf("Opcion no valida.\n");
 					free(linea);
 				}
-
+				actualizarArchivoDeDirectorios();
+				actualizarArchivoTablaNodos();
 				free(lineaCopia);
 				if (parametros != NULL)
 					free(parametros);
@@ -1416,16 +1447,20 @@ int main(void) {
 	}
 
 	t_nodo* buscar_nodo_libre(char* nodoAnterior) {
+		//todo hacer un random para que no asigne en el mismo orden
 		bool buscarLibre(void* elemento) {
-			return !((t_nodo*) elemento)->ocupado
-					&& (nodoAnterior == 0
-							|| ((t_nodo*) elemento)->nroNodo != nodoAnterior);
+			return !((t_nodo*) elemento)->ocupado && (nodoAnterior == 0 || ((t_nodo*) elemento)->nroNodo != nodoAnterior);
 		}
-		return list_find(fileSystem.ListaNodos, buscarLibre);
+
+		t_list* nodosCandidatos=list_filter(fileSystem.ListaNodos, buscarLibre);
+
+		int i=rand() % list_size(nodosCandidatos);
+		return list_get(nodosCandidatos, i);
+
 	}
 
 	int buscarBloque(t_nodo* nodo) {
-		int tamanio = bitarray_get_max_bit(nodo->bitmap);
+		int tamanio = nodo->cantidadBloques;
 		int i = 0;
 		for (; i < tamanio; i++) {
 			bool ocupado = bitarray_test_bit(nodo->bitmap, i);
@@ -1453,6 +1488,7 @@ int main(void) {
 		t_setbloque* bloque = malloc(sizeof(t_setbloque));
 		bloque->numero_bloque = numBloque;
 		bloque->datos_bloque = malloc(1024 * 1024);
+		memset(bloque->datos_bloque, '\0', 1024*1024);
 		memcpy(bloque->datos_bloque, contenido, ultimoByteValido);
 		void* buffer = malloc(sizeof(int) + 1024 * 1024); //numero bloque
 		int desplazamiento = 0;
@@ -1471,14 +1507,24 @@ int main(void) {
 				bloque_partido->ultimoByteValido);
 
 		t_nodo* nodolibre = buscar_nodo_libre(0);
+		if(nodolibre == NULL)
+			return NULL;
+
 		int numBloque = buscarBloque(nodolibre);
+		if(numBloque == -1)
+			return NULL;
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
 				bloque_partido->ultimoByteValido);
 		respuesta->nodo1 = string_duplicate(nodolibre->nroNodo);
 		respuesta->bloque1 = numBloque;
 
 		nodolibre = buscar_nodo_libre(nodolibre->nroNodo);
+		if(nodolibre == NULL)
+			return NULL;
+
 		numBloque = buscarBloque(nodolibre);
+		if(numBloque == -1)
+					return NULL;
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
 				bloque_partido->ultimoByteValido);
 		respuesta->bloque2 = numBloque;
@@ -1513,17 +1559,20 @@ int main(void) {
 			fclose(fp);
 			if (line)
 				free(line);
-			exit(EXIT_SUCCESS);
 			return true;
 		} else {
 		    // file doesn't exist
-			printf("No existe un estado anterior de directorios");
+			printf("No existe un estado anterior de directorios. \n");
 			return false;
 		}
 	}
 
 	void actualizarArchivoDeDirectorios() {
-		crear_subcarpeta("metadata");
+		DIR* dir = opendir("metadata");
+		if (dir){
+			crear_subcarpeta("metadata");
+			closedir(dir);
+		}
 		FILE * file = fopen("metadata/directorios.txt", "w");
 		int i;
 		if (file != NULL) {
@@ -1576,7 +1625,7 @@ int main(void) {
 		crear_subcarpeta("metadata/bitmaps/");
 
 		char* aux = malloc(200);
-
+		memset(aux, '\0', 200);
 		string_append(&aux, "metadata/bitmaps/");
 		string_append(&aux, unNodo->nroNodo);
 		string_append(&aux, ".dat");
@@ -1744,24 +1793,15 @@ int main(void) {
 		return unArchivo;
 	}
 
-	//consultar con seba
 	void actualizarArchivo(t_archivo* unArchivo) {
-		char* path;
-		char* file;
-		split_path_file(&path, &file, unArchivo->path); //el path posee el nombre del archivo?
+		char* path=malloc(255);
+		char* file=malloc(255);
+		split_path_file(&path, &file, unArchivo->path);
 		int cantidadDirectorios = countOccurrences(path, "/")+1;
-
-		int padre;
-		int j;
-		for(;j<cantidadDirectorios;j++){ //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
-			t_directory* directorio = buscarDirectorio(padre, tablaDeDirectorios[cantidadDirectorios]);
-			padre= directorio->index;
-		}
-
-		char* ubicacion = "metadata/archivos/";
-		crear_subcarpeta(ubicacion);
-		//strcat(ubicacion, itoa(cantidadDirectorios));
-		FILE * fp = fopen(ubicacion, "w");
+		char* ubicacionCarpeta = string_from_format("metadata/archivos/%i/",unArchivo->indiceDirectorioPadre);
+		crear_subcarpeta(ubicacionCarpeta);
+		char* ubicacionArchivo = string_from_format("%s%s",ubicacionCarpeta, unArchivo->nombre);
+		FILE * fp = fopen(ubicacionArchivo, "w");
 		fprintf(fp, "%s\n", unArchivo->path);
 		fprintf(fp, "TAMANIO=%lu\n", unArchivo->tamanio);
 		fprintf(fp, "TIPO=%i\n", unArchivo->tipoArchivo);
@@ -1783,8 +1823,7 @@ int main(void) {
 		path = str_replace(path, "yamafs://", "");
 		bool buscarArchivoPorPath(void* elem) {
 			return string_equals_ignore_case(((t_archivo*) elem)->path, path);
-		}
-		;
+		};
 
 		t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos,
 				buscarArchivoPorPath);
@@ -1795,8 +1834,7 @@ int main(void) {
 			else
 				tipoArchivo = "BINARIO";
 
-			printf(
-					"Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
+			printf("Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
 					archivoEncontrado->nombre, archivoEncontrado->tamanio,
 					tipoArchivo);
 			//imprimir nombre, tamanio y tipo de archivo
@@ -1991,3 +2029,13 @@ int main(void) {
 			}
 		}
 	}
+
+	bool elArchivoPuedeSercargado(int cantidadBloques){
+		int libreTotal=0;
+		void bloquesLibres(t_nodo* unNodo){
+			libreTotal += unNodo->libre/2;
+		}
+		list_iterate(fileSystem.ListaNodos,(void*)bloquesLibres);
+		return libreTotal>cantidadBloques;
+	}
+

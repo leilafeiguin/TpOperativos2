@@ -96,7 +96,6 @@ char* apareo (char* paths []){
 
 void* archivo;
 
-
 int main(void) {
 	t_log* logger;
 	char* fileLog;
@@ -124,6 +123,7 @@ int main(void) {
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
 	fstat(fd, &sb);
 	archivo= mmap(NULL,sb.st_size,PROT_READ,  MAP_SHARED,fd,0); //PROT_READ ??
+
 
 	un_socket socketServer=socket_escucha("127.0.0.1", configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
@@ -157,8 +157,7 @@ int main(void) {
 								int i;
 								for(i=0;i<cantidadElementos;i++){
 									t_transf* paquete_transformacion = malloc(sizeof(t_transf));
-
-								//memcpy(origen, destino, cuantoQuieroCopiar)
+	//memcpy(origen, destino, cuantoQuieroCopiar)
 									memcpy(&paquete_transformacion->cant_script, paquete_recibido->data, sizeof(int));
 									desplazamiento += sizeof(int);
 									paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
@@ -183,8 +182,8 @@ int main(void) {
 								}
 
 
-
 							}
+
 							break;
 							case cop_worker_reduccionLocal:
 							break;
