@@ -1274,7 +1274,6 @@ int main(void) {
 				if (strcmp(linea, "format") == 0) {
 					printf("Formatear el Filesystem\n");
 					formatearFileSystem();
-					actualizarArchivoDeDirectorios();
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
 					printf(
@@ -1400,7 +1399,8 @@ int main(void) {
 					printf("Opcion no valida.\n");
 					free(linea);
 				}
-
+				actualizarArchivoDeDirectorios();
+				actualizarArchivoTablaNodos();
 				free(lineaCopia);
 				if (parametros != NULL)
 					free(parametros);
@@ -1514,7 +1514,6 @@ int main(void) {
 			fclose(fp);
 			if (line)
 				free(line);
-			exit(EXIT_SUCCESS);
 			return true;
 		} else {
 		    // file doesn't exist
@@ -1524,7 +1523,11 @@ int main(void) {
 	}
 
 	void actualizarArchivoDeDirectorios() {
-		crear_subcarpeta("metadata");
+		DIR* dir = opendir("metadata");
+		if (dir){
+			crear_subcarpeta("metadata");
+			closedir(dir);
+		}
 		FILE * file = fopen("metadata/directorios.txt", "w");
 		int i;
 		if (file != NULL) {
