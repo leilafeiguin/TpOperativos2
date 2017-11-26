@@ -37,10 +37,6 @@ int main(void) {
 	log_trace(logger, "Archivo de configuracion levantado");
 
 	//Inciializacion de estructuras
-	fileSystem.ListaNodos = list_create(); //Se le deben cargar estructuras de tipo t_nodo
-	fileSystem.libre = 0;
-	fileSystem.listaArchivos = list_create(); //Se le deben cargar estructuras de tipo t_archivo
-	fileSystem.tamanio = 0;
 	int x = 0;
 	tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 	tablaDeDirectorios[x]->index = 0;
@@ -52,6 +48,11 @@ int main(void) {
 		tablaDeDirectorios[x]->nombre = "";
 		tablaDeDirectorios[x]->padre = 0;
 	}
+	fileSystem.ListaNodos = list_create(); //Se le deben cargar estructuras de tipo t_nodo
+	fileSystem.libre = 0;
+	fileSystem.listaArchivos = list_create(); //Se le deben cargar estructuras de tipo t_archivo
+	fileSystem.tamanio = 0;
+
 	cargarDirectoriosDesdeArchivo();
 	DIR* dir = opendir("/metadata/archivos/");
 	if (dir){
