@@ -10,6 +10,7 @@ typedef struct dataNode_configuracion {
 	char* PUERTO_WORKER;
 	char* PUERTO_DATANODE;
 	char* RUTA_DATABIN;
+	int CANTIDAD_MB_DATABIN;
 
 } dataNode_configuracion;
 
@@ -27,6 +28,7 @@ dataNode_configuracion get_configuracion() {
 	configuracion.PUERTO_DATANODE = get_campo_config_string(archivo_configuracion, "PUERTO_DATANODE");
 	configuracion.RUTA_DATABIN = get_campo_config_string(archivo_configuracion, "RUTA_DATABIN");
 	configuracion.PUERTO_WORKER = get_campo_config_string(archivo_configuracion, "PUERTO_WORKER");
+	configuracion.CANTIDAD_MB_DATABIN = get_campo_config_int(archivo_configuracion, "CANTIDAD_MB_DATABIN");
 	return configuracion;
 }
 

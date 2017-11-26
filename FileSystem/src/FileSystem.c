@@ -504,12 +504,15 @@ int main(void) {
 			nuevoArchivo->tipoArchivo = tipoArchivo;
 			int i = 0;
 			for (; i < archivoPartido->cantidadBloques; i++) {
-				t_nodoasignado* respuesta = escribir_bloque(
-						list_get(archivoPartido->bloquesPartidos, i));
+				t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos, i));
+				if(respuesta == NULL)
+				{
+					printf("No hay suficiente espacio en los nodos para almacenar el archivo. Error en bloque %i\n", i);
+					return;
+				}
 				t_bloque* unBloqueAux = malloc(sizeof(t_bloque));
 				unBloqueAux->nroBloque = i;
-				t_bloque_particion* bloqueParticion = list_get(
-						archivoPartido->bloquesPartidos, i);
+				t_bloque_particion* bloqueParticion = list_get(archivoPartido->bloquesPartidos, i);
 				unBloqueAux->finBloque = bloqueParticion->ultimoByteValido;
 				nuevoArchivo->tamanio += unBloqueAux->finBloque;
 
@@ -698,21 +701,58 @@ int main(void) {
 			char* contenidoArchivo = (char*) archivoMapeado;
 			int cantidadBloques = 0;
 			t_bloque_particion* bloquePartido = NULL;
+			int archivo = 0;
+			while(sb.st_size > archivo + 1024*1024){
+				char* aux=malloc(1024*1024+1);
+				memset(aux,'\0',1024*1024+1);
+				memcpy(aux,contenidoArchivo + archivo,1024*1024);
+				char* finBloque = strrchr(aux, '\n');
+				int ultimoByteValido = finBloque-aux+1;
+				//logica sobre esa parte
+				bloquePartido = malloc(sizeof(t_bloque_particion));
+				bloquePartido->contenido = malloc(ultimoByteValido);
+				memcpy(bloquePartido->contenido, aux, ultimoByteValido);
+				bloquePartido->ultimoByteValido = ultimoByteValido;
+
+				list_add(archivoPartido->bloquesPartidos, bloquePartido);
+
+				cantidadBloques++;
+				archivo += ultimoByteValido;
+				free(aux);
+			}
+
+			if(sb.st_size > archivo)
+			{
+				char* aux=malloc(sb.st_size - archivo);
+				memcpy(aux,contenidoArchivo + archivo,sb.st_size - archivo);
+
+				int ultimoByteValido = sb.st_size - archivo-1;
+				//logica sobre esa parte
+				bloquePartido = malloc(sizeof(t_bloque_particion));
+				bloquePartido->contenido = malloc(ultimoByteValido);
+				memcpy(bloquePartido->contenido, aux, ultimoByteValido);
+				bloquePartido->ultimoByteValido = ultimoByteValido;
+
+				list_add(archivoPartido->bloquesPartidos, bloquePartido);
+
+				cantidadBloques++;
+				archivo += ultimoByteValido;
+				free(aux);
+			}
+
+			/*
 			int cantidadRenglones = countOccurrences(contenidoArchivo, "\n")+1;
 			char** renglones = string_split(contenidoArchivo, "\n");
 			int tamanioBloque = 0;
 			int i = 0;
 			while (cantidadRenglones != i) {
-
 				if(renglones[i] == NULL || string_equals_ignore_case(renglones[i], ""))
 				{
 					i++;
 					continue;
 				}
 				string_append(&renglones[i], "\n");
-				if (bloquePartido == NULL
-						|| tamanioBloque + strlen(renglones[i]) > 1024 * 1024) {
-
+				if (bloquePartido == NULL || tamanioBloque + strlen(renglones[i]) > 1024 * 1024) {
 					cantidadBloques++;
 					if (bloquePartido != NULL) {
 						bloquePartido->ultimoByteValido = tamanioBloque;
@@ -722,7 +762,6 @@ int main(void) {
 					list_add(archivoPartido->bloquesPartidos, bloquePartido);
 					bloquePartido->contenido = malloc(1);
 				}
-
 				bloquePartido->contenido = realloc(bloquePartido->contenido,
 						tamanioBloque + strlen(renglones[i]));
 				memcpy(bloquePartido->contenido + tamanioBloque, renglones[i],
@@ -732,13 +771,8 @@ int main(void) {
 
 			}
 
-			free(renglones);
+			free(renglones);*/
 			munmap(archivoMapeado, sb.st_size);
-
-			if (bloquePartido != NULL) {
-				bloquePartido->ultimoByteValido = tamanioBloque;
-			}
-
 			archivoPartido->cantidadBloques = cantidadBloques;
 			return archivoPartido;
 		}
@@ -1415,6 +1449,7 @@ int main(void) {
 	}
 
 	t_nodo* buscar_nodo_libre(char* nodoAnterior) {
+		//todo hacer un random para que no asigne en el mismo orden
 		bool buscarLibre(void* elemento) {
 			return !((t_nodo*) elemento)->ocupado
 					&& (nodoAnterior == 0
@@ -1424,7 +1459,7 @@ int main(void) {
 	}
 
 	int buscarBloque(t_nodo* nodo) {
-		int tamanio = bitarray_get_max_bit(nodo->bitmap);
+		int tamanio = nodo->cantidadBloques;
 		int i = 0;
 		for (; i < tamanio; i++) {
 			bool ocupado = bitarray_test_bit(nodo->bitmap, i);
@@ -1452,6 +1487,7 @@ int main(void) {
 		t_setbloque* bloque = malloc(sizeof(t_setbloque));
 		bloque->numero_bloque = numBloque;
 		bloque->datos_bloque = malloc(1024 * 1024);
+		memset(bloque->datos_bloque, '\0', 1024*1024);
 		memcpy(bloque->datos_bloque, contenido, ultimoByteValido);
 		void* buffer = malloc(sizeof(int) + 1024 * 1024); //numero bloque
 		int desplazamiento = 0;
@@ -1470,14 +1506,24 @@ int main(void) {
 				bloque_partido->ultimoByteValido);
 
 		t_nodo* nodolibre = buscar_nodo_libre(0);
+		if(nodolibre == NULL)
+			return NULL;
+
 		int numBloque = buscarBloque(nodolibre);
+		if(numBloque == -1)
+			return NULL;
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
 				bloque_partido->ultimoByteValido);
 		respuesta->nodo1 = string_duplicate(nodolibre->nroNodo);
 		respuesta->bloque1 = numBloque;
 
 		nodolibre = buscar_nodo_libre(nodolibre->nroNodo);
+		if(nodolibre == NULL)
+			return NULL;
+
 		numBloque = buscarBloque(nodolibre);
+		if(numBloque == -1)
+					return NULL;
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
 				bloque_partido->ultimoByteValido);
 		respuesta->bloque2 = numBloque;
@@ -1578,7 +1624,7 @@ int main(void) {
 		crear_subcarpeta("metadata/bitmaps/");
 
 		char* aux = malloc(200);
-
+		memset(aux, '\0', 200);
 		string_append(&aux, "metadata/bitmaps/");
 		string_append(&aux, unNodo->nroNodo);
 		string_append(&aux, ".dat");
