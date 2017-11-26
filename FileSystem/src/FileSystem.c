@@ -36,7 +36,7 @@ int main(void) {
 	fileSystem_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
 
-	//Inciializacion de estructuras
+	//Incializacion de estructuras
 	int x = 0;
 	tablaDeDirectorios[x] = malloc(sizeof(struct t_directory));
 	tablaDeDirectorios[x]->index = 0;
@@ -542,7 +542,6 @@ int main(void) {
 				list_add(nuevoArchivo->bloques, unBloqueAux);
 			}
 			list_add(fileSystem.listaArchivos, nuevoArchivo);
-			//todo implementar actualizarTablaArchivos()
 		}
 
 
@@ -1252,7 +1251,7 @@ int main(void) {
 	}
 
 	void hiloFileSystem_Consola(void * unused) {
-		printf("Consola Iniciada. Ingrese una opcion \n");
+		printf("Consola Iniciada. Ingrese una opcion: \n");
 		char * linea;
 		char* primeraPalabra;
 		char* context;
@@ -1517,7 +1516,7 @@ int main(void) {
 			return true;
 		} else {
 		    // file doesn't exist
-			printf("No existe un estado anterior de directorios");
+			printf("No existe un estado anterior de directorios. \n");
 			return false;
 		}
 	}
