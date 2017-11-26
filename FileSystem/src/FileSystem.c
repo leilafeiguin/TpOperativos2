@@ -1153,9 +1153,9 @@ int main(void) {
 	void eliminar_archivo(char* path) {
 		path=str_replace(path, "yamafs://","");
 		bool buscarArchivoPorPath(void* elem) {
-					return string_equals_ignore_case(((t_archivo*) elem)->path, path);
-				}		;
-		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, path);
+			return string_equals_ignore_case(((t_archivo*) elem)->path, path);
+		};
+		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 		if(unArchivo == NULL)
 		{
 			printf("El archivo %s no existe", path);
@@ -1174,11 +1174,10 @@ int main(void) {
 			if(bloque->copia2 != NULL){
 				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
-				free(bloque->copia1);
+				free(bloque->copia2);
 			}
 			free(bloque);
 		}
-
 		free(unArchivo->nombre);
 		free(unArchivo->path);
 		list_destroy_and_destroy_elements(unArchivo->bloques, liberarBloques);
