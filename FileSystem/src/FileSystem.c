@@ -727,7 +727,7 @@ int main(void) {
 				int ultimoByteValido = sb.st_size - archivo;
 				//logica sobre esa parte
 				bloquePartido = malloc(sizeof(t_bloque_particion));
-				bloquePartido->contenido = malloc(ultimoByteValido);
+				bloquePartido->contenido = malloc(ultimoByteValido-1);
 				memcpy(bloquePartido->contenido, aux, ultimoByteValido);
 				bloquePartido->ultimoByteValido = ultimoByteValido;
 
