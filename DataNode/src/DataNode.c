@@ -34,7 +34,7 @@ int main(void) {
 	struct stat sb;
 	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
-		ftruncate(fileno(fd), 20*1024*1024);
+		ftruncate(fileno(fd), configuracion.CANTIDAD_MB_DATABIN*1024*1024);
 		fclose(fd);
 
 		}
