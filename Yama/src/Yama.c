@@ -20,10 +20,11 @@
 
 t_list* tabla_estados;
 yama_configuracion configuracion;
+t_log* logger;
+
 int main(void) {
 	int socketFS;
 
-	t_log* logger;
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
 	tabla_estados= list_create();
