@@ -161,9 +161,9 @@ int main(void) {
 								paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
 								memcpy(paquete_transformacion->script, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_script);
 								desplazamiento += paquete_transformacion->cant_script;
-								paquete_transformacion->bloq = malloc(1024*1024);
+								paquete_transformacion->bloq = malloc(sizeof(int));
 								memcpy(paquete_transformacion->bloq, paquete_recibido->data + desplazamiento, 1024*1024);
-								desplazamiento += 1024*1024;
+								desplazamiento += sizeof(int);
 								paquete_transformacion->archivo_temporal = malloc(paquete_transformacion->cant_archivo_temporal);
 								memcpy(paquete_transformacion->archivo_temporal, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_archivo_temporal);
 
