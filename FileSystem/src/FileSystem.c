@@ -803,6 +803,32 @@ int main(void) {
 		return NULL;
 	}
 
+	void validaCantParametrosComandoRemove(char* comando) {
+		char** parametros;
+		parametros = str_split(comando, ' ');
+		int i = 1;
+		for (; *(parametros + i); i++) {
+			printf("parametros= %s \n", *(parametros + i));
+		}
+
+		if (i == 1) {
+			printf("Cantidad de parametros correcta. Elimina archivo. \n");
+			eliminar_archivo(parametros[1]);
+		} else if(i == 2){
+			if(string_equals_ignore_case(parametros[1], "-d")){
+				printf("Cantidad de parametros correcta. Elimina directorio. \n");
+				eliminar_directorio(parametros[2]);
+			}
+		}else if(i == 4){
+			if(string_equals_ignore_case(parametros[1], "-b")){
+				printf("Cantidad de parametros correcta. Elimina bloque. \n");
+				eliminar_bloque(parametros[2], atoi(parametros[3]), atoi(parametros[4]));
+			}
+		}else{
+			printf("Parametros incorrectos. \n");
+		}
+	}
+
 	void formatearFileSystem() {
 		int i;
 		void liberar(void* elem) {
@@ -1252,29 +1278,8 @@ int main(void) {
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
 					printf(
-							"Eliminar un Archivo/Directorio/Bloque. Si un directorio a eliminar no se encuentra vacío, la operación debe fallar. Además, si el bloque a eliminar fuera la última copia del mismo, se deberá abortar la operación informando lo sucedido.\n");
-					if (validaCantParametrosComando(linea, 1) != 0) {
-						//Elimina un archivo
-						parametros = validaCantParametrosComando(linea, 1);
-						eliminar_archivo(parametros[1]);
-
-					} else if (validaCantParametrosComando(linea, 2) != 0) {
-						parametros = validaCantParametrosComando(linea, 2);
-						if (strcmp(parametros[1],"-d")) {
-							//Elimina un Directorio
-						} else {
-							printf("El primer parametro es invalido\n");
-						}
-					} else if (validaCantParametrosComando(linea, 4) != 0) {
-						parametros = validaCantParametrosComando(linea, 4);
-						if (strcmp(parametros[1],"-b")) {
-							//Elimina un Bloque
-						} else {
-							printf("El primer parametro es invalido\n");
-						}
-					} else {
-						//La cantidad de params es incorrecta
-					}
+							"Eliminar un Archivo/Directorio/Bloque. \n");
+					validaCantParametrosRemove(linea);
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rename") == 0) {
 					printf("Renombra un Archivo o Directorio\n");

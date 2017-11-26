@@ -239,6 +239,12 @@ void Mover_Archivo(char* path_destino, t_archivo* archivoEncontrado);
 // Renombra un archivo en yama
 void yama_rename(char*, char*, char*);
 
+//Valida cantidad parametros del remove
+void validaCantParametrosComandoRemove(char* comando);
+
+//Valida cantidad parametros
+char** validaCantParametrosComando(char* comando, int cantParametros);
+
 
 // Recibe el path de la metadata de un archivo y devuelve la estructura con los respectivos valores
 t_archivo* cargarArchivoDesdeArchivo(char* unPath, int directorioPadre);
