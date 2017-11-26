@@ -1279,7 +1279,7 @@ int main(void) {
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
 					printf(
 							"Eliminar un Archivo/Directorio/Bloque. \n");
-					validaCantParametrosRemove(linea);
+					validaCantParametrosComandoRemove(linea);
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rename") == 0) {
 					printf("Renombra un Archivo o Directorio\n");
