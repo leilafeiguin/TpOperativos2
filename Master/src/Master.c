@@ -14,9 +14,11 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "socketConfig.h"
 
 char* SCRIPT_TRANSF;
 char* SCRIPT_REDUC;
+char* ARCHIVO_ORIGEN;
 
 int main(int argc, char** argv) {
 
@@ -26,6 +28,7 @@ int main(int argc, char** argv) {
 	char* archivoDestino=argv[3];
 	SCRIPT_TRANSF=scriptTransf;
 	SCRIPT_REDUC=scriptReduc;
+	ARCHIVO_ORIGEN=archivoOrigen;
 
 	t_log* logger;
 	char* fileLog;
@@ -93,7 +96,12 @@ int main(int argc, char** argv) {
 	}
 
 	void iniciarHiloWorker(void* elem){
-		pthread_create(NULL,NULL, hiloWorker, elem);
+		t_parametrosHiloWorker* parametros = malloc(sizeof(t_parametrosHiloWorker));
+		t_clock* infoWorker = malloc(sizeof(t_clock));
+		infoWorker = elem;
+		parametros->infoWorker = infoWorker;
+		parametros->yama_socket = yamaSocket;
+		pthread_create(NULL,NULL, hiloWorker, parametros);
 	}
 
 	list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
@@ -126,8 +134,10 @@ int main(int argc, char** argv) {
 }
 
 
-void hiloWorker(void* infoWorker){
-	t_clock* worker=(t_clock*)infoWorker;
+void hiloWorker(void* parametros){
+	t_parametrosHiloWorker* parametrosCasteado = (t_parametrosHiloWorker*) parametros;
+	t_clock* worker=parametrosCasteado->infoWorker;
+	un_socket yamaSocket = parametrosCasteado->yama_socket;
 	int desplazamiento=0;
 	FILE *fileIN;
 	fileIN = fopen(SCRIPT_TRANSF, "rb");
@@ -150,7 +160,7 @@ void hiloWorker(void* infoWorker){
 
 	//Leer el archivo de script que corresponda segun la etapa (transformacion o reduccion)
 	//Hacer un strlen+1 del buffer donde tenemos el contenido del archivo
-	void* buffer= malloc(sizeof(int) + cantElementos * sizeof(int)+ strlen(bufferScript)+1 + sizeof(int));
+	void* buffer= malloc(sizeof(int) + cantElementos * (sizeof(int)+ strlen(bufferScript)+1 + sizeof(int)+ 11+ sizeof(int)));
 
 	void infoBloque(void* bloque){
 		t_infobloque* infobloque=((t_infobloque*)bloque);
@@ -176,7 +186,7 @@ void hiloWorker(void* infoWorker){
 
 	char* puerto = malloc(10);
 
-	 snprintf(puerto , 10, "%i", worker->puerto);
+	snprintf(puerto , 10, "%i", worker->puerto);
 	un_socket workerSocket = conectar_a(worker->ip, puerto);
 	realizar_handshake(workerSocket, cop_handshake_master);
 	enviar(workerSocket,cop_worker_transformacion,desplazamiento,buffer);
@@ -188,23 +198,36 @@ void hiloWorker(void* infoWorker){
 		mensaje= "ERROR: se desconecto el nodo";
 	}
 	else{
-		int desplazamiento = 0;
-		//void* buffer = malloc();
-
-		//memcpy(buffer+desplazamiento, strlen())
+		mensaje= "Todo ok";
 	}
 
 	//envio yama lei
-//	int desplazamiento = 0;
-//	void* buffer= malloc();
-
-
-
+	int desplazamiento2 = 0;
+	int longitudIdWorker = strlen(worker->worker_id);
+	int longitudIdArchivo = strlen(ARCHIVO_ORIGEN) + 1;
 	int longitudMensaje = strlen(mensaje) + 1;
-	memcpy(buffer+desplazamiento, longitudMensaje , sizeof(int));
-	desplazamiento += sizeof(int);
-	memcpy(buffer+desplazamiento, mensaje , longitudMensaje);
-	desplazamiento += longitudMensaje;
+
+	void* buffer2= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
+
+	t_estado_master* estado = finalizado;
+
+
+	memcpy(buffer2+desplazamiento2, &longitudIdWorker, sizeof(int));
+	desplazamiento2 += sizeof(int);
+	memcpy(buffer2+desplazamiento2, worker->worker_id, longitudIdWorker);
+	desplazamiento2 += longitudIdWorker;
+	memcpy(buffer2+desplazamiento2, &longitudIdArchivo, sizeof(int));
+	desplazamiento2 += sizeof(int);
+	memcpy(buffer2+desplazamiento2, ARCHIVO_ORIGEN, longitudIdArchivo);
+	desplazamiento2 += longitudIdArchivo;
+	memcpy(buffer2+desplazamiento2, estado, sizeof(t_estado_master));
+	desplazamiento2 += sizeof(t_estado_master);
+	memcpy(buffer2+desplazamiento2, &longitudMensaje , sizeof(int));
+	desplazamiento2 += sizeof(int);
+	memcpy(buffer2+desplazamiento2, mensaje , longitudMensaje);
+	desplazamiento2 += longitudMensaje;
+
+	enviar(yamaSocket, cop_master_archivo_a_transformar,desplazamiento2,buffer2);
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)

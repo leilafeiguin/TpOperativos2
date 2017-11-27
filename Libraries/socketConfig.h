@@ -31,6 +31,8 @@
 //70 - 79 DataNode
 //80 - 99 Worker
 
+
+
 enum codigos_de_operacion {
 	cop_generico = 0,
 	cop_archivo_programa = 1,

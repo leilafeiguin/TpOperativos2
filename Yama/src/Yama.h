@@ -18,21 +18,17 @@ typedef enum t_etapa {
 	almacenamientoFinal = 4
 } t_etapa;
 
-typedef enum t_estado {
+typedef enum t_estado_yama {
 	enProceso = 1,
 	error = 2,
 	finalizado = 3
-} t_estado;
-
-
+} t_estado_yama;
 
 typedef struct t_tabla_planificacion{
 	t_link_element* clock_actual; //t_clock*
 	t_list* workers; //(t_clock)*
 	char* archivo;
 }t_tabla_planificacion;
-
-
 
 typedef struct t_job{
 
@@ -41,7 +37,7 @@ typedef struct t_job{
 	t_etapa etapa;
 
 	char* temporal;
-	t_estado estado;
+	t_estado_yama estado;
 	t_tabla_planificacion* planificacion;
 } t_job;
 

@@ -415,13 +415,11 @@ int main(void) {
 								memcpy(idArchivo, paqueteRecibido->data + desplazamiento, longitudIdArchivo);
 								desplazamiento+=longitudIdArchivo;
 
-								int longitudEstadoWorker = 0;
-								memcpy(&longitudEstadoWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
-								desplazamiento+=sizeof(int);
-								char* estadoWorker = malloc(longitudEstadoWorker);
 
-								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, longitudEstadoWorker);
-								desplazamiento+=longitudEstadoWorker;
+								char* estadoWorker = malloc(sizeof(t_estado_yama));
+
+								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, sizeof(t_estado_yama));
+								desplazamiento+=sizeof(t_estado_yama);
 
 								int longitudMensaje = 0;
 								memcpy(&longitudMensaje, paqueteRecibido->data + desplazamiento, sizeof(int));
