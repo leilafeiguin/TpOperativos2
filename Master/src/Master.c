@@ -48,24 +48,26 @@ int main(int argc, char** argv) {
 
 	enviar(yamaSocket,cop_master_archivo_a_transformar,sizeof(char*)*strlen(archivoOrigen),archivoOrigen);
 
-	log_trace(logger, "Recibi datos de workers de Yama");
+	log_trace(logger, "Recibi datos de Yama");
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
 
 	if(paqueteRecibido->codigo_operacion == -1){
 		printf("Se cayo Yama, finaliza Master.\n");
 		exit(-1);
 	}
+	// recibir lista de workers
+
 	t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
 	archivoNodo->bloquesRelativos =  list_create();
 	archivoNodo->workersAsignados= list_create();
 
-	int i=0;
+
 	int cantidadWorkers = 0;
 	int desplazamiento = 0;
 	memcpy(&cantidadWorkers, paqueteRecibido->data + desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
-
-	for(i=0;i<cantidadWorkers;i++){
+	int i=0;
+	for(;i<cantidadWorkers;i++){
 		t_clock* worker = malloc(sizeof(t_clock));
 		memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
 		desplazamiento+= 15;
@@ -105,29 +107,6 @@ int main(int argc, char** argv) {
 	}
 
 	list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
-
-	//	NO BORRAR SIRVE PARA PROBAR CONEXIONES AL WORKER
-	//	un_socket w1 = conectar_a("127.0.0.1","5050");
-	//
-	//	un_socket w2 = conectar_a("127.0.0.1","5050");
-	//
-	//	un_socket w3 = conectar_a("127.0.0.1","5050");
-	//
-	//	realizar_handshake(w1, cop_handshake_master);
-	//	realizar_handshake(w2, cop_handshake_master);
-	//	realizar_handshake(w3, cop_handshake_master);
-
-	//list_map(workers, );
-	//agregandolos a las estructuras correspondientes
-
-	//realizar_handshake(worker1, cop_handshake_master);
-
-	//si falla hay que capturarlo y mandarlo a YAMA
-
-	log_trace(logger, "Respondo a Yama estado de conexiones con workers");
-	char* estado_worker1 = "Ok";
-	enviar(yamaSocket, cop_master_estados_workers, sizeof(char*)*strlen(estado_worker1), estado_worker1);
-
 	//hacer un if para saber si pasa a etapa de transformacion o si hubo error esperar nuevos workers
 
 	return EXIT_SUCCESS;
@@ -185,7 +164,6 @@ void hiloWorker(void* parametros){
 	list_iterate(((t_clock*)worker)->bloques, infoBloque);
 
 	char* puerto = malloc(10);
-
 	snprintf(puerto , 10, "%i", worker->puerto);
 	un_socket workerSocket = conectar_a(worker->ip, puerto);
 	realizar_handshake(workerSocket, cop_handshake_master);
@@ -201,33 +179,31 @@ void hiloWorker(void* parametros){
 		mensaje= "Todo ok";
 	}
 
-	//envio yama lei
 	int desplazamiento2 = 0;
 	int longitudIdWorker = strlen(worker->worker_id);
 	int longitudIdArchivo = strlen(ARCHIVO_ORIGEN) + 1;
 	int longitudMensaje = strlen(mensaje) + 1;
 
-	void* buffer2= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
+	void* estadoWorker= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
 
 	t_estado_master* estado = finalizado;
 
-
-	memcpy(buffer2+desplazamiento2, &longitudIdWorker, sizeof(int));
+	memcpy(estadoWorker+desplazamiento2, &longitudIdWorker, sizeof(int));
 	desplazamiento2 += sizeof(int);
-	memcpy(buffer2+desplazamiento2, worker->worker_id, longitudIdWorker);
+	memcpy(estadoWorker+desplazamiento2, worker->worker_id, longitudIdWorker);
 	desplazamiento2 += longitudIdWorker;
-	memcpy(buffer2+desplazamiento2, &longitudIdArchivo, sizeof(int));
+	memcpy(estadoWorker+desplazamiento2, &longitudIdArchivo, sizeof(int));
 	desplazamiento2 += sizeof(int);
-	memcpy(buffer2+desplazamiento2, ARCHIVO_ORIGEN, longitudIdArchivo);
+	memcpy(estadoWorker+desplazamiento2, ARCHIVO_ORIGEN, longitudIdArchivo);
 	desplazamiento2 += longitudIdArchivo;
-	memcpy(buffer2+desplazamiento2, estado, sizeof(t_estado_master));
+	memcpy(estadoWorker+desplazamiento2, estado, sizeof(t_estado_master));
 	desplazamiento2 += sizeof(t_estado_master);
-	memcpy(buffer2+desplazamiento2, &longitudMensaje , sizeof(int));
+	memcpy(estadoWorker+desplazamiento2, &longitudMensaje , sizeof(int));
 	desplazamiento2 += sizeof(int);
-	memcpy(buffer2+desplazamiento2, mensaje , longitudMensaje);
+	memcpy(estadoWorker+desplazamiento2, mensaje , longitudMensaje);
 	desplazamiento2 += longitudMensaje;
 
-	enviar(yamaSocket, cop_master_archivo_a_transformar,desplazamiento2,buffer2);
+	enviar(yamaSocket, cop_master_estados_workers,desplazamiento2,estadoWorker);
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)

@@ -269,10 +269,6 @@ int main(void) {
 									desplazamiento += sizeof(int);
 									desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
 
-
-
-
-
 									//cantidad elementos lista bloques (t_infobloque)
 									int cantidadElementos = 0;
 									memcpy(&cantidadElementos ,paqueteRecibido->data + desplazamiento,sizeof(int));
@@ -381,9 +377,6 @@ int main(void) {
 								// agregar un elemento a t_estados. Refactoriza como quieras la estructura t_job
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								socketFS = socketActual;
-
-
-
 							}
 								break;
 							case cop_master_archivo_a_transformar:
@@ -392,11 +385,10 @@ int main(void) {
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo=(char*)paqueteRecibido->data;
 								enviar(fileSystemSocket,cop_yama_info_fs,sizeof(char*)*strlen(pathArchivo),pathArchivo);
-
-
 								break;
 							}
 							case cop_master_estados_workers:
+							{
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
 								int desplazamiento = 0;
 								int longitudIdWorker = 0;
@@ -415,7 +407,6 @@ int main(void) {
 								memcpy(idArchivo, paqueteRecibido->data + desplazamiento, longitudIdArchivo);
 								desplazamiento+=longitudIdArchivo;
 
-
 								char* estadoWorker = malloc(sizeof(t_estado_yama));
 
 								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, sizeof(t_estado_yama));
@@ -429,9 +420,8 @@ int main(void) {
 								memcpy(mensaje, paqueteRecibido->data + desplazamiento, longitudMensaje);
 								desplazamiento+=longitudMensaje;
 
-
+								//Evaluar mensaje para saber si se cayeron nodos.
 								if(string_equals_ignore_case(estadoWorker, "ok")){
-
 									bool buscarXArchivoYMaster(void* elem){
 										return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
 												((t_estados*)elem)->socketMaster == socketActual;
@@ -471,11 +461,15 @@ int main(void) {
 
 									list_iterate(estado->contenido, actualizarEstado);
 									list_add_all(nuevosJobs, estado->contenido);
+									//un worker esta ok
+									//Evaluar, si todos los workers correspondientes a la transf estan ok
+									//Iterar sobre los t_clock y enviar el inicio de la transf cop_yama_inicio_transf
+									//sino no hacer nada
 
 								}else{
 									//replanificar
 								}
-
+							}
 								break;
 
 								case -1:
