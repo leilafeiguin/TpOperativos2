@@ -53,60 +53,61 @@ int main(int argc, char** argv) {
 	if(paqueteRecibido->codigo_operacion == -1){
 		printf("Se cayo Yama, finaliza Master.\n");
 		exit(-1);
-	}
-	// recibir lista de workers
+	}else if(paqueteRecibido->codigo_operacion == cop_yama_lista_de_workers){
+		t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
+		archivoNodo->bloquesRelativos =  list_create();
+		archivoNodo->workersAsignados= list_create();
 
-	t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
-	archivoNodo->bloquesRelativos =  list_create();
-	archivoNodo->workersAsignados= list_create();
-
-	int cantidadWorkers = 0;
-	int desplazamiento = 0;
-	memcpy(&cantidadWorkers, paqueteRecibido->data + desplazamiento, sizeof(int));
-	desplazamiento+=sizeof(int);
-	int i=0;
-	for(;i<cantidadWorkers;i++){
-		t_clock* worker = malloc(sizeof(t_clock));
-		memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
-		desplazamiento+= 15;
-		memcpy(&worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
-		desplazamiento+= sizeof(int);
-
-		int cantidadBloques = 0;
-		memcpy(&cantidadBloques, paqueteRecibido->data + desplazamiento, sizeof(int));
-
-		int j=0;
-		for(j=0;j<cantidadBloques;j++){
-			t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
-
-			memcpy(&infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
-			desplazamiento+= sizeof(int);
-			memcpy(&infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+		int cantidadWorkers = 0;
+		int desplazamiento = 0;
+		memcpy(&cantidadWorkers, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		int i=0;
+		for(;i<cantidadWorkers;i++){
+			t_clock* worker = malloc(sizeof(t_clock));
+			memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
+			desplazamiento+= 15;
+			memcpy(&worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
 
-			infoBloque->dirTemporal = malloc(11);
-			memcpy(infoBloque->dirTemporal, paqueteRecibido->data + desplazamiento, 11);
-			desplazamiento+= 11;
+			int cantidadBloques = 0;
+			memcpy(&cantidadBloques, paqueteRecibido->data + desplazamiento, sizeof(int));
 
-			// agregar a la lista de bloques list_add(archivoNodo->bloquesRelativos, worker);
-			list_add(worker->bloques, infoBloque);
+			int j=0;
+			for(j=0;j<cantidadBloques;j++){
+				t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
+
+				memcpy(&infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
+				desplazamiento+= sizeof(int);
+				memcpy(&infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+				desplazamiento+= sizeof(int);
+
+				infoBloque->dirTemporal = malloc(11);
+				memcpy(infoBloque->dirTemporal, paqueteRecibido->data + desplazamiento, 11);
+				desplazamiento+= 11;
+
+				// agregar a la lista de bloques list_add(archivoNodo->bloquesRelativos, worker);
+				list_add(worker->bloques, infoBloque);
+			}
+			// agregar a la lista de workers list_add(archivoNodo->bloquesRelativos, worker);
+			list_add(archivoNodo->workersAsignados, worker);
 		}
-		// agregar a la lista de workers list_add(archivoNodo->bloquesRelativos, worker);
-		list_add(archivoNodo->workersAsignados, worker);
+
+		void iniciarHiloWorker(void* elem){
+			t_parametrosHiloWorker* parametros = malloc(sizeof(t_parametrosHiloWorker));
+			t_clock* infoWorker = malloc(sizeof(t_clock));
+			infoWorker = elem;
+			parametros->infoWorker = infoWorker;
+			parametros->yama_socket = yamaSocket;
+			pthread_create(NULL,NULL, hiloWorker, parametros);
+		}
+
+		list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
+	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
+		//lanza hilo
+	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
+		//lanza hilo
 	}
-
-	void iniciarHiloWorker(void* elem){
-		t_parametrosHiloWorker* parametros = malloc(sizeof(t_parametrosHiloWorker));
-		t_clock* infoWorker = malloc(sizeof(t_clock));
-		infoWorker = elem;
-		parametros->infoWorker = infoWorker;
-		parametros->yama_socket = yamaSocket;
-		pthread_create(NULL,NULL, hiloWorker, parametros);
-	}
-
-	list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
-	//hacer un if para saber si pasa a etapa de transformacion o si hubo error esperar nuevos workers
-
 	return EXIT_SUCCESS;
 }
 
