@@ -31,11 +31,9 @@ typedef struct t_tabla_planificacion{
 }t_tabla_planificacion;
 
 typedef struct t_job{
-
 	char* worker_id;//nodo id
 	int bloque;
 	t_etapa etapa;
-
 	char* temporal;
 	t_estado_yama estado;
 	t_tabla_planificacion* planificacion;

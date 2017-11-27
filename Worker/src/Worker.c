@@ -116,14 +116,12 @@ int main(void) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
 		ftruncate(fileno(fd), 20*1024*1024);
 		fclose(fd);
+	}
 
-		}
-
-//Se abre data bin en modo read
+	//Se abre data bin en modo read
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
 	fstat(fd, &sb);
 	archivo= mmap(NULL,sb.st_size,PROT_READ,  MAP_SHARED,fd,0); //PROT_READ ??
-
 
 	un_socket socketServer=socket_escucha("127.0.0.1", configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
@@ -148,8 +146,6 @@ int main(void) {
 							break;
 							case cop_worker_transformacion:
 							{
-
-
 								int desplazamiento = 0;
 								int cantidadElementos = 0;
 								memcpy(&cantidadElementos, paquete_recibido->data, sizeof(int));
@@ -157,7 +153,7 @@ int main(void) {
 								int i;
 								for(i=0;i<cantidadElementos;i++){
 									t_transf* paquete_transformacion = malloc(sizeof(t_transf));
-	//memcpy(origen, destino, cuantoQuieroCopiar)
+									//memcpy(origen, destino, cuantoQuieroCopiar)
 									memcpy(&paquete_transformacion->cant_script, paquete_recibido->data, sizeof(int));
 									desplazamiento += sizeof(int);
 									paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
@@ -172,18 +168,13 @@ int main(void) {
 									desplazamiento += paquete_transformacion->cant_archivo_temporal;
 									memcpy(paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
 
-
 									//paquete_transformacion->cant_script = *contenido (falta terminar)
 									FILE *archivoPaqueteTransformacion = fopen("./archivoPaqueteTransformacion", "wb");
 									fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
 									chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
-
 									transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
 								}
-
-
 							}
-
 							break;
 							case cop_worker_reduccionLocal:
 							break;
@@ -213,9 +204,6 @@ char* obtenerBloque(int numeroBloque, int tamanioBloque){
 
 
 void transformacion(char* script, char* bloque, char* destino){
-
 	char* func =string_from_format("echo %s | %s > %s ", bloque, script, destino);
 	system(func);
-
-
 }

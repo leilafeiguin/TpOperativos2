@@ -21,7 +21,6 @@ char* SCRIPT_REDUC;
 char* ARCHIVO_ORIGEN;
 
 int main(int argc, char** argv) {
-
 	char* scriptTransf = argv[0];
 	char* scriptReduc = argv[1];
     char* archivoOrigen= argv[2];
@@ -60,7 +59,6 @@ int main(int argc, char** argv) {
 	t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
 	archivoNodo->bloquesRelativos =  list_create();
 	archivoNodo->workersAsignados= list_create();
-
 
 	int cantidadWorkers = 0;
 	int desplazamiento = 0;
