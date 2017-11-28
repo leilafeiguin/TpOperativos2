@@ -181,9 +181,12 @@ int main(int argc, char** argv) {
 			}
 			list_destroy_and_destroy_elements(listaTemp,(void*)destruirElemento);
 
+	}else if(paqueteRecibido->codigo_operacion == cop_worker_estadoReduccionLocal){
+
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
 		//lanza hilo
 	}
+
 	return EXIT_SUCCESS;
 }
 
