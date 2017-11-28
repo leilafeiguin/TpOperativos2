@@ -11,6 +11,17 @@ typedef struct master_configuracion {
 	char* PATH_ARCHIVO;
 } master_configuracion;
 
+typedef struct t_parametrosHiloWorker{
+	un_socket yama_socket;
+	t_clock* infoWorker;
+}t_parametrosHiloWorker;
+
+typedef enum t_estado_master {
+	enProceso = 1,
+	error = 2,
+	finalizado = 3
+} t_estado_master;
+
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Master/configMaster.cfg";
 
 master_configuracion get_configuracion() {

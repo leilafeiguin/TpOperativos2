@@ -1350,8 +1350,7 @@ int main(void) {
 							"Crea una copia de un bloque de un archivo en el nodo dado.\n");
 					parametros = validaCantParametrosComando(linea, 3);
 					if (parametros != NULL) {
-						CP_FROM(parametros[0], parametros[1],
-								(char) parametros[2][0]);
+						cp_block(parametros[1],atoi( parametros[2]),parametros[3]);
 					} else {
 						printf(
 								"El cpblock debe recibir el path_archivo, el nro_bloque y el id_nodo. \n");

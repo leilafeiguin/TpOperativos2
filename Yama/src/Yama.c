@@ -22,7 +22,6 @@ t_log* logger;
 
 int main(void) {
 	int socketFS;
-
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
 	tabla_estados= list_create();
@@ -201,7 +200,6 @@ int main(void) {
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
-
 							break;
 							case cop_archivo_programa:
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
@@ -269,10 +267,6 @@ int main(void) {
 									desplazamiento += sizeof(int);
 									desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
 
-
-
-
-
 									//cantidad elementos lista bloques (t_infobloque)
 									int cantidadElementos = 0;
 									memcpy(&cantidadElementos ,paqueteRecibido->data + desplazamiento,sizeof(int));
@@ -295,17 +289,13 @@ int main(void) {
 										desplazamiento+=sizeof(int);
 										infoBloque->finBloque = finBloque;
 
-
 										list_add(nodoBloques->bloques, infoBloque);
 									}
-
 									list_add(archivoNodo->nodos  ,nodoBloques);
 								}
 
 								void armarListaWorker(void* elem){
-
 									t_nodoxbloques* nodoxbloque = ((t_nodoxbloques*)elem);
-
 									t_clock* clock= malloc(sizeof(t_clock));
 									clock->disponibilidad = configuracion.DISPONIBILIDAD_BASE;
 									clock->worker_id = string_duplicate(nodoxbloque->idNodo);
@@ -319,6 +309,7 @@ int main(void) {
 								t_estados* estadosxjob=malloc(sizeof(t_estados));
 								estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
 								estadosxjob->socketMaster = socketActual;
+
 								//Evalua y planifica en base al archivo que tiene que transaformar
 								void planificarBloques(void* bloque){
 									int* nroBloque = (int*)bloque;
@@ -326,7 +317,6 @@ int main(void) {
 									usleep(configuracion.RETARDO_PLANIFICACION);
 								}
 								list_add(tabla_estados, estadosxjob);
-
 								list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
 
 								//Devuelve lista con los workers
@@ -369,21 +359,15 @@ int main(void) {
 										//directorio temporal (11)
 										memcpy(buffer+desplazamiento,  dirTemp, 11);
 										desplazamiento+=11;
-
 									}
-
 									list_iterate(((t_clock*)worker)->bloques, datosBloques);
 								}
-
 								list_iterate(archivoNodo->workersAsignados, datosWorker);
 
 								//todo leila falta agregar por cada nodo resultante de la planif
 								// agregar un elemento a t_estados. Refactoriza como quieras la estructura t_job
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								socketFS = socketActual;
-
-
-
 							}
 								break;
 							case cop_master_archivo_a_transformar:
@@ -392,11 +376,10 @@ int main(void) {
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo=(char*)paqueteRecibido->data;
 								enviar(fileSystemSocket,cop_yama_info_fs,sizeof(char*)*strlen(pathArchivo),pathArchivo);
-
-
 								break;
 							}
 							case cop_master_estados_workers:
+							{
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
 								int desplazamiento = 0;
 								int longitudIdWorker = 0;
@@ -415,13 +398,10 @@ int main(void) {
 								memcpy(idArchivo, paqueteRecibido->data + desplazamiento, longitudIdArchivo);
 								desplazamiento+=longitudIdArchivo;
 
-								int longitudEstadoWorker = 0;
-								memcpy(&longitudEstadoWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
-								desplazamiento+=sizeof(int);
-								char* estadoWorker = malloc(longitudEstadoWorker);
+								char* estadoWorker = malloc(sizeof(t_estado_yama));
 
-								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, longitudEstadoWorker);
-								desplazamiento+=longitudEstadoWorker;
+								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, sizeof(t_estado_yama));
+								desplazamiento+=sizeof(t_estado_yama);
 
 								int longitudMensaje = 0;
 								memcpy(&longitudMensaje, paqueteRecibido->data + desplazamiento, sizeof(int));
@@ -431,17 +411,14 @@ int main(void) {
 								memcpy(mensaje, paqueteRecibido->data + desplazamiento, longitudMensaje);
 								desplazamiento+=longitudMensaje;
 
-
-								if(string_equals_ignore_case(estadoWorker, "ok")){
-
+								//Evaluar mensaje para saber si se cayeron nodos.
+								if(string_equals_ignore_case(mensaje, "Todo ok")){
 									bool buscarXArchivoYMaster(void* elem){
 										return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
 												((t_estados*)elem)->socketMaster == socketActual;
 									}
 									t_estados* estado=list_find(tabla_estados, buscarXArchivoYMaster);
-
 									t_list* nuevosJobs= list_create();
-
 
 									void actualizarEstado(void* elem){
 										t_job* job= (t_job*)elem;
@@ -473,13 +450,16 @@ int main(void) {
 
 									list_iterate(estado->contenido, actualizarEstado);
 									list_add_all(nuevosJobs, estado->contenido);
+									//un worker esta ok
+									//Evaluar, si todos los workers correspondientes a la transf estan ok
+									//Iterar sobre los t_clock y enviar el inicio de la transf cop_yama_inicio_transf
+									//sino no hacer nada
 
 								}else{
 									//replanificar
 								}
-
+							}
 								break;
-
 								case -1:
 								{
 									if(socketActual == socketFS){
@@ -500,7 +480,6 @@ int main(void) {
 }
 
 char* generarDirectorioTemporal(){
-
 	char* dirTemp= malloc(11);
 	string_append(&dirTemp, "/tmp/");
 	string_append(&dirTemp, randstring(5));//todo buscar una funcion que te genere X cantidad de caracteres aleatorios
@@ -508,24 +487,19 @@ char* generarDirectorioTemporal(){
 }
 
 char *randstring(size_t length) {
-
     static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
     char *randomString = NULL;
-
     if (length){
         randomString = malloc(sizeof(char) * (length +1));
-
         if (randomString){
         	int n;
             for ( n = 0;n < length;n++) {
                 int key = rand() % (int)(sizeof(charset) -1);
                 randomString[n] = charset[key];
             }
-
             randomString[length] = '\0';
         }
     }
-
     return randomString;
 }
 
@@ -597,17 +571,15 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
+
 	bool buscarNodoWorker(void*elem){
 		return string_equals_ignore_case(((t_clock*)tabla->clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
 	}
 	t_nodoxbloques* nodoWorker=list_find(archivo->nodos, buscarNodoWorker);
 
-
-
 	bool existeBloqueEnWorker(void* elem){
 		return numeroBloque == ((t_infobloque*)elem)->bloqueRelativo;
 	}
-
 
 	t_infobloque* infoBloque = list_find(nodoWorker->bloques,existeBloqueEnWorker);
 
@@ -638,8 +610,6 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		}
 
 	}
-
-
 
 	if(list_any_satisfy(archivo->nodos, workerContieneBloque)){
 		if(CalcularDisponibilidad(((t_clock*)tabla->clock_actual->data), tabla)> 0)
@@ -692,13 +662,8 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 					list_iterate(tabla->workers,sumarDisponibilidadBase);
 				}
 			}
-
 		}
-
 	}
-
-
-
 }
 
 int CalcularDisponibilidad(t_clock* worker, t_tabla_planificacion* tabla){

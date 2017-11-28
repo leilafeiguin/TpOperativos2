@@ -17,18 +17,16 @@
 #include <unistd.h>
 
 void* archivo;
+t_log* logger;
 int main(void) {
-	t_log* logger;
 	char* fileLog;
 	fileLog = "DataNodeLogs.txt";
 
-	printf("Inicializando proceso DataNode\n");
-	logger = log_create(fileLog, "DataNode Logs", 0, 0);
-	log_trace(logger, "Inicializando proceso DataNode");
+	logger = log_create(fileLog, "DataNode Logs", 0, 1);
+	log_trace(logger, "Inicializando proceso DataNode. \n");
 
 	dataNode_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
-
 
 	//MMAP
 	struct stat sb;
@@ -36,12 +34,11 @@ int main(void) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
 		ftruncate(fileno(fd), configuracion.CANTIDAD_MB_DATABIN*1024*1024);
 		fclose(fd);
-
-		}
+	}
 
 	int fd=open(configuracion.RUTA_DATABIN, O_RDWR);
 	fstat(fd, &sb);
-	 archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
+	archivo= mmap(NULL,sb.st_size,PROT_READ | PROT_WRITE,  MAP_SHARED,fd,0);
 
 	//CONEXIONES
 	un_socket fileSystemSocket = conectar_a(configuracion.IP_FILESYSTEM,configuracion.PUERTO_FILESYSTEM);
@@ -73,7 +70,6 @@ int main(void) {
 	desplazamiento+= sizeof(int);
 	memcpy(buffer+ desplazamiento, paquete->nombreNodo,longitudNombre);
 	desplazamiento+= longitudNombre;
-
 
 	enviar(fileSystemSocket, cop_datanode_info,desplazamiento, buffer);
 
@@ -107,7 +103,7 @@ int main(void) {
 			break;
 			case -1:
 			{
-				printf("Se cayo FS, finaliza DataNode.\n");
+				log_trace(logger, "Se cayo FS, finaliza DataNode.\n");
 				exit(-1);
 			}
 			break;
@@ -115,8 +111,6 @@ int main(void) {
 	}
 	return EXIT_SUCCESS;
 }
-
-
 
 void leer_bloque_datanode(int numeroBloque, void* bloqueAleer) {
 	int posicion = (numeroBloque *1024*1024);
@@ -128,7 +122,5 @@ void escribir_bloque_datanode(int numeroBloque, void* bloqueAescribir) {
 	int posicion= (numeroBloque *1024*1024);
 	memcpy (archivo+ posicion,bloqueAescribir,1024*1024);
 	return;
-
-
 }
 

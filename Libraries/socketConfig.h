@@ -31,6 +31,8 @@
 //70 - 79 DataNode
 //80 - 99 Worker
 
+
+
 enum codigos_de_operacion {
 	cop_generico = 0,
 	cop_archivo_programa = 1,
@@ -42,9 +44,15 @@ enum codigos_de_operacion {
 
 	cop_master_archivo_a_transformar = 10,
 	cop_master_estados_workers = 11,
+	cop_master_estado_transformacion = 12,
+	cop__estado_reduccion_local = 13,
+	cop_master_estado_reduccion_local = 14,
 
 	cop_yama_lista_de_workers = 50,
 	cop_yama_info_fs = 51,
+	cop_yama_inicio_transformacion = 52,
+	cop_yama_inicio_reduccion_local = 53,
+	cop_yama_inicio_reduccion_global = 54,
 
 	cop_datanode_get_bloque = 70,
 	cop_datanode_get_bloque_respuesta = 71,
