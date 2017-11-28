@@ -109,8 +109,10 @@ static t_nodo *nodo_create(char* nroNodo, bool ocupado, t_bitarray* bitmap,
 	new->socket = socket;
 	new->libre = cantidadBloques;
 	new->cantidadBloques = cantidadBloques;
-	new->ip = malloc(strlen(ipWorker) + 1);
-	strcpy(new->ip, ipWorker);
+	if(strcmp(ipWorker,"ipWorker")!=0){
+		new->ip = malloc(strlen(ipWorker) + 1);
+		strcpy(new->ip, ipWorker);
+	}
 	new->puertoWorker = puertoWorker;
 	new->tamanio = tamanio;
 	return new;

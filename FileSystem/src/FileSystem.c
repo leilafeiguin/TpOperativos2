@@ -175,11 +175,16 @@ int main(void) {
 			unBitmap = bitarray_create(data, cantidad);
 
 			bool esElNodo(t_nodo* nodo){
-				return strcmp(nodo->nroNodo,infoNodo->nombreNodo);
+				if(strcmp(nodo->nroNodo,infoNodo->nombreNodo)==0){
+					return true;
+				}else{
+					return false;;
+				}
 			}
-			if(list_find(fileSystem.ListaNodos,(void*)esElNodo)){
+			if(list_any_satisfy(fileSystem.ListaNodos,(void*)esElNodo)){
 				t_nodo* unNodo = list_find(fileSystem.ListaNodos,(void*)esElNodo);
-				unNodo->ip = infoNodo->ip;
+				unNodo->ip = malloc(strlen(infoNodo->ip)+1);
+				memcpy(unNodo->ip, infoNodo->ip, strlen(infoNodo->ip)+1);
 				unNodo->socket = socketNuevo;
 				unNodo->puertoWorker = infoNodo->puertoWorker;
 				cargarBitmapDesdeArchivo(unNodo);
@@ -1539,6 +1544,8 @@ int main(void) {
 				tablaDeDirectorios[i]->nombre = linea[1];
 				tablaDeDirectorios[i]->padre = atoi(linea[2]);
 				i++;
+				free(line);
+				line = malloc(200);
 			}
 
 			fclose(fp);
@@ -1632,22 +1639,32 @@ int main(void) {
 			int cantidadNodos=0;
 			char** nodos;
 			bool esElNodoByName(t_nodo* unNodo){
-				return strcmp(unNodo->nroNodo,nodos[i]);
+				if(strcmp(unNodo->nroNodo,nodos[i])==0){
+					return true;
+				}else{
+					return false;
+				}
 			}
-			if((read = getline(&line, &len, file)) != -1){
+			while((read = getline(&line, &len, file)) != -1){
 				line = str_replace(line,"\n","");
 				switch(i){
 				case 0:
 					fileSystem.tamanio = atoi(str_replace(line,"TAMANIO=",""));
+					free(line);
+					line = malloc(200);
 					break;
 				case 1:
 					fileSystem.libre = atoi(str_replace(line, "LIBRE=",""));
+					free(line);
+					line = malloc(200);
 					break;
 				case 2:
 					line = str_replace(line,"NODOS=[","");
 					line = str_replace(line,"]","");
-					char** nodos = str_split(line,',');
 					cantidadNodos = countOccurrences(line,",")+1;
+					nodos = str_split(line,',');
+					free(line);
+					line = malloc(200);
 					i = 0;
 					int tamanio;
 					int libre;
@@ -1658,6 +1675,8 @@ int main(void) {
 							line = str_replace(line, nodos[i],"");
 							line = str_replace(line, "Total=","");
 							tamanio = atoi(line);
+							free(line);
+							line = malloc(200);
 						}
 						//Libre
 						if((read = getline(&line, &len, file)) != -1){
@@ -1665,13 +1684,15 @@ int main(void) {
 							line = str_replace(line, nodos[i],"");
 							line = str_replace(line, "Libre=","");
 							libre = atoi(line);
+							free(line);
+							line = malloc(200);
 						}
-						if(list_find(fileSystem.ListaNodos,(void*)esElNodoByName)){
+						if(list_any_satisfy(fileSystem.ListaNodos,(void*)esElNodoByName)){
 							t_nodo* unNodoAux = list_find(fileSystem.ListaNodos,(void*)esElNodoByName);
 							unNodoAux->tamanio = tamanio;
 							unNodoAux->libre = libre;
 						}else{
-							t_nodo* unNodo = nodo_create(nodos[i], false, NULL,-2, NULL, -1,tamanio, libre);
+							t_nodo* unNodo = nodo_create(nodos[i], false, NULL,-2, "ipWorker", -1,tamanio, libre);
 							list_add(fileSystem.ListaNodos,unNodo);
 						}
 
@@ -1679,6 +1700,9 @@ int main(void) {
 					break;
 				}
 				i++;
+			}
+			if(line){
+				free(line);
 			}
 		}
 		return;
@@ -1879,7 +1903,7 @@ int main(void) {
 		FILE * fp = fopen(ubicacionArchivo, "w");
 		if(fp){
 			fprintf(fp, "%s\n", unArchivo->path);
-			fprintf(fp, "TAMANIO=%i\n", unArchivo->tamanio);
+			fprintf(fp, "TAMANIO=%lu\n", unArchivo->tamanio);
 			fprintf(fp, "TIPO=%i\n", unArchivo->tipoArchivo);
 			int cantBloques = list_size(unArchivo->bloques);
 			int i = 0;
@@ -1891,7 +1915,7 @@ int main(void) {
 						ubicBloque1->nroBloque);
 				fprintf(fp, "BLOQUE%iCOPIA1=[%s,%i]\n", i, ubicBloque2->nroNodo,
 						ubicBloque2->nroBloque);
-				fprintf(fp, "BLOQUE%iBYTES=%i\n", i, unBloque->finBloque);
+				fprintf(fp, "BLOQUE%iBYTES=%lu\n", i, unBloque->finBloque);
 			}
 			fclose(fp);
 		}
@@ -1914,7 +1938,7 @@ int main(void) {
 			else
 				tipoArchivo = "BINARIO";
 
-			printf("Nombre Archivo: %s \n Tamaño archivo: %i \n Tipo Archivo: %s \n",
+			printf("Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
 					archivoEncontrado->nombre, archivoEncontrado->tamanio,
 					tipoArchivo);
 			//imprimir nombre, tamanio y tipo de archivo
@@ -1922,7 +1946,7 @@ int main(void) {
 			void imprimirInfoBloque(void* elem) {
 				t_bloque* bloque = (t_bloque*) elem;
 
-				printf("Bloque numero %i  ---- Fin Bloque %i\n",
+				printf("Bloque numero %i  ---- Fin Bloque %lu\n",
 						bloque->nroBloque, bloque->finBloque);
 				//imprimir numero bloque y fin bloque
 
