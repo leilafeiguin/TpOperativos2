@@ -117,7 +117,8 @@ int main(int argc, char** argv) {
 		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
 		//Deserializo la IP
-		memcpy(&ip, paqueteRecibido->data + desplazamiento, longitudIp);
+		ip =malloc(longitudIp+1);
+		memcpy(ip, paqueteRecibido->data + desplazamiento, longitudIp);
 		desplazamiento+=longitudIp;
 		//Deserializo el puerto
 		memcpy(&puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
@@ -126,12 +127,12 @@ int main(int argc, char** argv) {
 		memcpy(&cantidadDeElementos, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
 
-		t_serializacionTemporal* serializacion = malloc(sizeof(t_serializacionTemporal));
+		t_serializacionTemporal* serializacion;
 		int i;
 		for(i=0;i<cantidadDeElementos;i++){
+			serializacion = malloc(sizeof(t_serializacionTemporal));//consultar
 			int cantidadTemporal;
-			char* temporal;
-			memcpy(serializacion->cantidadTemporal, paqueteRecibido->data + desplazamiento, sizeof(int));
+			memcpy(&serializacion->cantidadTemporal, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
 			serializacion->temporal = malloc(cantidadTemporal);
 			memcpy(serializacion->temporal, paqueteRecibido->data + desplazamiento, cantidadTemporal);
@@ -143,11 +144,42 @@ int main(int argc, char** argv) {
 		char* tempDestino;
 		memcpy(&cantidadTempDestino, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+= sizeof(int);
-		memcpy(&tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
+		tempDestino =malloc(cantidadTempDestino);
+		memcpy(tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
 		desplazamiento+= cantidadTempDestino;
 
+		int suma= 0;
+		void sumadorElementos(t_serializacionTemporal* Elem){
+			suma += Elem->cantidadTemporal;
+			return;
+		}
+		list_iterate(listaTemp, (void*)sumadorElementos);
+		char*buffer = malloc(suma + cantidadDeElementos*sizeof(int)+ sizeof(int)+ sizeof(int) + strlen(tempDestino)+1);
+		desplazamiento = 0;
+		memcpy(buffer,&cantidadDeElementos,sizeof(int));
+		desplazamiento +=sizeof(int);
+		i = 0;
+		for(;i<cantidadDeElementos;i++){
+			int aux = ((t_serializacionTemporal*)list_get(listaTemp,i))->cantidadTemporal;
+			memcpy(buffer+desplazamiento, &aux,sizeof(int));
+			desplazamiento += sizeof(int);
+			memcpy(buffer+desplazamiento, ((t_serializacionTemporal*)list_get(listaTemp,i))->temporal,aux+1);
+			desplazamiento +=aux;
+		}
+			memcpy(buffer+desplazamiento,&cantidadTempDestino,sizeof(int));
+			desplazamiento +=sizeof(int);
+			memcpy(buffer+desplazamiento,tempDestino,cantidadTempDestino);
 
-
+			//enviar();// VER Q ONDA A QUIEN SE ENVIA Y ESO. TODO
+			free(buffer);
+			free(ip);
+			free(tempDestino);
+			free(serializacion);
+			void destruirElemento (t_serializacionTemporal*elem){
+				free(elem->temporal);
+				return;
+			}
+			list_destroy_and_destroy_elements(listaTemp,(void*)destruirElemento);
 
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
 		//lanza hilo
