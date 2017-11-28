@@ -878,7 +878,13 @@ int main(void) {
 		if (ubicacionOrigen != NULL) {
 
 			t_nodo* nodoOrigen = buscar_nodo(ubicacionOrigen->nroNodo);
+			if(string_equals_ignore_case(ubicacionOrigen->nroNodo, nombreNodo) || (string_equals_ignore_case(bloque->copia2->nroNodo,nombreNodo)))
+					{
+				//error
+				printf("Erorr, ya existe esa copia ./n");
+					}
 			void* contenido = getbloque(ubicacionOrigen->nroBloque, nodoOrigen);
+
 			int numBloqueDestino = buscarBloque(nodoDestino);
 			nodoDestino->libre--;
 			if (nodoDestino->libre == 0)
@@ -1271,8 +1277,7 @@ int main(void) {
 					formatearFileSystem();
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
-					printf(
-							"Eliminar un Archivo/Directorio/Bloque. \n");
+					printf("Eliminar un Archivo/Directorio/Bloque. \n");
 					validaCantParametrosComandoRemove(linea);
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rename") == 0) {
