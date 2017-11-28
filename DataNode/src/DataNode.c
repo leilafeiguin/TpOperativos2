@@ -103,7 +103,7 @@ int main(void) {
 			break;
 			case -1:
 			{
-				log_trace("Se cayo FS, finaliza DataNode.\n");
+				log_trace(logger, "Se cayo FS, finaliza DataNode.\n");
 				exit(-1);
 			}
 			break;
