@@ -44,7 +44,7 @@ void sortfile(char **array, int linecount){
 }
 
 
-void apareo (char* paths [], char* nombre_ordenado){
+bool apareo (char* paths [], char* nombre_ordenado){
 	int cantPaths = sizeof(paths) / sizeof(paths[0]) + 1;
 	int i = 0;
 	unsigned long int linecountGlobal;
@@ -57,7 +57,7 @@ void apareo (char* paths [], char* nombre_ordenado){
 		fileIN = fopen(paths[i], "rb");
 		if(!fileIN){
 			printf("No se puede abrir el archivo.\n");
-			exit(-1);
+			return false;
 		}
 		unsigned long int linecount = lineCountFile(paths[i]);
 		linecount += 1;
@@ -82,7 +82,7 @@ void apareo (char* paths [], char* nombre_ordenado){
 	FILE *archivoOrdenado = fopen(nombre_ordenado, "wb");
 	if(!archivoOrdenado){
 		printf("No se puede abrir el archivo.\n");
-		exit(-1);
+		return false;
 	}
 	for(i=0; i<linecountGlobal; i++){
 		fprintf(archivoOrdenado,"%s", arrayGlobal[i]);
@@ -91,7 +91,7 @@ void apareo (char* paths [], char* nombre_ordenado){
 	for(i=0; i<linecountGlobal; i++){
 		free(arrayGlobal[i]);
 	}
-	return;
+	return true;
 }
 
 void* archivo;
@@ -103,8 +103,6 @@ int main(void) {
 	char* paths [2];
 	paths[0] = "fileTest";
 	paths[1] = "fileTest2";
-	//char* pathFinal = ordenarArchivo("fileTest");
-	char* pathFinal = apareo(paths);
 	printf("Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker");
@@ -173,6 +171,7 @@ int main(void) {
 								fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
 								chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
 								transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
+							//falta enviar a worker el estado transf
 							}
 						}
 						break;
@@ -204,8 +203,24 @@ int main(void) {
 							char* archivo_reducido = malloc(tamanio_archivo_reducido);
 							memcpy(archivo_reducido, paquete_recibido->data + desplazamiento, tamanio_archivo_reducido + 1);
 
-							apareo(archivosAReducir, archivo_reducido);
-							//falta enviar respuesta a master consultar
+							bool resultado = apareo(archivosAReducir, archivo_reducido);
+
+							int longitudIp = strlen(configuracion.IP_NODO);
+							char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool));
+							desplazamiento = 0;
+
+							memcpy(buffer, &longitudIp, sizeof(int));
+							desplazamiento += sizeof(int);
+
+							memcpy(buffer + desplazamiento, configuracion.IP_NODO, longitudIp + 1);
+							desplazamiento += longitudIp;
+
+							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
+							desplazamiento += sizeof(int);
+
+							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
+
+							enviar(socketConexion, cop_worker_reduccionLocal, strlen(buffer), buffer);
 						}
 						break;
 						case cop_worker_reduccionGlobal:
