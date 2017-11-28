@@ -483,8 +483,6 @@ int main(void) {
 									memcpy(bufferRequest, &request->puerto, sizeof(int));
 									desplazamientoRequest+=sizeof(int);
 
-									//t_list* temporalesTransformacion
-									//cantidad elementos lista temporalesTransformacion (char*)
 									memcpy(bufferRequest, &cantidadElementosTemporales, sizeof(int));
 									desplazamientoRequest+= sizeof(int);
 
@@ -501,6 +499,8 @@ int main(void) {
 
 									memcpy(bufferRequest, request->temporalReduccionLocal, longitudTemporalReduccionLocal); //int que dice cuantos nodos hay en la lista
 									desplazamientoRequest+=longitudTemporalReduccionLocal;
+
+									enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,bufferRequest);
 								}else{
 									t_job* primerJob= list_get(jobsModificados,0);
 									t_tabla_planificacion* tabla=primerJob->planificacion;
