@@ -28,6 +28,6 @@ worker_configuracion get_configuracion() {
 	return configuracion;
 }
 
-char* apareo (char* paths []);
+bool apareo (char* paths [], char* nombre_ordenado);
 void transformacion(char* , char*, char*);
 char* obtenerBloque(int numeroBloque, int tamanioBloque);
