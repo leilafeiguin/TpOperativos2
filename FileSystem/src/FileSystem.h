@@ -258,3 +258,5 @@ void cargarArchivos();
 bool cargarDirectoriosDesdeArchivo();
 
 bool elArchivoPuedeSercargado(int);
+
+void cargarArchivoTablaNodos();
