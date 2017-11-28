@@ -260,3 +260,5 @@ bool cargarDirectoriosDesdeArchivo();
 bool elArchivoPuedeSercargado(int);
 
 void cargarArchivoTablaNodos();
+
+void cargarBitmapDesdeArchivo(t_nodo*);

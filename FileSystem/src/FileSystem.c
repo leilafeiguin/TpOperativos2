@@ -125,6 +125,8 @@ int main(void) {
 			esperar_handshake(socketNuevo, paqueteRecibido,
 					cop_handshake_datanode);
 			printf("Se conecto un nodo\n");
+			cargarArchivoTablaNodos();
+			cargarArchivos();
 
 			t_paquete* paqueteRecibido = recibir(socketNuevo);
 			//deserializa
@@ -171,10 +173,22 @@ int main(void) {
 			}
 
 			unBitmap = bitarray_create(data, cantidad);
-			t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap,
-					socketNuevo, infoNodo->ip, infoNodo->puertoWorker,
-					infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)));
-			list_add(fileSystem.ListaNodos, unNodo);
+
+			bool esElNodo(t_nodo* nodo){
+				return strcmp(nodo->nroNodo,infoNodo->nombreNodo);
+			}
+			if(list_find(fileSystem.ListaNodos,(void*)esElNodo)){
+				t_nodo* unNodo = list_find(fileSystem.ListaNodos,(void*)esElNodo);
+				unNodo->ip = infoNodo->ip;
+				unNodo->socket = socketNuevo;
+				unNodo->puertoWorker = infoNodo->puertoWorker;
+				cargarBitmapDesdeArchivo(unNodo);
+			}else{
+				t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap,
+						socketNuevo, infoNodo->ip, infoNodo->puertoWorker,
+						infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)));
+				list_add(fileSystem.ListaNodos, unNodo);
+			}
 		}
 			//falta agregar otras estructuras administrativas
 			break;
@@ -1372,8 +1386,6 @@ int main(void) {
 					printf("Lista los archivos de un directorio\n");
 					parametros = validaCantParametrosComando(linea, 1);
 					if (parametros != NULL) {
-						cargarArchivoTablaNodos();
-						cargarArchivos();
 						ls(parametros[1]);
 
 					} else {
@@ -1632,24 +1644,32 @@ int main(void) {
 					char** nodos = str_split(line,',');
 					cantidadNodos = countOccurrences(line,",")+1;
 					i = 0;
+					int tamanio;
+					int libre;
 					for(;i<cantidadNodos;i++){
-						t_nodo* unNodoAux = list_find(fileSystem.ListaNodos,(void*)esElNodoByName);
-						if(unNodoAux != NULL){
 						//Total
-							if((read = getline(&line, &len, file)) != -1){
-								line = str_replace(line,"\n","");
-								line = str_replace(line, nodos[i],"");
-								line = str_replace(line, "Total=","");
-								unNodoAux->tamanio = atoi(line);
-							}
-						//Libre
-							if((read = getline(&line, &len, file)) != -1){
-								line = str_replace(line,"\n","");
-								line = str_replace(line, nodos[i],"");
-								line = str_replace(line, "Libre=","");
-								unNodoAux->libre = atoi(line);
-							}
+						if((read = getline(&line, &len, file)) != -1){
+							line = str_replace(line,"\n","");
+							line = str_replace(line, nodos[i],"");
+							line = str_replace(line, "Total=","");
+							tamanio = atoi(line);
 						}
+						//Libre
+						if((read = getline(&line, &len, file)) != -1){
+							line = str_replace(line,"\n","");
+							line = str_replace(line, nodos[i],"");
+							line = str_replace(line, "Libre=","");
+							libre = atoi(line);
+						}
+						if(list_find(fileSystem.ListaNodos,(void*)esElNodoByName)){
+							t_nodo* unNodoAux = list_find(fileSystem.ListaNodos,(void*)esElNodoByName);
+							unNodoAux->tamanio = tamanio;
+							unNodoAux->libre = libre;
+						}else{
+							t_nodo* unNodo = nodo_create(nodos[i], false, NULL,-2, NULL, -1,tamanio, libre);
+							list_add(fileSystem.ListaNodos,unNodo);
+						}
+
 					}
 					break;
 				}
@@ -1676,6 +1696,7 @@ int main(void) {
 			for (i = 0; i < cantidadNodos; i++) {
 				t_nodo* aux;
 				aux = list_get(fileSystem.ListaNodos, i);
+				actualizarBitmap(aux);
 				libreTotal += aux->libre;
 				tamanioTotal += aux->tamanio;
 				libresPorNodo[i] = aux->libre;
@@ -1756,7 +1777,8 @@ int main(void) {
 				char* aux = str_replace(line,"\n","");
 				switch(i){
 					case 0:
-						unArchivo->path = aux;
+						unArchivo->path = malloc(strlen(aux)+1);
+						memcpy(unArchivo->path,aux,strlen(aux)+1);
 						break;
 					case 1:
 						unArchivo->tamanio = strtoul(str_replace(aux, "TAMANIO=", ""),NULL,10);
