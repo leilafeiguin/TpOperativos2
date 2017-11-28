@@ -16,6 +16,11 @@ typedef struct t_parametrosHiloWorker{
 	t_clock* infoWorker;
 }t_parametrosHiloWorker;
 
+typedef struct t_serializacionTemporal{
+	int cantidadTemporal;
+	char* temporal;
+}t_serializacionTemporal;
+
 typedef enum t_estado_master {
 	enProceso = 1,
 	error = 2,

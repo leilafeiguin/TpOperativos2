@@ -106,6 +106,40 @@ int main(int argc, char** argv) {
 		list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
 		//lanza hilo
+		//Deserializacion
+		char* ip;
+		int puerto;
+		int cantidadDeElementos;
+		t_list* listaTemp = list_create();
+
+		int longitudIp = 0;
+		int desplazamiento = 0;
+		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(&ip, paqueteRecibido->data + desplazamiento, longitudIp);
+		desplazamiento+=longitudIp;
+		memcpy(&puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(&cantidadDeElementos, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+
+		//enviarselo al puerto correspondiente
+		t_serializacionTemporal* serializacion = malloc(sizeof(t_serializacionTemporal));
+		int i;
+		for(i=0;i<cantidadDeElementos;i++){
+			int cantidadTemporal;
+			char* temporal;
+			memcpy(serializacion->cantidadTemporal, paqueteRecibido->data + desplazamiento, sizeof(int));
+			desplazamiento+= sizeof(int);
+			serializacion->temporal = malloc(cantidadTemporal);
+			memcpy(serializacion->temporal, paqueteRecibido->data + desplazamiento, cantidadTemporal);
+			desplazamiento+= cantidadTemporal;
+			list_add(listaTemp, serializacion);
+		}
+
+
+
+
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
 		//lanza hilo
 	}
