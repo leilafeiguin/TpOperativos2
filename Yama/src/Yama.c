@@ -489,6 +489,7 @@ int main(void) {
 									for(i=0;i<cantidadElementosTemporales;i++){
 										int longitudTemporal = strlen(list_get(request->temporalesTransformacion,i))+1;
 										char* temporal = malloc(longitudTemporal);
+										memcpy(bufferRequest, &longitudTemporal, sizeof(int));
 										memcpy(bufferRequest, temporal, sizeof(int));
 										desplazamientoRequest+=longitudTemporal;
 									}
