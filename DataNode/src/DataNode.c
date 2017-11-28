@@ -17,14 +17,13 @@
 #include <unistd.h>
 
 void* archivo;
+t_log* logger;
 int main(void) {
-	t_log* logger;
 	char* fileLog;
 	fileLog = "DataNodeLogs.txt";
 
-	printf("Inicializando proceso DataNode\n");
-	logger = log_create(fileLog, "DataNode Logs", 0, 0);
-	log_trace(logger, "Inicializando proceso DataNode");
+	logger = log_create(fileLog, "DataNode Logs", 0, 1);
+	log_trace(logger, "Inicializando proceso DataNode. \n");
 
 	dataNode_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
@@ -104,7 +103,7 @@ int main(void) {
 			break;
 			case -1:
 			{
-				printf("Se cayo FS, finaliza DataNode.\n");
+				log_trace("Se cayo FS, finaliza DataNode.\n");
 				exit(-1);
 			}
 			break;
