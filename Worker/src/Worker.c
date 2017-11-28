@@ -220,7 +220,7 @@ int main(void) {
 
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
 
-							enviar(socketConexion, cop_worker_reduccionLocal, strlen(buffer), buffer);
+							enviar(socketConexion, cop_worker_estadoReducionLocal, strlen(buffer), buffer);
 						}
 						break;
 						case cop_worker_reduccionGlobal:
