@@ -111,19 +111,21 @@ int main(int argc, char** argv) {
 		int puerto;
 		int cantidadDeElementos;
 		t_list* listaTemp = list_create();
-
 		int longitudIp = 0;
 		int desplazamiento = 0;
+		//Deserializo el int del tamaño de la ip
 		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+		//Deserializo la IP
 		memcpy(&ip, paqueteRecibido->data + desplazamiento, longitudIp);
 		desplazamiento+=longitudIp;
+		//Deserializo el puerto
 		memcpy(&puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+		//Deserializo cantidad de elementos
 		memcpy(&cantidadDeElementos, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
 
-		//enviarselo al puerto correspondiente
 		t_serializacionTemporal* serializacion = malloc(sizeof(t_serializacionTemporal));
 		int i;
 		for(i=0;i<cantidadDeElementos;i++){
@@ -136,6 +138,13 @@ int main(int argc, char** argv) {
 			desplazamiento+= cantidadTemporal;
 			list_add(listaTemp, serializacion);
 		}
+
+		int cantidadTempDestino = 0;
+		char* tempDestino;
+		memcpy(&cantidadTempDestino, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+= sizeof(int);
+		memcpy(&tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
+		desplazamiento+= cantidadTempDestino;
 
 
 
