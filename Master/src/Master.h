@@ -48,3 +48,4 @@ size_t cantidadCaracterEnString(const char *str, char token);
 char** str_split(char* a_str, const char a_delim);
 void iniciarHiloWorker(void* elem);
 void hiloWorker(void* infoWorker);
+char *str_replace(char *orig, char *rep, char *with);

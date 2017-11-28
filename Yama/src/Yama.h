@@ -28,13 +28,18 @@ typedef struct t_tabla_planificacion{
 	t_link_element* clock_actual; //t_clock*
 	t_list* workers; //(t_clock)*
 	char* archivo;
+	t_archivoxnodo* archivoNodo;
 }t_tabla_planificacion;
 
 typedef struct t_job{
 	char* worker_id;//nodo id
+	char* ip;
+	int puerto;
 	int bloque;
 	t_etapa etapa;
-	char* temporal;
+	char* temporalTransformacion;
+	char* temporalReduccionLocal;
+	char* temporalReduccionGlobal;
 	t_estado_yama estado;
 	t_tabla_planificacion* planificacion;
 } t_job;
@@ -75,7 +80,7 @@ t_job* crearJob(t_job datos);
 
 int availability();
 
-void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob);
+void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob, char* workerIdCaido);
 
 char* generarDirectorioTemporal();
 
@@ -86,3 +91,5 @@ int CalcularWLMax(t_tabla_planificacion* tabla);
 int CalcularWLWorker(t_clock* worker);
 
 char *randstring(size_t length);
+
+char *str_replace(char *orig, char *rep, char *with);

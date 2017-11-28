@@ -131,14 +131,19 @@ typedef struct t_clock{
 
 } t_clock;
 
+typedef struct t_request_reduccion_local{
+	char* ip;
+	int puerto;
+	t_list* temporalesTransformacion;//char*
+	char* temporalReduccionLocal;
+}t_request_reduccion_local;
+
 
 /**	@NAME: conectar_a
  * 	@DESC: Intenta conectarse.
  * 	@RETURN: Devuelve el socket o te avisa si hubo un error al conectarse.
  *
  */
-
-
 
 un_socket conectar_a(char *IP, char* Port);
 

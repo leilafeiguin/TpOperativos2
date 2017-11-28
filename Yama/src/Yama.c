@@ -309,11 +309,11 @@ int main(void) {
 								t_estados* estadosxjob=malloc(sizeof(t_estados));
 								estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
 								estadosxjob->socketMaster = socketActual;
-
+								tabla->archivoNodo=archivoNodo;
 								//Evalua y planifica en base al archivo que tiene que transaformar
 								void planificarBloques(void* bloque){
 									int* nroBloque = (int*)bloque;
-									planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob );
+									planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob, NULL);
 									usleep(configuracion.RETARDO_PLANIFICACION);
 								}
 								list_add(tabla_estados, estadosxjob);
@@ -364,20 +364,19 @@ int main(void) {
 								}
 								list_iterate(archivoNodo->workersAsignados, datosWorker);
 
-								//todo leila falta agregar por cada nodo resultante de la planif
-								// agregar un elemento a t_estados. Refactoriza como quieras la estructura t_job
+
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								socketFS = socketActual;
 							}
-								break;
+							break;
 							case cop_master_archivo_a_transformar:
 							{
 								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo=(char*)paqueteRecibido->data;
 								enviar(fileSystemSocket,cop_yama_info_fs,sizeof(char*)*strlen(pathArchivo),pathArchivo);
-								break;
 							}
+							break;
 							case cop_master_estados_workers:
 							{
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
@@ -398,9 +397,9 @@ int main(void) {
 								memcpy(idArchivo, paqueteRecibido->data + desplazamiento, longitudIdArchivo);
 								desplazamiento+=longitudIdArchivo;
 
-								char* estadoWorker = malloc(sizeof(t_estado_yama));
+								t_estado_yama estadoWorker;
 
-								memcpy(estadoWorker, paqueteRecibido->data + desplazamiento, sizeof(t_estado_yama));
+								memcpy(&estadoWorker, paqueteRecibido->data + desplazamiento, sizeof(t_estado_yama));
 								desplazamiento+=sizeof(t_estado_yama);
 
 								int longitudMensaje = 0;
@@ -410,29 +409,42 @@ int main(void) {
 
 								memcpy(mensaje, paqueteRecibido->data + desplazamiento, longitudMensaje);
 								desplazamiento+=longitudMensaje;
+								bool buscarXArchivoYMaster(void* elem){
+									return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
+											((t_estados*)elem)->socketMaster == socketActual;
+								}
+								t_estados* estado=list_find(tabla_estados, buscarXArchivoYMaster);
+
+								bool buscarWorker(void* elem){
+									t_job* job= (t_job*)elem;
+									return string_equals_ignore_case(job->worker_id, idWorker);
+								}
+								t_list* jobsModificados=list_filter(estado->contenido, buscarWorker);
 
 								//Evaluar mensaje para saber si se cayeron nodos.
-								if(string_equals_ignore_case(mensaje, "Todo ok")){
-									bool buscarXArchivoYMaster(void* elem){
-										return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
-												((t_estados*)elem)->socketMaster == socketActual;
-									}
-									t_estados* estado=list_find(tabla_estados, buscarXArchivoYMaster);
+								if(estadoWorker == finalizado){
 									t_list* nuevosJobs= list_create();
-
+									t_request_reduccion_local* request = malloc(sizeof(t_request_reduccion_local));
+									request->temporalesTransformacion = list_create();
+									request->temporalReduccionLocal = string_from_format("/tmp/%i-%s-%s", socketActual, str_replace(idArchivo, "/","-"), randstring(5));
 									void actualizarEstado(void* elem){
-										t_job* job= (t_job*)elem;
+										t_job* job=(t_job*)elem;
+										request->ip=job->ip;
+										request->puerto = job->puerto;
 										job->estado= finalizado;
-
 										t_job* nuevoJob=malloc(sizeof(t_job));
 										nuevoJob->bloque = job->bloque;
 										nuevoJob->estado = enProceso;
 										nuevoJob->planificacion = job->planificacion;
-										nuevoJob->temporal = job->temporal;
+										nuevoJob->temporalTransformacion = job->temporalTransformacion;
+										nuevoJob->temporalReduccionLocal = job->temporalReduccionLocal;
+										nuevoJob->temporalReduccionGlobal = job->temporalReduccionGlobal;
 										nuevoJob->worker_id = job->worker_id;
 										switch(job->etapa){
 											case transformacion:
 												nuevoJob->etapa = reduccionLocal;
+												nuevoJob->temporalReduccionLocal = string_duplicate(request->temporalReduccionLocal);
+												list_add(request->temporalesTransformacion, job->temporalTransformacion);
 												break;
 											case reduccionLocal:
 												nuevoJob->etapa = reduccionGlobal;
@@ -447,16 +459,102 @@ int main(void) {
 										}
 										list_add(nuevosJobs, nuevoJob);
 									}
-
-									list_iterate(estado->contenido, actualizarEstado);
+									list_iterate(jobsModificados, actualizarEstado);
 									list_add_all(nuevosJobs, estado->contenido);
-									//un worker esta ok
-									//Evaluar, si todos los workers correspondientes a la transf estan ok
-									//Iterar sobre los t_clock y enviar el inicio de la transf cop_yama_inicio_transf
-									//sino no hacer nada
 
+									//serializar y enviar request
+
+									int cantidadElementosTemporales = list_size(request->temporalesTransformacion);
+									int longitudTemporales = 0;
+									for(i=0;i<cantidadElementosTemporales;i++){
+										longitudTemporales += strlen(list_get(request->temporalesTransformacion,i))+1;
+									}
+
+									int desplazamientoRequest = 0;
+									void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + sizeof(int) + strlen(request->temporalReduccionLocal)+1);
+															//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
+									int longitudIp = strlen(request->ip)+1;
+									memcpy(bufferRequest, &longitudIp, sizeof(int));
+									desplazamientoRequest+=sizeof(int);
+
+									memcpy(bufferRequest, request->ip, longitudIp); //int que dice cuantos nodos hay en la lista
+									desplazamientoRequest+=longitudIp;
+
+									memcpy(bufferRequest, &request->puerto, sizeof(int));
+									desplazamientoRequest+=sizeof(int);
+
+									//t_list* temporalesTransformacion
+									//cantidad elementos lista temporalesTransformacion (char*)
+									memcpy(bufferRequest, &cantidadElementosTemporales, sizeof(int));
+									desplazamientoRequest+= sizeof(int);
+
+									for(i=0;i<cantidadElementosTemporales;i++){
+										int longitudTemporal = strlen(list_get(request->temporalesTransformacion,i))+1;
+										char* temporal = malloc(longitudTemporal);
+										memcpy(bufferRequest, temporal, sizeof(int));
+										desplazamientoRequest+=longitudTemporal;
+									}
+
+									int longitudTemporalReduccionLocal = strlen(request->temporalReduccionLocal)+1;
+									memcpy(bufferRequest, &longitudTemporalReduccionLocal, sizeof(int));
+									desplazamientoRequest+=sizeof(int);
+
+									memcpy(bufferRequest, request->temporalReduccionLocal, longitudTemporalReduccionLocal); //int que dice cuantos nodos hay en la lista
+									desplazamientoRequest+=longitudTemporalReduccionLocal;
 								}else{
+									t_job* primerJob= list_get(jobsModificados,0);
+									t_tabla_planificacion* tabla=primerJob->planificacion;
+									t_archivoxnodo* archivoNodo=tabla->archivoNodo;
+									list_clean(archivoNodo->workersAsignados);
 									//replanificar
+									void replanificarBloques(void* elem){
+										t_job* job = (t_job*)elem;
+										job->estado = error;
+										planificarBloque(tabla , job->bloque, archivoNodo,estado, idWorker);
+										usleep(configuracion.RETARDO_PLANIFICACION);
+									}
+									list_iterate(jobsModificados, replanificarBloques);
+									int cantidadBloquesTotales =list_size(jobsModificados);
+									int cantidadWorkers = list_size(archivoNodo->workersAsignados);
+									desplazamiento=0;
+									void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+sizeof(int)+sizeof(int))+cantidadBloquesTotales*(sizeof(int) + sizeof(int)+15));
+									memcpy(buffer, &cantidadWorkers, sizeof(int)); //int que dice cuantos nodos hay en la lista
+									desplazamiento+=sizeof(int);
+
+									void datosWorker(void* worker){
+										//por cada nodo mando IP (15)
+										memcpy(buffer+desplazamiento, ((t_clock*)worker)->ip, 15);
+										desplazamiento+=15;
+
+										//puerto (4)
+										memcpy(buffer+desplazamiento, &((t_clock*)worker)->puerto,sizeof(int));
+										desplazamiento+=sizeof(int);
+
+										int cantidadBloques=list_size(((t_clock*)worker)->bloques);
+										memcpy(buffer+desplazamiento,&cantidadBloques ,sizeof(int));
+										desplazamiento+=sizeof(int);
+
+										void datosBloques(void* bloque){
+											//por cada bloque a pedir a cada worker mando
+
+											t_infobloque* infobloque=((t_infobloque*)bloque);
+											//int bloque absoluto (donde esta dentro del nodo)
+											memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
+											desplazamiento+=sizeof(int);
+
+											//int fin de bloque
+											memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
+											desplazamiento+=sizeof(int);
+
+											char* dirTemp=generarDirectorioTemporal();
+											//directorio temporal
+											memcpy(buffer+desplazamiento,  dirTemp, strlen(dirTemp)+1);
+											desplazamiento+=strlen(dirTemp)+1;
+										}
+										list_iterate(((t_clock*)worker)->bloques, datosBloques);
+									}
+									list_iterate(archivoNodo->workersAsignados, datosWorker);
+									enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								}
 							}
 								break;
@@ -471,13 +569,60 @@ int main(void) {
 									// buscar todos los t_clock que tienen workerId == a todos los worker id que eliminaste recien
 								}
 								break;
-								}
+							}
 						}
 					}
 			}
 		}
 	return EXIT_SUCCESS;
 }
+
+
+char *str_replace(char *orig, char *rep, char *with) {
+		char *result; // the return string
+		char *ins;    // the next insert point
+		char *tmp;    // varies
+		int len_rep;  // length of rep (the string to remove)
+		int len_with; // length of with (the string to replace rep with)
+		int len_front; // distance between rep and end of last rep
+		int count;    // number of replacements
+
+		// sanity checks and initialization
+		if (!orig || !rep)
+			return NULL;
+		len_rep = strlen(rep);
+		if (len_rep == 0)
+			return NULL; // empty rep causes infinite loop during count
+		if (!with)
+			with = "";
+		len_with = strlen(with);
+
+		// count the number of replacements needed
+		ins = orig;
+		for (count = 0; (tmp = strstr(ins, rep)); ++count) {
+			ins = tmp + len_rep;
+		}
+
+		tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+		if (!result)
+			return NULL;
+
+		// first time through the loop, all the variable are set correctly
+		// from here on,
+		//    tmp points to the end of the result string
+		//    ins points to the next occurrence of rep in orig
+		//    orig points to the remainder of orig after "end of rep"
+		while (count--) {
+			ins = strstr(orig, rep);
+			len_front = ins - orig;
+			tmp = strncpy(tmp, orig, len_front) + len_front;
+			tmp = strcpy(tmp, with) + len_with;
+			orig += len_front + len_rep; // move to next "end of rep"
+		}
+		strcpy(tmp, orig);
+		return result;
+	}
 
 char* generarDirectorioTemporal(){
 	char* dirTemp= malloc(11);
@@ -512,65 +657,20 @@ void sig_handler(int signo){
     	log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
     }
 }
-/*
-void procesar_job(int jobId, t_job datos){
-	t_estados* registro=(t_estados*) buscar_por_jobid(jobId);
-	if(registro == NULL){
-		t_estados* job= malloc(sizeof(t_estados));
-		job->job=jobId;
-		job->contenido = list_create();
-		t_job* nuevoJob= crearJob(datos);
-		list_add(job->contenido, nuevoJob);
-		list_add(tabla_estados, job);
-	}else{
-		t_job* nodo = buscar_por_nodo(datos.worker_id, registro->contenido);
-		if (nodo == NULL){
-			t_job* nuevoJob= crearJob(datos);
-			list_add(registro->contenido, nuevoJob);
-		}else{
-			setearJob(nodo, datos);
-		}
-	}
-}
 
-t_job* crearJob(t_job datos){
-	t_job* nuevoJob= malloc(sizeof(t_job));
-	setearJob(nuevoJob, datos);
-	return nuevoJob;
-}
-
-void setearJob(t_job* nuevoJob, t_job datos){
-	nuevoJob->bloque=datos.bloque;
-	nuevoJob->socketMaster = datos.socketMaster;
-	nuevoJob->worker_id = datos.worker_id;
-	nuevoJob->cantidadTemporal = datos.cantidadTemporal;
-	nuevoJob->estado=datos.estado;
-	nuevoJob->etapa =datos.etapa;
-	nuevoJob->temporal = malloc(strlen(datos.temporal) +1);
-	strcpy(nuevoJob->temporal, datos.temporal);
-	//asignar el resto de los camposa
-}
-
-void* buscar_por_nodo (char* nodo, t_list* listaNodos){
-	int es_el_nodo(t_job* job){
-		return string_equals_ignore_case(job->worker_id , nodo);
-	}
-	return list_find(listaNodos, (void*) es_el_nodo);
-}
-
-void* buscar_por_jobid(int jobId){
-	int _is_the_one(t_estados *p) {
-		return p->job == jobId;
-	}
-	return list_find(tabla_estados, (void*) _is_the_one);
-}
-
-*/
-
-void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob){
-
+void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob, char* workerIdCaido){
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
+
+	if(workerIdCaido != NULL){
+
+		bool buscarNodoCaido(void* elem){
+
+			return string_equals_ignore_case(workerIdCaido, ((t_nodoxbloques*)elem)->idNodo);
+		}
+
+		list_remove_by_condition(archivo->nodos, buscarNodoCaido);
+	}
 
 	bool buscarNodoWorker(void*elem){
 		return string_equals_ignore_case(((t_clock*)tabla->clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
@@ -595,8 +695,10 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		jobBloque->bloque= *numeroBloque;
 		jobBloque->estado = enProceso;
 		jobBloque->etapa = transformacion;
+		jobBloque->ip=string_duplicate(worker->ip);
+		jobBloque->puerto = worker->puerto;
 		jobBloque->worker_id= string_duplicate(worker->worker_id);
-		jobBloque->temporal = generarDirectorioTemporal();
+		jobBloque->temporalTransformacion = generarDirectorioTemporal();
 		list_add(estadoxjob->contenido, jobBloque);
 		list_add(worker->bloques, infoBloque);
 

@@ -19,16 +19,17 @@
 char* SCRIPT_TRANSF;
 char* SCRIPT_REDUC;
 char* ARCHIVO_ORIGEN;
-
+char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
 	char* scriptTransf = argv[0];
 	char* scriptReduc = argv[1];
     char* archivoOrigen= argv[2];
 	char* archivoDestino=argv[3];
+
 	SCRIPT_TRANSF=scriptTransf;
 	SCRIPT_REDUC=scriptReduc;
 	ARCHIVO_ORIGEN=archivoOrigen;
-
+	PATH_ARCHIVO_ORIGEN= str_replace(ARCHIVO_ORIGEN, "yamafs://", "");
 	t_log* logger;
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
@@ -111,6 +112,52 @@ int main(int argc, char** argv) {
 	return EXIT_SUCCESS;
 }
 
+char *str_replace(char *orig, char *rep, char *with) {
+		char *result; // the return string
+		char *ins;    // the next insert point
+		char *tmp;    // varies
+		int len_rep;  // length of rep (the string to remove)
+		int len_with; // length of with (the string to replace rep with)
+		int len_front; // distance between rep and end of last rep
+		int count;    // number of replacements
+
+		// sanity checks and initialization
+		if (!orig || !rep)
+			return NULL;
+		len_rep = strlen(rep);
+		if (len_rep == 0)
+			return NULL; // empty rep causes infinite loop during count
+		if (!with)
+			with = "";
+		len_with = strlen(with);
+
+		// count the number of replacements needed
+		ins = orig;
+		for (count = 0; (tmp = strstr(ins, rep)); ++count) {
+			ins = tmp + len_rep;
+		}
+
+		tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+		if (!result)
+			return NULL;
+
+		// first time through the loop, all the variable are set correctly
+		// from here on,
+		//    tmp points to the end of the result string
+		//    ins points to the next occurrence of rep in orig
+		//    orig points to the remainder of orig after "end of rep"
+		while (count--) {
+			ins = strstr(orig, rep);
+			len_front = ins - orig;
+			tmp = strncpy(tmp, orig, len_front) + len_front;
+			tmp = strcpy(tmp, with) + len_with;
+			orig += len_front + len_rep; // move to next "end of rep"
+		}
+		strcpy(tmp, orig);
+		return result;
+	}
+
 
 void hiloWorker(void* parametros){
 	t_parametrosHiloWorker* parametrosCasteado = (t_parametrosHiloWorker*) parametros;
@@ -170,12 +217,15 @@ void hiloWorker(void* parametros){
 	t_paquete* paqueteRecibido = recibir(workerSocket);
 
 	char* mensaje = "";
+	t_estado_master estado ;
 	if(paqueteRecibido->data == NULL){
 		printf("Se desconecto el nodo /n");
 		mensaje= "ERROR: se desconecto el nodo";
+		estado=error;
 	}
 	else{
 		mensaje= "Todo ok";
+		estado=finalizado;
 	}
 
 	int desplazamiento2 = 0;
@@ -185,8 +235,6 @@ void hiloWorker(void* parametros){
 
 	void* estadoWorker= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
 
-	t_estado_master* estado = finalizado;
-
 	memcpy(estadoWorker+desplazamiento2, &longitudIdWorker, sizeof(int));
 	desplazamiento2 += sizeof(int);
 	memcpy(estadoWorker+desplazamiento2, worker->worker_id, longitudIdWorker);
@@ -195,7 +243,7 @@ void hiloWorker(void* parametros){
 	desplazamiento2 += sizeof(int);
 	memcpy(estadoWorker+desplazamiento2, ARCHIVO_ORIGEN, longitudIdArchivo);
 	desplazamiento2 += longitudIdArchivo;
-	memcpy(estadoWorker+desplazamiento2, estado, sizeof(t_estado_master));
+	memcpy(estadoWorker+desplazamiento2, &estado, sizeof(t_estado_master));
 	desplazamiento2 += sizeof(t_estado_master);
 	memcpy(estadoWorker+desplazamiento2, &longitudMensaje , sizeof(int));
 	desplazamiento2 += sizeof(int);
