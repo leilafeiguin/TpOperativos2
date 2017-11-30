@@ -469,11 +469,12 @@ int main(void) {
 									for(i=0;i<cantidadElementosTemporales;i++){
 										longitudTemporales += strlen(list_get(request->temporalesTransformacion,i))+1;
 									}
+									int longitudIdWorker;
+									t_clock* worker;
 
 									int desplazamientoRequest = 0;
-									void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + sizeof(int) + strlen(request->temporalReduccionLocal)+1);
+									void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + sizeof(int) + strlen(request->temporalReduccionLocal)+1+sizeof(int)+strlen(worker->worker_id)+1);
 
-									//todo agregar worker id
 									//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
 									int longitudIp = strlen(request->ip)+1;
 									memcpy(bufferRequest, &longitudIp, sizeof(int));
@@ -502,6 +503,11 @@ int main(void) {
 
 									memcpy(bufferRequest, request->temporalReduccionLocal, longitudTemporalReduccionLocal); //int que dice cuantos nodos hay en la lista
 									desplazamientoRequest+=longitudTemporalReduccionLocal;
+
+									memcpy(bufferRequest,&longitudIdWorker,sizeof(int));
+									desplazamiento+=sizeof(int);
+									memcpy(bufferRequest,worker->worker_id,longitudIdWorker);
+									desplazamiento+= longitudIdWorker;
 
 									enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,bufferRequest);
 								}else{
