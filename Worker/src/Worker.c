@@ -222,7 +222,7 @@ int main(void) {
 							bool resultado = apareo(archivosAReducir, archivo_reducido);
 
 							int longitudIp = strlen(configuracion.IP_NODO);
-							char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool));
+							char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool)+sizeof(int)+longitudIdWorker);
 							desplazamiento = 0;
 							memcpy(buffer, &longitudIp, sizeof(int));
 							desplazamiento += sizeof(int);
