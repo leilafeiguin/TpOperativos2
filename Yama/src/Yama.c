@@ -702,6 +702,11 @@ int main(void) {
 								}
 							}
 								break;
+							case cop_master_finalizado:
+							{
+								enviar(socketActual,cop_yama_finalizado,paqueteRecibido->tamanio,paqueteRecibido->data);
+							}
+								break;
 								case -1:
 								{
 									if(socketActual == socketFS){

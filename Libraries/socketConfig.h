@@ -47,12 +47,14 @@ enum codigos_de_operacion {
 	cop_master_estado_transformacion = 12,
 	cop_estado_reduccion_local = 13,
 	cop_master_estado_reduccion_local = 14,
+	cop_master_finalizado = 15,
 
 	cop_yama_lista_de_workers = 50,
 	cop_yama_info_fs = 51,
 	cop_yama_inicio_transformacion = 52,
 	cop_yama_inicio_reduccion_local = 53,
 	cop_yama_inicio_reduccion_global = 54,
+	cop_yama_finalizado = 55,
 
 	cop_datanode_get_bloque = 70,
 	cop_datanode_get_bloque_respuesta = 71,
