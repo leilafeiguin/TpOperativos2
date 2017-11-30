@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 		}
 
 		list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
-	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
+		}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
 		//lanza hilo
 		//Deserializacion
 		char* ip;
