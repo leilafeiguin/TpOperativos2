@@ -561,70 +561,138 @@ int main(void) {
 								}
 							}
 								break;
-							case cop_yama_inicio_reduccion_global:
+							case cop_master_estado_reduccion_local:
 							{
-								char* ipEncargado;
-								int puertoEncargado;
-								char* idEncargado;
-								t_list* workersGlobal = list_create(); //t_workers_global
-								int cantWorkersGlobal = list_size(workersGlobal);
-								int sizeLista = 0;
-								int i = 0;
-								for(; i<cantWorkersGlobal;i++){
-									t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
-									workerGlobal = list_get(workersGlobal, i);
-									sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->id)+1;
-											//		longitudIp		ip						puerto		longitudArchivo		archivo										longitudId
+								//Recibo de Master
+								int longitudIdWorker;
+								char* workerId;
+								int longitudIdArchivo;
+								char* idArchivo;
+								t_estado_yama estado;
+								int longitudMensaje;
+								char* mensaje;
+
+								int desplazamientoRecibido = 0;
+								memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamientoRecibido, sizeof(int));
+								desplazamientoRecibido+=sizeof(int);
+								workerId = malloc(longitudIdWorker);
+
+								memcpy(workerId, paqueteRecibido->data + desplazamientoRecibido, longitudIdWorker);
+								desplazamientoRecibido+=longitudIdWorker;
+
+								memcpy(&longitudIdArchivo, paqueteRecibido->data + desplazamientoRecibido, sizeof(int));
+								desplazamientoRecibido+=sizeof(int);
+								idArchivo = malloc(longitudIdArchivo);
+
+								memcpy(idArchivo, paqueteRecibido->data + desplazamientoRecibido, longitudIdArchivo);
+								desplazamientoRecibido+=longitudIdArchivo;
+
+								memcpy(&estado, paqueteRecibido->data + desplazamientoRecibido, sizeof(int));
+								desplazamientoRecibido+=sizeof(int);
+
+								memcpy(&longitudMensaje, paqueteRecibido->data + desplazamientoRecibido, sizeof(int));
+								desplazamientoRecibido+=sizeof(int);
+								mensaje = malloc(longitudMensaje);
+
+								memcpy(mensaje, paqueteRecibido->data + desplazamientoRecibido, longitudMensaje);
+								desplazamientoRecibido+=longitudMensaje;
+
+								bool buscarXArchivoYMaster(void* elem){
+									return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
+											((t_estados*)elem)->socketMaster == socketActual;
+								}
+								t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
+
+								bool esEtapaReduccionLocal(void* elem){
+									return ((t_job*)elem)->etapa == reduccionLocal;
+								}
+								t_list* estadosReduccionLocal = list_filter(estados->contenido, esEtapaReduccionLocal);
+
+								void actualizarTablaEstados(void* elem){
+									((t_job*)elem)->estado = estado;
 								}
 
-								int desplazamientoRG = 0;
-								void* bufferRG = malloc(sizeof(int) + strlen(ipEncargado)+1 + sizeof(int) + sizeof(int) + strlen(idEncargado)+1 + sizeof(int));
-													//	longitudIp		ip						puerto		longitudId		idEncargado				cantWorkers
-								int longitudIp = strlen(ipEncargado)+1;
-								memcpy(bufferRG, &longitudIp, sizeof(int));
-								desplazamientoRG+=sizeof(int);
+								list_iterate(estadosReduccionLocal, actualizarTablaEstados);
 
-								memcpy(bufferRG, ipEncargado, longitudIp);
-								desplazamientoRG+=longitudIp;
+								bool estaTerminado(void* elem){
+									return ((t_job*)elem)->estado == finalizado;
+								}
+								if(list_all_satisfy(estadosReduccionLocal, estaTerminado)){
+									//Envio a Master
+									char* ipEncargado;
+									int puertoEncargado;
+									char* idEncargado;
+									t_list* workersGlobal = list_create(); //t_workers_global
+									char* temporalReduccionGlobal;
+									int cantWorkersGlobal = list_size(workersGlobal);
+									int sizeLista = 0;
+									int i = 0;
+									for(; i<cantWorkersGlobal;i++){
+										t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
+										workerGlobal = list_get(workersGlobal, i);
+										sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->id)+1;
+												//		longitudIp		ip						puerto		longitudArchivo		archivo										longitudId
+									}
 
-								memcpy(bufferRG, &puertoEncargado, sizeof(int));
-								desplazamientoRG+=sizeof(int);
-
-								int longitudId = strlen(idEncargado)+1;
-								memcpy(bufferRG, &longitudId, sizeof(int));
-								desplazamientoRG+=sizeof(int);
-
-								memcpy(bufferRG, idEncargado, longitudId);
-								desplazamientoRG+=longitudId;
-
-								int j = 0;
-								for(; j<cantWorkersGlobal;j++){
-									t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
-									workerGlobal = list_get(workersGlobal, j);
-
-									int longitudIpW = strlen(workerGlobal->ip)+1;
-									memcpy(bufferRG, &longitudIpW, sizeof(int));
+									int desplazamientoRG = 0;
+									void* bufferRG = malloc(sizeof(int) + strlen(ipEncargado)+1 + sizeof(int) + sizeof(int) + strlen(idEncargado)+1 + sizeof(int) + sizeLista);
+														//	longitudIp		ip						puerto		longitudId		idEncargado				cantWorkers
+									int longitudIp = strlen(ipEncargado)+1;
+									memcpy(bufferRG, &longitudIp, sizeof(int));
 									desplazamientoRG+=sizeof(int);
 
-									memcpy(bufferRG, workerGlobal->ip, longitudIpW);
-									desplazamientoRG+=longitudIpW;
+									memcpy(bufferRG, ipEncargado, longitudIp);
+									desplazamientoRG+=longitudIp;
 
-									memcpy(bufferRG, &workerGlobal->puerto, sizeof(int));
+									memcpy(bufferRG, &puertoEncargado, sizeof(int));
 									desplazamientoRG+=sizeof(int);
 
-									int longitudArchivo = strlen(workerGlobal->archivoReduccionLocal)+1;
-									memcpy(bufferRG, &longitudArchivo, sizeof(int));
+									int longitudId = strlen(idEncargado)+1;
+									memcpy(bufferRG, &longitudId, sizeof(int));
 									desplazamientoRG+=sizeof(int);
 
-									memcpy(bufferRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
-									desplazamientoRG+=longitudArchivo;
+									memcpy(bufferRG, idEncargado, longitudId);
+									desplazamientoRG+=longitudId;
 
-									int longitudIdW = strlen(workerGlobal->id)+1;
-									memcpy(bufferRG, &longitudIdW, sizeof(int));
+									memcpy(bufferRG, &cantWorkersGlobal, sizeof(int));
 									desplazamientoRG+=sizeof(int);
 
-									memcpy(bufferRG, workerGlobal->id, longitudArchivo);
-									desplazamientoRG+=longitudIdW;
+									int j = 0;
+									for(; j<cantWorkersGlobal;j++){
+										t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
+										workerGlobal = list_get(workersGlobal, j);
+
+										int longitudIpW = strlen(workerGlobal->ip)+1;
+										memcpy(bufferRG, &longitudIpW, sizeof(int));
+										desplazamientoRG+=sizeof(int);
+
+										memcpy(bufferRG, workerGlobal->ip, longitudIpW);
+										desplazamientoRG+=longitudIpW;
+
+										memcpy(bufferRG, &workerGlobal->puerto, sizeof(int));
+										desplazamientoRG+=sizeof(int);
+
+										int longitudArchivo = strlen(workerGlobal->archivoReduccionLocal)+1;
+										memcpy(bufferRG, &longitudArchivo, sizeof(int));
+										desplazamientoRG+=sizeof(int);
+
+										memcpy(bufferRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
+										desplazamientoRG+=longitudArchivo;
+
+										int longitudIdW = strlen(workerGlobal->id)+1;
+										memcpy(bufferRG, &longitudIdW, sizeof(int));
+										desplazamientoRG+=sizeof(int);
+
+										memcpy(bufferRG, workerGlobal->id, longitudArchivo);
+										desplazamientoRG+=longitudIdW;
+									}
+									int longitudTemporalReduccionGlobal = strlen(temporalReduccionGlobal)+1;
+									memcpy(bufferRG, &longitudTemporalReduccionGlobal, sizeof(int));
+									desplazamientoRG+=sizeof(int);
+
+									memcpy(bufferRG, temporalReduccionGlobal, longitudTemporalReduccionGlobal);
+									desplazamientoRG+=longitudTemporalReduccionGlobal;
+									enviar(socketActual,cop_yama_inicio_reduccion_global,desplazamientoRG,bufferRG);
 								}
 							}
 								break;
