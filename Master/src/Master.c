@@ -23,8 +23,8 @@ char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
 	char* scriptTransf = argv[0];
 	char* scriptReduc = argv[1];
-    char* archivoOrigen= argv[2];
-	char* archivoDestino=argv[3];
+    char* archivoOrigen = argv[2];
+	char* archivoDestino = argv[3];
 
 	SCRIPT_TRANSF=scriptTransf;
 	SCRIPT_REDUC=scriptReduc;
@@ -107,6 +107,7 @@ int main(int argc, char** argv) {
 		}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
 		//lanza hilo
 		//Deserializacion
+		// todo mati GG. Cuando yama envia este mensaje, hay que agregar el ID de worker
 		char* ip;
 		int puerto;
 		int cantidadDeElementos;
@@ -134,12 +135,12 @@ int main(int argc, char** argv) {
 		int i;
 		for(i=0;i<cantidadDeElementos;i++){
 			serializacion = malloc(sizeof(t_serializacionTemporal));//consultar
-			int cantidadTemporal;
+
 			memcpy(&serializacion->cantidadTemporal, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
-			serializacion->temporal = malloc(cantidadTemporal);
-			memcpy(serializacion->temporal, paqueteRecibido->data + desplazamiento, cantidadTemporal);
-			desplazamiento+= cantidadTemporal;
+			serializacion->temporal = malloc(serializacion->cantidadTemporal);
+			memcpy(serializacion->temporal, paqueteRecibido->data + desplazamiento, serializacion->cantidadTemporal);
+			desplazamiento+= serializacion->cantidadTemporal;
 			list_add(listaTemp, serializacion);
 		}
 
@@ -185,6 +186,39 @@ int main(int argc, char** argv) {
 			list_destroy_and_destroy_elements(listaTemp,(void*)destruirElemento);
 
 	}else if(paqueteRecibido->codigo_operacion == cop_estado_reduccion_local){
+		int longitudIdWorker;
+		char* worker_id;
+		int	 longitudIdArchivo;
+		char*	archivo;
+	t_estado_master 	estado;
+		int		longitudMensaje;
+		char* 	mensaje;
+
+		char* buffer =malloc(longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje);
+		int desplazamiento;
+		desplazamiento = 0;
+		memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
+		desplazamiento += sizeof(int);
+		memcpy(buffer+desplazamiento, worker_id, longitudIdWorker);
+		desplazamiento += longitudIdWorker;
+		memcpy(buffer+desplazamiento, &longitudIdArchivo, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(buffer+desplazamiento, archivo,longitudIdArchivo);
+		desplazamiento+=longitudIdArchivo;
+		memcpy(buffer+desplazamiento, &estado,sizeof(t_estado_master));
+		desplazamiento +=sizeof(t_estado_master);
+		memcpy(buffer+desplazamiento, &longitudMensaje,sizeof(int));
+		desplazamiento +=sizeof(int);
+		memcpy(buffer+desplazamiento,mensaje,longitudMensaje);
+		desplazamiento += longitudMensaje;
+
+		enviar(yamaSocket,cop_master_estado_reduccion_local,desplazamiento,buffer);
+		free(buffer);
+
+
+
+
+
 
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
 			pthread_create(NULL,NULL, hiloReduccionGlobal, paqueteRecibido);
@@ -423,7 +457,7 @@ void hiloWorker(void* parametros){
 	int longitudMensaje = strlen(mensaje) + 1;
 
 	void* estadoWorker= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
-
+//mati
 	memcpy(estadoWorker+desplazamiento2, &longitudIdWorker, sizeof(int));
 	desplazamiento2 += sizeof(int);
 	memcpy(estadoWorker+desplazamiento2, worker->worker_id, longitudIdWorker);

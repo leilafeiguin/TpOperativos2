@@ -172,9 +172,12 @@ int main(void) {
 								chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
 								transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
 
+							//falta enviar a worker el estado trans
+
 								char* mensaje = malloc(3);
 								mensaje = "ok";
 								enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);
+
 
 							}
 						}
@@ -224,10 +227,12 @@ int main(void) {
 
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
 
-							enviar(socketConexion, cop_worker_estadoReducionLocal, strlen(buffer), buffer);
+							enviar(socketConexion, cop_worker_reduccionLocal, strlen(buffer), buffer);
 						}
 						break;
-						case cop_worker_reduccionGlobal:
+						case cop_worker_reduccionGlobal:{
+
+						}
 						break;
 						case -1:
 						{

@@ -224,7 +224,8 @@ int main(void) {
 			t_paquete* paqueteRecibido = recibir(socketYama);
 			switch (paqueteRecibido->codigo_operacion) { //revisar validaciones de habilitados
 
-			case cop_yama_info_fs: {
+			case cop_yama_info_fs:
+			{
 				char* pathArchivo = (char*) paqueteRecibido->data;
 				pathArchivo = str_replace(pathArchivo, "yamafs://", "");
 				bool buscarArchivoPorPath(void* elem) {
@@ -376,6 +377,29 @@ int main(void) {
 				} else {
 					//todo handlear error
 				}
+			case cop_yama_finalizado:
+			{
+				int longitudNombre;
+				int longitudArchivo;
+				int desplazamiento=0;
+
+				memcpy(&longitudNombre,paqueteRecibido->data,sizeof(int));
+				desplazamiento+=sizeof(int);
+				char* nombreArchivo = malloc(longitudNombre);
+				memcpy(nombreArchivo,paqueteRecibido->data+desplazamiento,longitudNombre);
+				desplazamiento+=longitudNombre;
+				memcpy(&longitudArchivo,paqueteRecibido->data+desplazamiento,sizeof(int));
+				desplazamiento+=sizeof(int);
+
+				FILE* fp = fopen("archivoTemp", "w");
+				if(fp){
+					fwrite(paqueteRecibido->data+desplazamiento,longitudArchivo,1,fp);
+					fclose(fp);
+				}
+				CP_FROM("archivoTemp",nombreArchivo,0);
+				remove("archivoTemp");
+				free(nombreArchivo);
+			}
 			}
 				break;
 			case -1: {
@@ -506,7 +530,7 @@ int main(void) {
 			if (cantidadDirectorios > 0) {
 				for (; j < cantidadDirectorios; j++) { //Todo corregir, si no encuentra el directorio la funcion tiene que fallar
 					t_directory* directorio = buscarDirectorio(padre,
-							listaDirectorios[cantidadDirectorios]);
+							listaDirectorios[j]);
 					padre = directorio->index;
 				}
 			}
@@ -584,9 +608,8 @@ int main(void) {
 		int x;
 		for (x = 0; x < 100; x++) {
 
-			if (tablaDeDirectorios[x]->padre == padre
-					&& string_equals_ignore_case(tablaDeDirectorios[x]->nombre,
-							nombre))
+			if (tablaDeDirectorios[x]!=NULL && tablaDeDirectorios[x]->nombre!= NULL &&
+					tablaDeDirectorios[x]->padre == padre && string_equals_ignore_case(tablaDeDirectorios[x]->nombre,nombre))
 				return tablaDeDirectorios[x];
 		}
 
@@ -1224,6 +1247,7 @@ int main(void) {
 				}
 				if(!list_any_satisfy(fileSystem.listaArchivos, buscarArchivoPorPath)) {
 					free(directorioAEliminar->nombre);
+					directorioAEliminar->nombre = NULL;
 					directorioAEliminar->padre=-2;
 				}
 				else {
@@ -1497,24 +1521,31 @@ int main(void) {
 				bloque_partido->ultimoByteValido);
 
 		t_nodo* nodolibre = buscar_nodo_libre(0);
-		if(nodolibre == NULL)
+		if(nodolibre == NULL){
+			printf("no hay nodo libre\n");
 			return NULL;
+		}
 
 		int numBloque = buscarBloque(nodolibre);
-		if(numBloque == -1)
+		if(numBloque == -1){
+			printf("no hay bloque libre\n");
 			return NULL;
+		}
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
 				bloque_partido->ultimoByteValido);
 		respuesta->nodo1 = string_duplicate(nodolibre->nroNodo);
 		respuesta->bloque1 = numBloque;
 
 		nodolibre = buscar_nodo_libre(nodolibre->nroNodo);
-		if(nodolibre == NULL)
+		if(nodolibre == NULL){
+			printf("no hay nodo libre\n");
 			return NULL;
-
+		}
 		numBloque = buscarBloque(nodolibre);
-		if(numBloque == -1)
-					return NULL;
+		if(numBloque == -1){
+			printf("no hay bloque libre\n");
+			return NULL;
+		}
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
 				bloque_partido->ultimoByteValido);
 		respuesta->bloque2 = numBloque;
@@ -1602,6 +1633,7 @@ int main(void) {
 				cantidad++;
 			}
 			char* bitarray=malloc(cantidad);
+			memset(bitarray,'\0',cantidad);
 			fread(bitarray, cantidad,1, file);
 			unNodo->bitmap = bitarray_create(bitarray,cantidad);
 
@@ -1688,6 +1720,9 @@ int main(void) {
 							t_nodo* unNodoAux = list_find(fileSystem.ListaNodos,(void*)esElNodoByName);
 							unNodoAux->tamanio = tamanio;
 							unNodoAux->libre = libre;
+							unNodoAux->cantidadBloques = tamanio / (1024*1024);
+							if(tamanio % (1024 * 1024) != 0)
+								unNodoAux->cantidadBloques++;
 						}else{
 							t_nodo* unNodo = nodo_create(nodos[i], false, NULL,-2, "ipWorker", -1,tamanio, libre);
 							list_add(fileSystem.ListaNodos,unNodo);
