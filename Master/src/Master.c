@@ -109,13 +109,20 @@ int main(int argc, char** argv) {
 		//Deserializacion
 		// todo mati GG. Cuando yama envia este mensaje, hay que agregar el ID de worker
 		char* ip;
+		int longitudIdWorker;
+		char* worker_id;
 		int puerto;
 		int cantidadDeElementos;
 		t_list* listaTemp = list_create();
 		int longitudIp = 0;
 		int desplazamiento = 0;
 		//falta deserializar el worker id
+		memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento +=sizeof(int);
+		memcpy(worker_id, paqueteRecibido->data +desplazamiento, longitudIdWorker);
+		desplazamiento +=longitudIdWorker;
 		//Deserializo el int del tamaño de la ip
+
 		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
 		//Deserializo la IP
@@ -199,7 +206,7 @@ int main(int argc, char** argv) {
 		desplazamiento = 0;
 		memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 		desplazamiento += sizeof(int);
-		memcpy(buffer+desplazamiento, , longitudIdWorker);
+		memcpy(buffer+desplazamiento,worker , longitudIdWorker);
 		desplazamiento += longitudIdWorker;
 		memcpy(buffer+desplazamiento, &longitudIdArchivo, sizeof(int));
 		desplazamiento+=sizeof(int);
