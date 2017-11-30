@@ -609,6 +609,7 @@ int main(void) {
 								}
 								t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
 
+
 								bool esEtapaReduccionLocal(void* elem){
 									return ((t_job*)elem)->etapa == reduccionLocal;
 								}
@@ -624,12 +625,44 @@ int main(void) {
 									return ((t_job*)elem)->estado == finalizado;
 								}
 								if(list_all_satisfy(estadosReduccionLocal, estaTerminado)){
+									t_list* listaWorkerBloques = list_create(); //t_workerBloques
+
+									void llenarCantBloques(void* elem){
+										t_workerBloques* workerBloques = malloc(sizeof(t_workerBloques));
+										t_list* workers = list_create();
+										list_add_all(workers, ((t_tabla_planificacion*)elem)->workers);
+
+										void llenarCantBloquesWorker(void* elemAux){
+											workerBloques->idWorker = ((t_clock*)elemAux)->worker_id;
+											workerBloques->ip = ((t_clock*)elemAux)->ip;
+											workerBloques->puerto = ((t_clock*)elemAux)->puerto;
+											workerBloques->cantBloques = list_size(((t_clock*)elemAux)->bloques);
+											list_add(listaWorkerBloques, workerBloques);
+										}
+										list_iterate(workers, llenarCantBloquesWorker);
+									}
+									list_iterate(tablas_planificacion, llenarCantBloques);
+
+									//Busco el minimo
+									int min = 999999999999999;
+									t_workerBloques* workerBloquesMin = malloc(sizeof(t_workerBloques));
+									void buscarMinimo(void* elemMin){
+										if(((t_workerBloques*)elemMin)->cantBloques < min){
+											min = ((t_workerBloques*)elemMin)->cantBloques;
+											workerBloquesMin->idWorker = ((t_workerBloques*)elemMin)->idWorker;
+											workerBloquesMin->ip = ((t_workerBloques*)elemMin)->ip;
+											workerBloquesMin->puerto = ((t_workerBloques*)elemMin)->puerto;
+											workerBloquesMin->cantBloques = ((t_workerBloques*)elemMin)->cantBloques;
+										}
+									}
+									list_iterate(listaWorkerBloques, buscarMinimo);
+
 									//Envio a Master
-									char* ipEncargado;
-									int puertoEncargado;
-									char* idEncargado;
+									char* ipEncargado = workerBloquesMin->ip;
+									int puertoEncargado = workerBloquesMin->puerto;
+									char* idEncargado = workerBloquesMin->idWorker;
 									t_list* workersGlobal = list_create(); //t_workers_global
-									char* temporalReduccionGlobal;
+									char* temporalReduccionGlobal = generarDirectorioTemporal();
 									int cantWorkersGlobal = list_size(workersGlobal);
 									int sizeLista = 0;
 									int i = 0;

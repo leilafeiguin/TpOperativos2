@@ -50,6 +50,13 @@ typedef struct t_estados{
 	t_list* contenido;
 } t_estados;
 
+typedef struct t_workerBloques{
+	char* idWorker;
+	char* ip;
+	int puerto;
+	int cantBloques;
+} t_workerBloques;
+
 
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
