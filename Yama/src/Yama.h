@@ -58,8 +58,6 @@ typedef struct t_workerBloques{
 	char* archivoReduccionLocal;
 } t_workerBloques;
 
-
-
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
 
 yama_configuracion get_configuracion() {

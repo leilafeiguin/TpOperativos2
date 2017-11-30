@@ -33,76 +33,6 @@ int main(void) {
 	log_trace(logger, "Archivo de configuracion levantado");
 
 	t_list* tablas_planificacion= list_create();
-
-	/*t_job job;
-	job.master = 1;
-	job.nodo = 1;
-	job.bloque = 8;
-	job.etapa = transformacion;
-	job.cantidadTemporal = 5;
-	job.temporal = "temp1";
-	job.estado = enProceso;
-	procesar_job(1, job);
-	job.nodo = 3;
-	job.bloque = 2;
-	job.temporal = "temp2";
-	procesar_job(1, job);
-	job.nodo = 2;
-	job.bloque = 9;
-	job.temporal = "temp3";
-	procesar_job(1, job);
-	job.master = 3;
-	job.nodo = 4;
-	job.bloque = 11;
-	job.etapa = transformacion;
-	job.temporal = "temp4";
-	job.estado = enProceso;
-	procesar_job(2, job);
-	job.nodo = 5;
-	job.bloque = 10;
-	job.etapa = reduccionLocal;
-	job.temporal = "temp5";
-	procesar_job(2, job);
-	job.nodo = 6;
-	job.bloque = 14;
-	job.etapa = reduccionGlobal;
-	job.temporal = "temp6";
-	job.estado = finalizado;
-	procesar_job(2, job);
-	job.nodo = 7;
-	job.bloque = 15;
-	job.etapa = reduccionLocal;
-	job.temporal = "temp7";
-	job.estado = error;
-	procesar_job(2, job);
-	job.nodo = 8;
-	job.bloque = 12;
-	job.etapa = transformacion;
-	job.temporal = "temp8";
-	job.estado = enProceso;
-	procesar_job(2, job);
-
-	t_job job2;
-	job2.master = 1;
-	job2.nodo = 1;
-	job2.bloque = 8;
-	job2.etapa = reduccionLocal;
-	job2.cantidadTemporal = 6;
-	job2.temporal = "temp20";
-	job2.estado = enProceso;
-	procesar_job(1, job2);
-
-	t_job job3;
-	job3.master = 3;
-	job3.nodo = 4;
-	job3.bloque = 11;
-	job3.etapa = reduccionLocal;
-	job3.cantidadTemporal = 6;
-	job3.temporal = "temp30";
-	job3.estado = error;
-	procesar_job(2, job3);
-
-*/
 	fd_set master;    // master file descriptor list
 	fd_set read_fds;  // temp file descriptor list for select()
 	int fd_max;        // maximum file descriptor number
@@ -363,8 +293,6 @@ int main(void) {
 									list_iterate(((t_clock*)worker)->bloques, datosBloques);
 								}
 								list_iterate(archivoNodo->workersAsignados, datosWorker);
-
-
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								socketFS = socketActual;
 							}
@@ -462,8 +390,7 @@ int main(void) {
 									list_iterate(jobsModificados, actualizarEstado);
 									list_add_all(nuevosJobs, estado->contenido);
 
-									//serializar y enviar request
-
+									//Serializar y enviar request
 									int cantidadElementosTemporales = list_size(request->temporalesTransformacion);
 									int longitudTemporales = 0;
 									for(i=0;i<cantidadElementosTemporales;i++){
@@ -471,10 +398,8 @@ int main(void) {
 									}
 									int longitudIdWorker;
 									t_clock* worker;
-
 									int desplazamientoRequest = 0;
 									void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + sizeof(int) + strlen(request->temporalReduccionLocal)+1+sizeof(int)+strlen(worker->worker_id)+1);
-
 									//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
 									int longitudIp = strlen(request->ip)+1;
 									memcpy(bufferRequest, &longitudIp, sizeof(int));
@@ -506,6 +431,7 @@ int main(void) {
 
 									memcpy(bufferRequest,&longitudIdWorker,sizeof(int));
 									desplazamiento+=sizeof(int);
+
 									memcpy(bufferRequest,worker->worker_id,longitudIdWorker);
 									desplazamiento+= longitudIdWorker;
 
@@ -515,7 +441,8 @@ int main(void) {
 									t_tabla_planificacion* tabla=primerJob->planificacion;
 									t_archivoxnodo* archivoNodo=tabla->archivoNodo;
 									list_clean(archivoNodo->workersAsignados);
-									//replanificar
+
+									//Replanificar
 									void replanificarBloques(void* elem){
 										t_job* job = (t_job*)elem;
 										job->estado = error;
@@ -551,12 +478,10 @@ int main(void) {
 											memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
 											desplazamiento+=sizeof(int);
 
-											//int fin de bloque
 											memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
 											desplazamiento+=sizeof(int);
 
 											char* dirTemp=generarDirectorioTemporal();
-											//directorio temporal
 											memcpy(buffer+desplazamiento,  dirTemp, strlen(dirTemp)+1);
 											desplazamiento+=strlen(dirTemp)+1;
 										}
@@ -608,7 +533,6 @@ int main(void) {
 											((t_estados*)elem)->socketMaster == socketActual;
 								}
 								t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
-
 
 								bool esEtapaReduccionLocal(void* elem){
 									return ((t_job*)elem)->etapa == reduccionLocal;
