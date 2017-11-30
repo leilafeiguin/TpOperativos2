@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 		}
 
 		list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
-	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
+		}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
 		//lanza hilo
 		//Deserializacion
 		char* ip;
@@ -113,6 +113,7 @@ int main(int argc, char** argv) {
 		t_list* listaTemp = list_create();
 		int longitudIp = 0;
 		int desplazamiento = 0;
+		//falta deserializar el worker id
 		//Deserializo el int del tamaño de la ip
 		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
@@ -126,6 +127,8 @@ int main(int argc, char** argv) {
 		//Deserializo cantidad de elementos
 		memcpy(&cantidadDeElementos, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+//todo lanzar hilo reduccion local
+		//y adentro hacer la serializacion y envio a worker (antes de enviar tengo que hacer un conectar a)
 
 		t_serializacionTemporal* serializacion;
 		int i;

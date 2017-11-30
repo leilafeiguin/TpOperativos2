@@ -1591,9 +1591,8 @@ int main(void) {
 
 	void cargarBitmapDesdeArchivo(t_nodo* unNodo){
 		char* aux = malloc(200);
-		string_append(&aux, "metadata/bitmaps/");
-		string_append(&aux, unNodo->nroNodo);
-		string_append(&aux, ".dat");
+		memset(aux, '\0', 200);
+		aux = string_from_format("metadata/bitmaps/%s.dat",unNodo->nroNodo);
 
 		FILE * file = fopen(aux, "r");
 		if (file != NULL) {
@@ -1612,20 +1611,18 @@ int main(void) {
 	}
 
 	void actualizarBitmap(t_nodo* unNodo) {
+		crear_subcarpeta("metadata");
 		crear_subcarpeta("metadata/bitmaps/");
 
 		char* aux = malloc(200);
 		memset(aux, '\0', 200);
-		string_append(&aux, "metadata/bitmaps/");
-		string_append(&aux, unNodo->nroNodo);
-		string_append(&aux, ".dat");
-		FILE * file = fopen(aux, "wb");
+		aux = string_from_format("metadata/bitmaps/%s.dat",unNodo->nroNodo);
+		FILE * file = fopen(aux, "w");
 		if (file != NULL) {
 			fwrite(unNodo->bitmap->bitarray, strlen(unNodo->bitmap->bitarray),
 					1, file);
 			fclose(file);
 		}
-
 		free(aux);
 	}
 
