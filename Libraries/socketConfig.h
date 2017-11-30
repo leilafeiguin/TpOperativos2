@@ -79,12 +79,6 @@ typedef struct {
 }t_setbloque;
 
 
-typedef struct t_workers_global{
-	char* ip;
-	int puerto;
-	char* archivoReduccionLocal;
-	char* id;
-} t_workers_global;
 
 typedef struct {
 	int cant_script; //long script

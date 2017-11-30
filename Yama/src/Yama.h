@@ -55,6 +55,7 @@ typedef struct t_workerBloques{
 	char* ip;
 	int puerto;
 	int cantBloques;
+	char* archivoReduccionLocal;
 } t_workerBloques;
 
 

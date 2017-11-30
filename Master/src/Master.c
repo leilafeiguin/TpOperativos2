@@ -451,8 +451,29 @@ void hilo_reduccion_local(void* parametros){
 
 	t_paquete* paqueteRecibido;
 	paqueteRecibido = recibir(socketWorker);
+	//Deserializacion
+	int longIp;
+	char*ipW;
+	int puerto;
+	bool resultado;
+	int longIdWorker;
+	char* idWorker;
+	desplazamiento = 0;
 
-	//des
+	memcpy(&longIp,paqueteRecibido->data+desplazamiento,sizeof(int));
+	desplazamiento += sizeof(int);
+	memcpy(ipW,paqueteRecibido->data +desplazamiento,longIp);
+	desplazamiento+=longIp;
+	memcpy(&puerto,paqueteRecibido->data+desplazamiento,sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&resultado,paqueteRecibido->data+desplazamiento,sizeof(bool));
+	desplazamiento+=sizeof(bool);
+	memcpy(&longIdWorker,paqueteRecibido->data+desplazamiento,sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(idWorker,paqueteRecibido->data+desplazamiento,longIdWorker);
+	desplazamiento+=longIdWorker;
+
+	//Serializacion
 	int longitudIdWorker;
 	char* worker_id;
 	int	 longitudIdArchivo;
@@ -460,9 +481,6 @@ void hilo_reduccion_local(void* parametros){
 	t_estado_master 	estado;
 	int		longitudMensaje;
 	char* 	mensaje;
-
-	// mati deserealiza
-
 
 	char* buffer1 =malloc(longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje);
 	desplazamiento = 0;
