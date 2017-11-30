@@ -27,6 +27,16 @@ typedef enum t_estado_master {
 	finalizado = 3
 } t_estado_master;
 
+typedef struct t_hilo_reduccion_local{
+	int yamaSocket;
+	char* ip;
+	char* idWorker;
+	int puerto;
+	t_list* listaTemp;
+	char* tempDestino;
+}t_hilo_reduccion_local;
+
+
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Master/configMaster.cfg";
 
 master_configuracion get_configuracion() {
@@ -55,3 +65,4 @@ void iniciarHiloWorker(void* elem);
 void hiloWorker(void* infoWorker);
 void hiloReduccionGlobal(void* parametros);
 char *str_replace(char *orig, char *rep, char *with);
+void hilo_reduccion_local(void* parametros);
