@@ -23,8 +23,8 @@ char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
 	char* scriptTransf = argv[0];
 	char* scriptReduc = argv[1];
-    char* archivoOrigen= argv[2];
-	char* archivoDestino=argv[3];
+    char* archivoOrigen = argv[2];
+	char* archivoDestino = argv[3];
 
 	SCRIPT_TRANSF=scriptTransf;
 	SCRIPT_REDUC=scriptReduc;
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 		}
 
 		list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
-	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
+		}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
 		//lanza hilo
 		//Deserializacion
 		// todo mati GG. Cuando yama envia este mensaje, hay que agregar el ID de worker

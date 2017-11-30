@@ -101,14 +101,16 @@ typedef struct t_archivo_partido {
 } t_archivo_partido;
 
 static t_nodo *nodo_create(char* nroNodo, bool ocupado, t_bitarray* bitmap,
-	un_socket socket, char* ipWorker, int puertoWorker, int tamanio, int cantidadBloques) {
+	un_socket socket, char* ipWorker, int puertoWorker, int tamanio, int libre) {
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
 	new->nroNodo = nroNodo;
 	new->ocupado = ocupado;
 	new->socket = socket;
-	new->libre = cantidadBloques;
-	new->cantidadBloques = cantidadBloques;
+	new->libre = libre;
+	new->cantidadBloques = tamanio / (1024 * 1024);
+	if(tamanio % (1024 * 1024) == 0)
+		new->cantidadBloques++;
 	if(strcmp(ipWorker,"ipWorker")!=0){
 		new->ip = malloc(strlen(ipWorker) + 1);
 		strcpy(new->ip, ipWorker);
