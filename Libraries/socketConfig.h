@@ -45,11 +45,10 @@ enum codigos_de_operacion {
 	cop_master_archivo_a_transformar = 10,
 	cop_master_estados_workers = 11,
 	cop_master_estado_transformacion = 12,
-	cop__estado_reduccion_local = 13,
+	cop_estado_reduccion_local = 13,
 	cop_master_estado_reduccion_local = 14,
 
 	cop_yama_lista_de_workers = 50,
-	cop_yama_info_fs = 51,
 	cop_yama_inicio_transformacion = 52,
 	cop_yama_inicio_reduccion_local = 53,
 	cop_yama_inicio_reduccion_global = 54,
