@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
 		desplazamiento = 0;
 		memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 		desplazamiento += sizeof(int);
-		memcpy(buffer+desplazamiento, worker_id, longitudIdWorker);
+		memcpy(buffer+desplazamiento, , longitudIdWorker);
 		desplazamiento += longitudIdWorker;
 		memcpy(buffer+desplazamiento, &longitudIdArchivo, sizeof(int));
 		desplazamiento+=sizeof(int);

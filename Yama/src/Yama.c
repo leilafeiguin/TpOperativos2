@@ -509,7 +509,7 @@ int main(void) {
 									memcpy(bufferRequest,worker->worker_id,longitudIdWorker);
 									desplazamiento+= longitudIdWorker;
 
-									enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,bufferRequest);
+									enviar(socketActual,cop_yama_inicio_reduccion_local,desplazamiento,bufferRequest);
 								}else{
 									t_job* primerJob= list_get(jobsModificados,0);
 									t_tabla_planificacion* tabla=primerJob->planificacion;
