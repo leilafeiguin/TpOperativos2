@@ -23,8 +23,8 @@ char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
 	char* scriptTransf = argv[0];
 	char* scriptReduc = argv[1];
-    char* archivoOrigen= argv[2];
-	char* archivoDestino=argv[3];
+    char* archivoOrigen = argv[2];
+	char* archivoDestino = argv[3];
 
 	SCRIPT_TRANSF=scriptTransf;
 	SCRIPT_REDUC=scriptReduc;
