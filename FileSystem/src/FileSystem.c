@@ -20,10 +20,10 @@
 #include <pthread.h>
 #include <dirent.h>
 
+t_log* logger;
 
 int main(void) {
 	//Logger
-	t_log* logger;
 	char* fileLog;
 	fileLog = "FileSystemLogs.txt";
 	fclose(fopen(fileLog, "w"));
@@ -129,7 +129,7 @@ int main(void) {
 		case cop_handshake_datanode: {
 			esperar_handshake(socketNuevo, paqueteRecibido,
 					cop_handshake_datanode);
-			printf("Se conecto un nodo\n");
+			log_trace(logger, "Se conecto un nodo\n");
 			cargarArchivoTablaNodos();
 			cargarArchivos();
 
@@ -204,7 +204,7 @@ int main(void) {
 			break;
 		case -1: {
 			if (socketNuevo == socketYama) {
-				printf("Se cayo Yama, finaliza FS.\n");
+				log_trace(logger, "Se cayo Yama, finaliza FS.\n");
 				exit(-1);
 			} else {
 				printf(
@@ -409,7 +409,7 @@ int main(void) {
 			}
 				break;
 			case -1: {
-				printf("Se cayo Yama, finaliza FS.\n");
+				log_trace(logger, "Se cayo Yama, finaliza FS.\n");
 				exit(-1);
 			}
 				break;
@@ -458,7 +458,7 @@ int main(void) {
 				buscarArchivoPorPath);
 
 		if (archivoEncontrado == NULL) {
-			printf("El path %s no se encuentra en el FS\n", origen);
+			log_trace(logger, "El path %s no se encuentra en el FS\n", origen);
 			return;
 		}
 
@@ -520,7 +520,7 @@ int main(void) {
 		struct stat st;
 		stat(origen, &st);
 		if(st.st_size == 0){
-			printf("El archivo esta vacio.\n");
+			log_trace(logger, "El archivo esta vacio.\n");
 		}else{
 			t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
 			t_archivo* nuevoArchivo = malloc(sizeof(t_archivo));
@@ -549,7 +549,7 @@ int main(void) {
 			nuevoArchivo->tipoArchivo = tipoArchivo;
 			int i = 0;
 			if(!elArchivoPuedeSercargado(archivoPartido->cantidadBloques)){
-				printf("No hay suficiente espacio en los nodos para almacenar el archivo.\n");
+				log_trace(logger, "No hay suficiente espacio en los nodos para almacenar el archivo.\n");
 				return;
 			}
 			for (; i < archivoPartido->cantidadBloques; i++) {
@@ -837,7 +837,7 @@ int main(void) {
 			printf("%s necesita %i parametro/s. \n", comando, cantParametros);
 			return NULL;
 		} else {
-			printf("Cantidad de parametros correcta. \n");
+			log_trace(logger, "Cantidad de parametros correcta. \n");
 			return parametros;
 		}
 		return NULL;
@@ -852,20 +852,20 @@ int main(void) {
 		}
 
 		if (i == 2) {
-			printf("Cantidad de parametros correcta. Elimina archivo. \n");
+			log_trace(logger, "Cantidad de parametros correcta. Elimina archivo. \n");
 			eliminar_archivo(parametros[1]);
 		} else if(i == 3){
 			if(string_equals_ignore_case(parametros[1], "-d")){
-				printf("Cantidad de parametros correcta. Elimina directorio. \n");
+				log_trace(logger, "Cantidad de parametros correcta. Elimina directorio. \n");
 				eliminar_directorio(parametros[2]);
 			}
 		}else if(i == 5){
 			if(string_equals_ignore_case(parametros[1], "-b")){
-				printf("Cantidad de parametros correcta. Elimina bloque. \n");
+				log_trace(logger, "Cantidad de parametros correcta. Elimina bloque. \n");
 				eliminar_bloque(parametros[2], atoi(parametros[3]), atoi(parametros[4]));
 			}
 		}else{
-			printf("Parametros incorrectos. \n");
+			log_trace(logger, "Parametros incorrectos. \n");
 		}
 	}
 
@@ -882,7 +882,7 @@ int main(void) {
 		for (i = 0; i < sizeof(tablaDeDirectorios) / sizeof(t_directory); i++) {
 			tablaDeDirectorios[i]->padre = -1;
 		}
-		printf("Filesystem formateado.\n");
+		log_trace(logger, "Filesystem formateado.\n");
 	}
 
 	void cp_block(char* path, int numeroBloque, char* nombreNodo) {
@@ -929,7 +929,7 @@ int main(void) {
 			if(string_equals_ignore_case(ubicacionOrigen->nroNodo, nombreNodo) || (string_equals_ignore_case(bloque->copia2->nroNodo,nombreNodo)))
 					{
 				//error
-				printf("Erorr, ya existe esa copia ./n");
+				log_trace(logger, "Erorr, ya existe esa copia ./n");
 					}
 			void* contenido = getbloque(ubicacionOrigen->nroBloque, nodoOrigen);
 
@@ -950,7 +950,7 @@ int main(void) {
 			else
 				bloque->copia2 = bloqueAsignado;
 		} else {
-			printf("No tiene ninguna copia para tomar de origen.\n");
+			log_trace(logger, "No tiene ninguna copia para tomar de origen.\n");
 			return;
 		}
 	}
@@ -988,13 +988,13 @@ int main(void) {
 			libre++;
 		}
 		if (libre == 100) {
-			printf("La tabla de directorios esta llena\n");
+			log_trace(logger, "La tabla de directorios esta llena\n");
 		} else {
 			tablaDeDirectorios[libre]->index = libre;
 			tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios
 					- 1];
 			tablaDeDirectorios[libre]->padre = indicePadre;
-			printf("Se creo el directorio\n");
+			log_trace(logger, "Se creo el directorio\n");
 		}
 		return;
 	}
@@ -1075,7 +1075,7 @@ int main(void) {
 				buscarArchivoPorPath);
 
 		if (archivoEncontrado == NULL) {
-			printf("El path %s no se encuentra en el FS\n", path);
+			fprintf("El path %s no se encuentra en el FS\n", path);
 			return;
 		}
 
@@ -1322,125 +1322,124 @@ int main(void) {
 				primeraPalabra = strtok_r(lineaCopia, " ", &context);
 
 				if (strcmp(linea, "format") == 0) {
-					printf("Formatear el Filesystem\n");
+					log_trace(logger, "Formatear el Filesystem\n");
 					formatearFileSystem();
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rm") == 0) {
-					printf("Eliminar un Archivo/Directorio/Bloque. \n");
+					log_trace(logger, "Eliminar un Archivo/Directorio/Bloque. \n");
 					validaCantParametrosComandoRemove(linea);
 					free(linea);
 				} else if (strcmp(primeraPalabra, "rename") == 0) {
-					printf("Renombra un Archivo o Directorio\n");
+					log_trace(logger, "Renombra un Archivo o Directorio\n");
 					parametros = validaCantParametrosComando(linea, 3);
 					if (parametros != NULL) {
 						yama_rename(parametros[1], parametros[2], parametros[3]);
 					} else {
-						printf(
-								"El rename debe recibir path_original nombre_final. \n");
+						log_trace(logger, "El rename debe recibir path_original nombre_final. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "mv") == 0) {
-					printf("Mueve un Archivo o Directorio\n");
+					log_trace(logger, "Mueve un Archivo o Directorio\n");
 					parametros = validaCantParametrosComando(linea, 3);
 					if (parametros != NULL) {
 						yama_mv(parametros[1], parametros[2],
 								(char) parametros[3][0]);
 					} else {
-						printf(
+						log_trace(logger,
 								"El mv debe recibir path_origen path_destino y tipo ('a' o 'd')\n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "cat") == 0) {
-					printf(
+					log_trace(logger,
 							"Muestra el contenido del archivo como texto plano.\n");
 					parametros = validaCantParametrosComando(linea, 1);
 					if (parametros != NULL) {
 						cat(parametros[1]);
 					} else {
-						printf("El cat debe recibir path archivo. \n");
+						log_trace(logger, "El cat debe recibir path archivo. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "mkdir") == 0) {
-					printf(
+					log_trace(logger,
 							"Crea un directorio. Si el directorio ya existe, el comando deberá informarlo.\n");
 					parametros = validaCantParametrosComando(linea, 1);
 					if (parametros != NULL) {
 						YAMA_mkdir(parametros[1]);
 					} else {
-						printf(
+						log_trace(logger,
 								"El mkdir debe recibir el path del directorio. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "cpfrom") == 0) {
-					printf(
+					log_trace(logger,
 							"Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
 					parametros = validaCantParametrosComando(linea, 3);
 					if (parametros != NULL) {
 						CP_FROM(parametros[1], parametros[2],
 								atoi(parametros[3]));
 					} else {
-						printf(
+						log_trace(logger,
 								"El cpfrom debe recibir el path del archivo y el directorio de fs. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "cpto") == 0) {
-					printf("Copiar un archivo local al yamafs\n");
+					log_trace(logger, "Copiar un archivo local al yamafs\n");
 					parametros = validaCantParametrosComando(linea, 2);
 					if (parametros != NULL) {
 						CP_TO(parametros[1], parametros[2]);
 					} else {
-						printf(
+						log_trace(logger,
 								"El cpto debe recibir el path_archivo_yamafs y el directorio_filesystem. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "cpblock") == 0) {
-					printf(
+					log_trace(logger,
 							"Crea una copia de un bloque de un archivo en el nodo dado.\n");
 					parametros = validaCantParametrosComando(linea, 3);
 					if (parametros != NULL) {
 						cp_block(parametros[1],atoi( parametros[2]),parametros[3]);
 					} else {
-						printf(
+						log_trace(logger,
 								"El cpblock debe recibir el path_archivo, el nro_bloque y el id_nodo. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "md5") == 0) {
-					printf("Solicitar el MD5 de un archivo en yamafs\n");
+					log_trace(logger, "Solicitar el MD5 de un archivo en yamafs\n");
 					parametros = validaCantParametrosComando(linea, 1);
 					if (parametros != NULL) {
 						calcular_md5(parametros[1]);
 					} else {
-						printf(
+						log_trace(logger,
 								"El mds5 debe recibir el path_archivo_yamafs. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "ls") == 0) {
-					printf("Lista los archivos de un directorio\n");
+					log_trace(logger, "Lista los archivos de un directorio\n");
 					parametros = validaCantParametrosComando(linea, 1);
 					if (parametros != NULL) {
 						ls(parametros[1]);
 
 					} else {
-						printf("El ls debe recibir el path_directorio. \n");
+						log_trace(logger, "El ls debe recibir el path_directorio. \n");
 					}
 
 					free(linea);
 				} else if (strcmp(primeraPalabra, "info") == 0) {
-					printf(
+					log_trace(logger,
 							"Muestra toda la información del archivo, incluyendo tamaño, bloques, ubicación de los bloques, etc.\n");
 					parametros = validaCantParametrosComando(linea, 1);
 					if (parametros != NULL) {
 						info_archivo(parametros[1]);
 					} else {
-						printf("El info debe recibir el path_archivo. \n");
+						log_trace(logger, "El info debe recibir el path_archivo. \n");
 					}
 
 					free(linea);
