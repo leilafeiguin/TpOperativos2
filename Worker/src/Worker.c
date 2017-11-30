@@ -231,6 +231,20 @@ int main(void) {
 						}
 						break;
 						case cop_worker_reduccionGlobal:{
+							//Deserializacion todo MARCO
+							//respuesta a Master Reduccion Global todoMAti gg
+
+							int tamanioNombre;
+							char* nombreArchivoFinal;
+							int tamanioArchivoFinal;
+							char* archivoFinal;
+							int desplazamiento;
+							desplazamiento = 0;
+							char* buffer = malloc(sizeof(int));
+							memcpy(buffer + desplazamiento,&tamanioNombre,sizeof(int));
+							desplazamiento +=sizeof(int);
+							memcpy(buffer + desplazamiento, nombreArchivoFinal,tamanioNombre);
+							desplazamiento +=tamanioNombre;
 
 						}
 						break;

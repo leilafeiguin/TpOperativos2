@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 		t_list* listaTemp = list_create();
 		int longitudIp = 0;
 		int desplazamiento = 0;
-		//falta deserializar el worker id
+		//Deserializacion worker ID
 		memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
 		desplazamiento +=sizeof(int);
 		memcpy(worker_id, paqueteRecibido->data +desplazamiento, longitudIdWorker);
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
 		desplazamiento = 0;
 		memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 		desplazamiento += sizeof(int);
-		memcpy(buffer+desplazamiento,worker , longitudIdWorker);
+		memcpy(buffer+desplazamiento,worker->, longitudIdWorker);
 		desplazamiento += longitudIdWorker;
 		memcpy(buffer+desplazamiento, &longitudIdArchivo, sizeof(int));
 		desplazamiento+=sizeof(int);
