@@ -187,6 +187,8 @@ int main(void) {
 							int cantElementos;
 							int desplazamiento;
 							int i = 0;
+							int longitudIdWorker;
+							char* worker_id
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -209,7 +211,12 @@ int main(void) {
 
 							char* archivo_reducido = malloc(tamanio_archivo_reducido);
 							memcpy(archivo_reducido, paquete_recibido->data + desplazamiento, tamanio_archivo_reducido + 1);
-
+							//preguntar
+							desplazamiento +=tamanio_archivo_reducido;
+							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
+							desplazamiento+=sizeof(int);
+							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
+							desplazamiento+=longitudIdWorker
 
 
 							bool resultado = apareo(archivosAReducir, archivo_reducido);
@@ -217,17 +224,19 @@ int main(void) {
 							int longitudIp = strlen(configuracion.IP_NODO);
 							char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool));
 							desplazamiento = 0;
-
 							memcpy(buffer, &longitudIp, sizeof(int));
 							desplazamiento += sizeof(int);
-
 							memcpy(buffer + desplazamiento, configuracion.IP_NODO, longitudIp + 1);
 							desplazamiento += longitudIp;
-
 							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
 							desplazamiento += sizeof(int);
-
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
+							//preguntar
+							desplazamiento+=sizeof(bool);
+							memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
+							desplazamiento+=sizeof(int);
+							memcpy(buffer+desplazamiento,worker_id,longitudIdWorker);
+							desplazamiento+=longitudIdWorker;
 
 							enviar(socketConexion, cop_worker_reduccionLocal, strlen(buffer), buffer);
 						}
