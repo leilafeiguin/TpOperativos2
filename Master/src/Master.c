@@ -116,11 +116,6 @@ int main(int argc, char** argv) {
 		t_list* listaTemp = list_create();
 		int longitudIp = 0;
 		int desplazamiento = 0;
-		//Deserializacion worker ID
-		memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
-		desplazamiento +=sizeof(int);
-		memcpy(worker_id, paqueteRecibido->data +desplazamiento, longitudIdWorker);
-		desplazamiento +=longitudIdWorker;
 		//Deserializo el int del tamaño de la ip
 
 		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
@@ -159,6 +154,13 @@ int main(int argc, char** argv) {
 		memcpy(tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
 		desplazamiento+= cantidadTempDestino;
 
+		//Deserializacion worker ID
+		memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento +=sizeof(int);
+		memcpy(worker_id, paqueteRecibido->data +desplazamiento, longitudIdWorker);
+		desplazamiento +=longitudIdWorker;
+
+
 		int suma= 0;
 		void sumadorElementos(t_serializacionTemporal* Elem){
 			suma += Elem->cantidadTemporal;
@@ -193,11 +195,12 @@ int main(int argc, char** argv) {
 			list_destroy_and_destroy_elements(listaTemp,(void*)destruirElemento);
 
 	}else if(paqueteRecibido->codigo_operacion == cop_estado_reduccion_local){
+		//des
 		int longitudIdWorker;
 		char* worker_id;
 		int	 longitudIdArchivo;
 		char*	archivo;
-	t_estado_master 	estado;
+		t_estado_master 	estado;
 		int		longitudMensaje;
 		char* 	mensaje;
 
@@ -206,7 +209,7 @@ int main(int argc, char** argv) {
 		desplazamiento = 0;
 		memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 		desplazamiento += sizeof(int);
-		memcpy(buffer+desplazamiento,worker->, longitudIdWorker);
+		//memcpy(buffer+desplazamiento,worker->, longitudIdWorker);
 		desplazamiento += longitudIdWorker;
 		memcpy(buffer+desplazamiento, &longitudIdArchivo, sizeof(int));
 		desplazamiento+=sizeof(int);

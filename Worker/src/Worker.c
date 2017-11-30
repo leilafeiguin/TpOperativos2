@@ -210,6 +210,8 @@ int main(void) {
 							char* archivo_reducido = malloc(tamanio_archivo_reducido);
 							memcpy(archivo_reducido, paquete_recibido->data + desplazamiento, tamanio_archivo_reducido + 1);
 
+
+
 							bool resultado = apareo(archivosAReducir, archivo_reducido);
 
 							int longitudIp = strlen(configuracion.IP_NODO);
