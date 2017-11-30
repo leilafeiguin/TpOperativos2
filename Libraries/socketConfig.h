@@ -47,6 +47,7 @@ enum codigos_de_operacion {
 	cop_master_estado_transformacion = 12,
 	cop_estado_reduccion_local = 13,
 	cop_master_estado_reduccion_local = 14,
+	cop_master_finalizado = 15,
 
 	cop_yama_lista_de_workers = 50,
 	cop_yama_info_fs = 51,
