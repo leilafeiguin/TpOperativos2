@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include "socketConfig.h"
 
+t_log* logger;
 char* SCRIPT_TRANSF;
 char* SCRIPT_REDUC;
 char* ARCHIVO_ORIGEN;
@@ -30,12 +31,11 @@ int main(int argc, char** argv) {
 	SCRIPT_REDUC=scriptReduc;
 	ARCHIVO_ORIGEN=archivoOrigen;
 	PATH_ARCHIVO_ORIGEN= str_replace(ARCHIVO_ORIGEN, "yamafs://", "");
-	t_log* logger;
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
 
 	printf("Inicializando proceso Master\n");
-	logger = log_create(fileLog, "Master Logs", 0, 0);
+	logger = log_create(fileLog, "Master Logs", 0, 1);
 	log_trace(logger, "Inicializando proceso Master");
 
 	master_configuracion configuracion = get_configuracion();
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
 
 	if(paqueteRecibido->codigo_operacion == -1){
-		printf("Se cayo Yama, finaliza Master.\n");
+		log_trace(logger,"Se cayo Yama, finaliza Master.\n");
 		exit(-1);
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_lista_de_workers){
 		t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
@@ -386,7 +386,7 @@ void hiloWorker(void* parametros){
 	FILE *fileIN;
 	fileIN = fopen(SCRIPT_TRANSF, "rb");
 	if(!fileIN){
-		printf("No se puede abrir el archivo.\n");
+		log_trace(logger, "No se puede abrir el archivo.\n");
 		exit(-1);
 	}
 
@@ -438,7 +438,7 @@ void hiloWorker(void* parametros){
 	char* mensaje = "";
 	t_estado_master estado ;
 	if(paqueteRecibido->data == NULL){
-		printf("Se desconecto el nodo /n");
+		log_trace(logger, "Se desconecto el nodo /n");
 		mensaje= "ERROR: se desconecto el nodo";
 		estado=error;
 	}
