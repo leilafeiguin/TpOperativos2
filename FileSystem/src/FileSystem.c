@@ -1870,18 +1870,20 @@ int main(void) {
 				line = str_replace(line,"\n","");
 				char* lineaBloq1=string_from_format("BLOQUE%iCOPIA%i=",i,0);
 				line = str_replace(line,lineaBloq1,"");
-				char** valores = str_split(line,',');
-				char* auxNNodo = str_replace(valores[0],"[","");
-				char* auxNBloque = str_replace(valores[1],"]","");
-				int numeroBloque=atoi(auxNBloque);
-				copia1->nroNodo=malloc(strlen(auxNNodo)+1);
-				memcpy(copia1->nroNodo,auxNNodo , strlen(auxNNodo)+1);
-				memcpy(&copia1->nroBloque, &numeroBloque, sizeof(int));
-				unBloque->copia1 = copia1;
-				free(auxNNodo);
-				free(auxNBloque);
-				free(line);
-				free(valores);
+				if (line!=NULL){
+					char** valores = str_split(line,',');
+					char* auxNNodo = str_replace(valores[0],"[","");
+					char* auxNBloque = str_replace(valores[1],"]","");
+					int numeroBloque=atoi(auxNBloque);
+					copia1->nroNodo=malloc(strlen(auxNNodo)+1);
+					memcpy(copia1->nroNodo,auxNNodo , strlen(auxNNodo)+1);
+					memcpy(&copia1->nroBloque, &numeroBloque, sizeof(int));
+					unBloque->copia1 = copia1;
+					free(auxNNodo);
+					free(auxNBloque);
+					free(line);
+					free(valores);
+					}
 				line = malloc(200);
 			}
 			//copia 1
@@ -1889,18 +1891,20 @@ int main(void) {
 				line = str_replace(line,"\n","");
 				char* lineaBloq2=string_from_format("BLOQUE%iCOPIA%i=",i,1);
 				line = str_replace(line,lineaBloq2,"");
-				char** valores = str_split(line,',');
-				char* auxNNodo= str_replace(valores[0],"[","");
-				char* auxNBloque = str_replace(valores[1],"]","");
-				int numeroBloque = atoi(auxNBloque);
-				copia2->nroNodo = malloc(strlen(auxNNodo)+1);
-				memcpy(copia2->nroNodo,auxNNodo,strlen(auxNNodo)+1);
-				memcpy(&copia2->nroBloque, &numeroBloque, sizeof(int));
-				unBloque->copia2 = copia2;
-				free(auxNNodo);
-				free(auxNBloque);
-				free(line);
-				free(valores);
+				if (line!=NULL){
+					char** valores = str_split(line,',');
+					char* auxNNodo= str_replace(valores[0],"[","");
+					char* auxNBloque = str_replace(valores[1],"]","");
+					int numeroBloque = atoi(auxNBloque);
+					copia2->nroNodo = malloc(strlen(auxNNodo)+1);
+					memcpy(copia2->nroNodo,auxNNodo,strlen(auxNNodo)+1);
+					memcpy(&copia2->nroBloque, &numeroBloque, sizeof(int));
+					unBloque->copia2 = copia2;
+					free(auxNNodo);
+					free(auxNBloque);
+					free(line);
+					free(valores);
+					}
 				line = malloc(200);
 			}
 			//Fin de bloque
@@ -1943,10 +1947,14 @@ int main(void) {
 				t_bloque* unBloque = list_get(unArchivo->bloques, i);
 				ubicacionBloque* ubicBloque1 = unBloque->copia1;
 				ubicacionBloque* ubicBloque2 = unBloque->copia2;
+				if(unBloque->copia1 != NULL){
 				fprintf(fp, "BLOQUE%iCOPIA0=[%s,%i]\n", i, ubicBloque1->nroNodo,
 						ubicBloque1->nroBloque);
+				}
+				if(unBloque->copia2 != NULL){
 				fprintf(fp, "BLOQUE%iCOPIA1=[%s,%i]\n", i, ubicBloque2->nroNodo,
 						ubicBloque2->nroBloque);
+				}
 				fprintf(fp, "BLOQUE%iBYTES=%lu\n", i, unBloque->finBloque);
 			}
 			fclose(fp);
