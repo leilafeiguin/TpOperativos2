@@ -628,48 +628,68 @@ int main(void) {
 									t_list* listaWorkerBloques = list_create(); //t_workerBloques
 
 									void llenarCantBloques(void* elem){
-										t_workerBloques* workerBloques = malloc(sizeof(t_workerBloques));
-										t_list* workers = list_create();
-										list_add_all(workers, ((t_tabla_planificacion*)elem)->workers);
 
 										void llenarCantBloquesWorker(void* elemAux){
-											workerBloques->idWorker = ((t_clock*)elemAux)->worker_id;
-											workerBloques->ip = ((t_clock*)elemAux)->ip;
-											workerBloques->puerto = ((t_clock*)elemAux)->puerto;
-											workerBloques->cantBloques = list_size(((t_clock*)elemAux)->bloques);
+
+											bool buscarXWorkerId(void* elemWorker)
+											{
+												return string_equals_ignore_case(((t_workerBloques*)elemWorker)->idWorker,((t_clock*)elemAux)->worker_id);
+											}
+
+											t_workerBloques* workerBloques = list_find(listaWorkerBloques, buscarXWorkerId);
+											if(workerBloques == NULL){
+												workerBloques= malloc(sizeof(t_workerBloques));
+												workerBloques->idWorker = ((t_clock*)elemAux)->worker_id;
+												workerBloques->ip = ((t_clock*)elemAux)->ip;
+												workerBloques->puerto = ((t_clock*)elemAux)->puerto;
+											}
+
+											workerBloques->cantBloques += list_size(((t_clock*)elemAux)->bloques);
 											list_add(listaWorkerBloques, workerBloques);
 										}
-										list_iterate(workers, llenarCantBloquesWorker);
+										list_iterate(((t_tabla_planificacion*)elem)->workers, llenarCantBloquesWorker);
 									}
 									list_iterate(tablas_planificacion, llenarCantBloques);
 
 									//Busco el minimo
-									int min = 999999999999999;
-									t_workerBloques* workerBloquesMin = malloc(sizeof(t_workerBloques));
+									int min = 99999999999;
+									char* ipEncargado = NULL;
+									int puertoEncargado = NULL;
+									char* idEncargado = NULL;
+
 									void buscarMinimo(void* elemMin){
 										if(((t_workerBloques*)elemMin)->cantBloques < min){
 											min = ((t_workerBloques*)elemMin)->cantBloques;
-											workerBloquesMin->idWorker = ((t_workerBloques*)elemMin)->idWorker;
-											workerBloquesMin->ip = ((t_workerBloques*)elemMin)->ip;
-											workerBloquesMin->puerto = ((t_workerBloques*)elemMin)->puerto;
-											workerBloquesMin->cantBloques = ((t_workerBloques*)elemMin)->cantBloques;
+											idEncargado = ((t_workerBloques*)elemMin)->idWorker;
+											ipEncargado = ((t_workerBloques*)elemMin)->ip;
+											puertoEncargado = ((t_workerBloques*)elemMin)->puerto;
 										}
 									}
 									list_iterate(listaWorkerBloques, buscarMinimo);
 
-									//Envio a Master
-									char* ipEncargado = workerBloquesMin->ip;
-									int puertoEncargado = workerBloquesMin->puerto;
-									char* idEncargado = workerBloquesMin->idWorker;
-									t_list* workersGlobal = list_create(); //t_workers_global
+									void* transformarWorkersJob(void* elem){
+										t_job* job=(t_job*) elem;
+
+										bool buscarXWorkerId(void* elemWorker)
+										{
+											return string_equals_ignore_case(((t_workerBloques*)elemWorker)->idWorker,job->worker_id);
+										}
+
+										t_workerBloques* worker= list_find(listaWorkerBloques, buscarXWorkerId);
+										worker->archivoReduccionLocal = string_duplicate(job->temporalReduccionLocal);
+										return worker;
+									}
+
+									t_list* workersGlobal=list_map(estados->contenido, transformarWorkersJob);
+
+
 									char* temporalReduccionGlobal = generarDirectorioTemporal();
 									int cantWorkersGlobal = list_size(workersGlobal);
 									int sizeLista = 0;
 									int i = 0;
 									for(; i<cantWorkersGlobal;i++){
-										t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
-										workerGlobal = list_get(workersGlobal, i);
-										sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->id)+1;
+										t_workerBloques* workerGlobal = list_get(workersGlobal, i);
+										sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->idWorker)+1;
 												//		longitudIp		ip						puerto		longitudArchivo		archivo										longitudId
 									}
 
@@ -698,8 +718,7 @@ int main(void) {
 
 									int j = 0;
 									for(; j<cantWorkersGlobal;j++){
-										t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
-										workerGlobal = list_get(workersGlobal, j);
+										t_workerBloques* workerGlobal = list_get(workersGlobal, j);
 
 										int longitudIpW = strlen(workerGlobal->ip)+1;
 										memcpy(bufferRG, &longitudIpW, sizeof(int));
@@ -718,11 +737,11 @@ int main(void) {
 										memcpy(bufferRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
 										desplazamientoRG+=longitudArchivo;
 
-										int longitudIdW = strlen(workerGlobal->id)+1;
+										int longitudIdW = strlen(workerGlobal->idWorker)+1;
 										memcpy(bufferRG, &longitudIdW, sizeof(int));
 										desplazamientoRG+=sizeof(int);
 
-										memcpy(bufferRG, workerGlobal->id, longitudArchivo);
+										memcpy(bufferRG, workerGlobal->idWorker, longitudArchivo);
 										desplazamientoRG+=longitudIdW;
 									}
 									int longitudTemporalReduccionGlobal = strlen(temporalReduccionGlobal)+1;
