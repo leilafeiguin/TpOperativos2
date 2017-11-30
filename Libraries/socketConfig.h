@@ -65,6 +65,7 @@ enum codigos_de_operacion {
 	cop_worker_reduccionLocal = 81,
 	cop_worker_reduccionGlobal = 82,
 	cop_worker_estadoReducionLocal = 83,
+	cop_worker_archivo = 84,
 
 };
 typedef struct {
