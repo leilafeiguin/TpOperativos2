@@ -217,7 +217,7 @@ void hiloReduccionGlobal(void* parametros){
 	int longitudId;
 	int longitudRedGlobal;
 	int cantidadWorkers;
-	t_list* workers;
+	t_list* workers = list_create();
 	int desplazamiento = 0;
 
 	memcpy(&longitudIp, parametros+ desplazamiento, sizeof(int));
@@ -274,45 +274,50 @@ void hiloReduccionGlobal(void* parametros){
 	void* bufferRG= malloc(sizeof(int) + sizeLista);
 
 	int desplazamientoRG=0;
+
+	memcpy(bufferRG+desplazamientoRG, &cantidadWorkers, sizeof(int));
+	desplazamientoRG+=sizeof(int);
+
 	int k;
 	for(k=0; j<cantidadWorkers;k++){
 		t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
 		workerGlobal = list_get(workers, k);
 
 		int longitudIpW = strlen(workerGlobal->ip)+1;
-		memcpy(bufferRG, &longitudIpW, sizeof(int));
+		memcpy(bufferRG+desplazamientoRG, &longitudIpW, sizeof(int));
 		desplazamientoRG+=sizeof(int);
 
-		memcpy(bufferRG, workerGlobal->ip, longitudIpW);
+		memcpy(bufferRG+desplazamientoRG, workerGlobal->ip, longitudIpW);
 		desplazamientoRG+=longitudIpW;
 
-		memcpy(bufferRG, &workerGlobal->puerto, sizeof(int));
+		memcpy(bufferRG+desplazamientoRG, &workerGlobal->puerto, sizeof(int));
 		desplazamientoRG+=sizeof(int);
 
 		int longitudArchivo = strlen(workerGlobal->archivoReduccionLocal)+1;
-		memcpy(bufferRG, &longitudArchivo, sizeof(int));
+		memcpy(bufferRG+desplazamientoRG, &longitudArchivo, sizeof(int));
 		desplazamientoRG+=sizeof(int);
 
-		memcpy(bufferRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
+		memcpy(bufferRG+desplazamientoRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
 		desplazamientoRG+=longitudArchivo;
 
 		int longitudIdW = strlen(workerGlobal->id)+1;
-		memcpy(bufferRG, &longitudIdW, sizeof(int));
+		memcpy(bufferRG+desplazamientoRG, &longitudIdW, sizeof(int));
 		desplazamientoRG+=sizeof(int);
 
-		memcpy(bufferRG, workerGlobal->id, longitudArchivo);
+		memcpy(bufferRG+desplazamientoRG, workerGlobal->id, longitudArchivo);
 		desplazamientoRG+=longitudIdW;
 	}
 
-
-	memcpy(bufferRG, longitudRedGlobal, sizeof(int));
+	memcpy(bufferRG+desplazamientoRG, &longitudRedGlobal, sizeof(int));
 	desplazamientoRG+=sizeof(int);
-	memcpy(bufferRG, redGlobal, longitudRedGlobal);
+	memcpy(bufferRG+desplazamientoRG, redGlobal, longitudRedGlobal);
 	desplazamientoRG+=longitudRedGlobal;
 
-	un_socket socketRedGlobal = conectar_a(ipEncargado,puertoEncargado);
+	un_socket socketRedGlobal = conectar_a(ipEncargado,string_from_format("%i",puertoEncargado));
 	realizar_handshake(socketRedGlobal, cop_handshake_master);
 	enviar(socketRedGlobal,cop_worker_reduccionGlobal,desplazamiento,bufferRG);
+
+	//todo recibir respuesta
 
 }
 

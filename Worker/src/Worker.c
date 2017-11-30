@@ -100,9 +100,6 @@ int main(void) {
 	t_log* logger;
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
-	char* paths [2];
-	paths[0] = "fileTest";
-	paths[1] = "fileTest2";
 	printf("Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker");
@@ -141,6 +138,7 @@ int main(void) {
 						case cop_handshake_master:
 						break;
 						case cop_handshake_worker:
+							esperar_handshake(socketConexion, paquete_recibido, cop_handshake_worker);
 						break;
 						case cop_worker_transformacion:
 						{
@@ -164,7 +162,7 @@ int main(void) {
 								paquete_transformacion->archivo_temporal = malloc(paquete_transformacion->cant_archivo_temporal);
 								memcpy(paquete_transformacion->archivo_temporal, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_archivo_temporal);
 								desplazamiento += paquete_transformacion->cant_archivo_temporal;
-								memcpy(paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
+								memcpy(&paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
 
 
 								FILE *archivoPaqueteTransformacion = fopen("./archivoPaqueteTransformacion", "wb");
@@ -188,7 +186,7 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
-							char* worker_id
+
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -211,12 +209,14 @@ int main(void) {
 
 							char* archivo_reducido = malloc(tamanio_archivo_reducido);
 							memcpy(archivo_reducido, paquete_recibido->data + desplazamiento, tamanio_archivo_reducido + 1);
-							//preguntar
 							desplazamiento +=tamanio_archivo_reducido;
+
 							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
 							desplazamiento+=sizeof(int);
+
+							char* worker_id = malloc(longitudIdWorker);
 							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
-							desplazamiento+=longitudIdWorker
+							desplazamiento+=longitudIdWorker;
 
 
 							bool resultado = apareo(archivosAReducir, archivo_reducido);
@@ -239,40 +239,123 @@ int main(void) {
 							desplazamiento+=longitudIdWorker;
 
 							enviar(socketConexion, cop_worker_reduccionLocal, strlen(buffer), buffer);
+							free(buffer);
 						}
 						break;
-						case cop_worker_reduccionGlobal:{
-							//Deserializacion todo MARCO
-							//respuesta a Master Reduccion Global todo MAti gg
+						case cop_worker_reduccionGlobal:
+						{
+							t_list* archivosPorSolicitar = list_create();
+							int cantidadElementos;
+							int desplazamiento = 0;
+							int i = 0;
+							memcpy(&cantidadElementos, paquete_recibido->data, sizeof(int));
+							desplazamiento+=sizeof(int);
 
-							int tamanioNombre;
-							char* nombreArchivoFinal;
-							int tamanioArchivoFinal;
-							char* archivoFinal;
-							int desplazamiento;
-							desplazamiento = 0;
-							char* buffer = malloc(sizeof(int));
-							memcpy(buffer + desplazamiento,&tamanioNombre,sizeof(int));
-							desplazamiento +=sizeof(int);
-							memcpy(buffer + desplazamiento, nombreArchivoFinal,tamanioNombre);
-							desplazamiento +=tamanioNombre;
-							memcpy(buffer+ desplazamiento, &tamanioArchivoFinal, sizeof(int));
-							desplazamiento += sizeof(int);
+							for(;i<cantidadElementos;i++){
+								t_archivoRG* unPedido = malloc(sizeof(t_archivoRG));
+								int tamIp;
+								int tamArch;
+								int tamId;
+								memcpy(&tamIp, paquete_recibido->data+desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
 
-							FILE* fp = fopen(nombreArchivoFinal,"r");
+								memcpy(unPedido->ip, paquete_recibido->data+desplazamiento, tamIp);
+								desplazamiento+=tamIp;
+
+								memcpy(&unPedido->puerto, paquete_recibido->data+desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+
+								memcpy(&tamArch, paquete_recibido->data+desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+
+								memcpy(unPedido->archivo, paquete_recibido->data+desplazamiento, tamArch);
+								desplazamiento+=tamArch;
+
+								memcpy(&tamId, paquete_recibido->data+desplazamiento, sizeof(int));
+								desplazamiento+=sizeof(int);
+
+								memcpy(unPedido->id, paquete_recibido->data+desplazamiento, tamId);
+								desplazamiento+=tamId;
+
+								list_add(archivosPorSolicitar,unPedido);
+							}
+							int tamArchFin;
+							memcpy(&tamArchFin, paquete_recibido->data+desplazamiento, sizeof(int));
+							desplazamiento+=sizeof(int);
+
+							char* archFin = malloc(tamArchFin);
+							memcpy(archFin, paquete_recibido->data+desplazamiento, tamArchFin);
+							desplazamiento+=tamArchFin;
+
+							t_list* archivosAReucir = list_create();
+							void solicitarArchivo(t_archivoRG* unPedido){
+								if(strcmp(unPedido->id,configuracion.NOMBRE_NODO)!=0){
+									un_socket socket;
+									socket = conectar_a(unPedido->ip,string_from_format("%i",unPedido->puerto));
+									realizar_handshake(socket,cop_handshake_worker);
+									enviar(socket,cop_worker_archivo,strlen(unPedido->archivo)+1,unPedido->archivo);
+									t_paquete* paquete_recibido;
+									paquete_recibido = recibir(socket);
+									FILE* fp = fopen(unPedido->archivo,"w");
+									if(fp!=NULL){
+										fwrite(paquete_recibido->data,paquete_recibido->tamanio,1,fp);
+										fclose(fp);
+									}
+								}
+									unPedido->archivo = malloc(strlen(unPedido->archivo)+1);
+									list_add(archivosAReucir, unPedido->archivo);
+									return;
+							}
+
+							list_iterate(archivosPorSolicitar,(void*)solicitarArchivo);
+
+							i = 0;
+							int cantidadArchivos = list_size(archivosAReucir);
+							char* archivosAReucirPosta[cantidadArchivos-1];
+							for(;0<cantidadArchivos;i++){
+								archivosAReucirPosta[i] = malloc(strlen(list_get(archivosAReucir,i))+1);
+								archivosAReucirPosta[i] = list_get(archivosAReucir,i);
+							}
+
+							bool resultado = apareo(archivosAReucirPosta,archFin);
+							if(resultado){
+								desplazamiento = 0;
+								FILE* fp = fopen(archFin,"r");
+								int tamBuffer;
+								char* buffer;
+								if(fp!=NULL){
+									fseek(fp, 0, SEEK_END);
+									int tamanioArchivo = ftell(fp);
+									fseek(fp, 0, SEEK_SET);
+									tamBuffer =sizeof(int)+sizeof(int)+tamArchFin+tamanioArchivo;
+									buffer = malloc(tamBuffer);
+									memcpy(buffer + desplazamiento,&tamArchFin,sizeof(int));
+									desplazamiento +=sizeof(int);
+									memcpy(buffer + desplazamiento, archFin, tamArchFin);
+									desplazamiento +=tamArchFin;
+									memcpy(buffer+desplazamiento, &tamanioArchivo, sizeof(int));
+									desplazamiento+=sizeof(int);
+									fread(buffer+desplazamiento,tamanioArchivo,1,fp);
+									fclose(fp);
+								}
+								enviar(socketConexion,cop_worker_reduccionGlobal , tamBuffer, buffer);
+								free(buffer);
+							}
+						}
+						break;
+						case cop_worker_archivo:
+						{
+							FILE* fp = fopen((char*)paquete_recibido->data,"r");
 							if(fp!=NULL){
 								fseek(fp, 0, SEEK_END);
 								int tamanioArchivo = ftell(fp);
 								fseek(fp, 0, SEEK_SET);
-								char* archivoFinal = malloc(tamanioArchivo);
-								fread(archivoFinal,tamanioArchivo,1,fp);
-								fclose(fp);
+								char* file = malloc(tamanioArchivo+1);
+								fread(file,tamanioArchivo,1,fp);
+								enviar(socketConexion,cop_worker_archivo,tamanioArchivo,file);
+								free(file);
 							}
-
-
-
 						}
-						break;
 						case -1:
 						{
 							printf("Se cayo Master, finaliza Worker.\n");
