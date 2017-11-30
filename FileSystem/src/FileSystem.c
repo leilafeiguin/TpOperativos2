@@ -377,6 +377,29 @@ int main(void) {
 				} else {
 					//todo handlear error
 				}
+			case cop_yama_finalizado:
+			{
+				int longitudNombre;
+				int longitudArchivo;
+				int desplazamiento=0;
+
+				memcpy(&longitudNombre,paqueteRecibido->data,sizeof(int));
+				desplazamiento+=sizeof(int);
+				char* nombreArchivo = malloc(longitudNombre);
+				memcpy(nombreArchivo,paqueteRecibido->data+desplazamiento,longitudNombre);
+				desplazamiento+=longitudNombre;
+				memcpy(&longitudArchivo,paqueteRecibido->data+desplazamiento,sizeof(int));
+				desplazamiento+=sizeof(int);
+
+				FILE* fp = fopen("archivoTemp", "w");
+				if(fp){
+					fwrite(paqueteRecibido->data+desplazamiento,longitudArchivo,1,fp);
+					fclose(fp);
+				}
+				CP_FROM("archivoTemp",nombreArchivo,0);
+				remove("archivoTemp");
+				free(nombreArchivo);
+			}
 			}
 				break;
 			case -1: {
