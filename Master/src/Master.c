@@ -216,10 +216,6 @@ int main(int argc, char** argv) {
 		free(buffer);
 
 
-
-
-
-
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
 			pthread_create(NULL,NULL, hiloReduccionGlobal, paqueteRecibido);
 	}
