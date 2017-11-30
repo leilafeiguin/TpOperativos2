@@ -216,7 +216,7 @@ int main(void) {
 							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
 							desplazamiento+=sizeof(int);
 							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
-							desplazamiento+=longitudIdWorker
+							desplazamiento+=longitudIdWorker;
 
 
 							bool resultado = apareo(archivosAReducir, archivo_reducido);
