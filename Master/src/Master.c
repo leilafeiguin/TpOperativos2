@@ -33,7 +33,6 @@ int main(int argc, char** argv) {
 	PATH_ARCHIVO_ORIGEN= str_replace(ARCHIVO_ORIGEN, "yamafs://", "");
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
-
 	logger = log_create(fileLog, "Master Logs", 0, 1);
 	log_trace(logger, "Inicializando proceso Master");
 
