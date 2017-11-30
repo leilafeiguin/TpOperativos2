@@ -231,6 +231,34 @@ int main(void) {
 						}
 						break;
 						case cop_worker_reduccionGlobal:{
+							//Deserializacion todo MARCO
+							//respuesta a Master Reduccion Global todo MAti gg
+
+							int tamanioNombre;
+							char* nombreArchivoFinal;
+							int tamanioArchivoFinal;
+							char* archivoFinal;
+							int desplazamiento;
+							desplazamiento = 0;
+							char* buffer = malloc(sizeof(int));
+							memcpy(buffer + desplazamiento,&tamanioNombre,sizeof(int));
+							desplazamiento +=sizeof(int);
+							memcpy(buffer + desplazamiento, nombreArchivoFinal,tamanioNombre);
+							desplazamiento +=tamanioNombre;
+							memcpy(buffer+ desplazamiento, &tamanioArchivoFinal, sizeof(int));
+							desplazamiento += sizeof(int);
+
+							FILE* fp = fopen(nombreArchivoFinal,"r");
+							if(fp!=NULL){
+								fseek(fp, 0, SEEK_END);
+								int tamanioArchivo = ftell(fp);
+								fseek(fp, 0, SEEK_SET);
+								char* archivoFinal = malloc(tamanioArchivo);
+								fread(archivoFinal,tamanioArchivo,1,fp);
+								fclose(fp);
+							}
+
+
 
 						}
 						break;
