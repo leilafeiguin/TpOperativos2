@@ -171,7 +171,7 @@ int main(void) {
 								fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
 								chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
 								transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
-							//falta enviar a worker el estado transf
+							//todo falta enviar a worker el estado transf
 							}
 						}
 						break;

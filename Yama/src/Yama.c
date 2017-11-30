@@ -472,7 +472,9 @@ int main(void) {
 
 									int desplazamientoRequest = 0;
 									void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + sizeof(int) + strlen(request->temporalReduccionLocal)+1);
-															//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
+
+									//todo agregar worker id
+									//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
 									int longitudIp = strlen(request->ip)+1;
 									memcpy(bufferRequest, &longitudIp, sizeof(int));
 									desplazamientoRequest+=sizeof(int);
