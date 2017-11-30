@@ -28,8 +28,7 @@ int main(void) {
 	fileLog = "FileSystemLogs.txt";
 	fclose(fopen(fileLog, "w"));
 
-	printf("Inicializando proceso FileSystem\n");
-	logger = log_create(fileLog, "FileSystem Logs", 0, 0);
+	logger = log_create(fileLog, "FileSystem Logs", 0, 1);
 	log_trace(logger, "Inicializando proceso FileSystem");
 
 	fileSystem_configuracion configuracion = get_configuracion();
@@ -207,7 +206,7 @@ int main(void) {
 				log_trace(logger, "Se cayo Yama, finaliza FS.\n");
 				exit(-1);
 			} else {
-				printf(
+				log_trace(logger,
 						"Se cayo un DataNode, se elimina de la lista de nodos.\n");
 				bool eliminarNodoXSocket(void* elem) {
 					return (((t_nodo*) elem)->socket == socketNuevo);
@@ -494,7 +493,7 @@ int main(void) {
 					if (bloque->copia2 != NULL)
 						nombre2 = bloque->copia2->nroNodo;
 
-					printf(
+					log_trace(logger,
 							"No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
 							bloque->nroBloque, nombre1, nombre2);
 					return;
@@ -830,11 +829,11 @@ int main(void) {
 		char** parametros;
 		parametros = str_split(comando, ' ');
 		for (i = 1; *(parametros + i); i++) {
-			printf("parametros= %s \n", *(parametros + i));
+			log_trace(logger, "parametros= %s \n", *(parametros + i));
 		}
 
 		if (i != cantParametros + 1) {
-			printf("%s necesita %i parametro/s. \n", comando, cantParametros);
+			log_trace(logger, "%s necesita %i parametro/s. \n", comando, cantParametros);
 			return NULL;
 		} else {
 			log_trace(logger, "Cantidad de parametros correcta. \n");
@@ -848,7 +847,7 @@ int main(void) {
 		parametros = str_split(comando, ' ');
 		int i = 1;
 		for (; *(parametros + i); i++) {
-			printf("parametros= %s \n", *(parametros + i));
+			log_trace(logger, "parametros= %s \n", *(parametros + i));
 		}
 
 		if (i == 2) {
@@ -888,7 +887,7 @@ int main(void) {
 	void cp_block(char* path, int numeroBloque, char* nombreNodo) {
 		t_nodo* nodoDestino = buscar_nodo(nombreNodo);
 		if (nodoDestino == NULL || nodoDestino->ocupado) {
-			printf("no existe el nodo %s o está ocupado. \n", nombreNodo);
+			log_trace(logger, "no existe el nodo %s o está ocupado. \n", nombreNodo);
 			return;
 
 		}
@@ -901,7 +900,7 @@ int main(void) {
 		t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos,
 				buscarArchivoPorPath);
 		if (archivoEncontrado == NULL) {
-			printf("El path %s no se encuentra en el FS. \n", path);
+			log_trace(logger, "El path %s no se encuentra en el FS. \n", path);
 			return;
 		}
 
@@ -913,7 +912,7 @@ int main(void) {
 				buscarBloquePorNumero);
 
 		if (bloque == NULL) {
-			printf("El bloque %i no se encuentra en el FS.\n", numeroBloque);
+			log_trace(logger, "El bloque %i no se encuentra en el FS.\n", numeroBloque);
 			return;
 		}
 
@@ -975,7 +974,7 @@ int main(void) {
 				directorioActual = buscarDirectorio(indicePadre,
 						directorios[i]);
 				if (directorioActual == NULL) {
-					printf("El directorio %s no existe para el padre %i\n",
+					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
 					return;
 				}
@@ -1015,7 +1014,7 @@ int main(void) {
 				break;
 			directorioActual = buscarDirectorio(indicePadre, directorios[i]);
 			if (directorioActual == NULL) {
-				printf("El directorio %s no existe para el padre %i\n",
+				log_trace(logger, "El directorio %s no existe para el padre %i\n",
 						directorios[i], indicePadre);
 				return;
 			}
@@ -1036,12 +1035,12 @@ int main(void) {
 
 		void imprimirDirectorios(t_directory* elem) {
 			if (elem->nombre != NULL && elem->index != -2) {
-				printf("Directorio: %s\n", elem->nombre);
+				log_trace(logger, "Directorio: %s\n", elem->nombre);
 			}
 		}
 
 		void imprimirArchivos(t_archivo* elem) {
-			printf("Archivo: %s\n", elem->nombre);
+			log_trace(logger, "Archivo: %s\n", elem->nombre);
 		}
 		if(list_size(listaDirectorios)!=0){
 			list_iterate(listaDirectorios, (void*) imprimirDirectorios);
@@ -1112,7 +1111,7 @@ int main(void) {
 					if (bloque->copia2 != NULL)
 						nombre2 = bloque->copia2->nroNodo;
 
-					printf(
+					log_trace(logger,
 							"No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
 							bloque->nroBloque, nombre1, nombre2);
 					return;
@@ -1154,7 +1153,7 @@ int main(void) {
 				buscarArchivoPorPath);
 
 		if (archivoEncontrado == NULL) {
-			printf("El path %s no se encuentra en el FS\n", path);
+			log_trace(logger, "El path %s no se encuentra en el FS\n", path);
 			return;
 		}
 
@@ -1181,7 +1180,7 @@ int main(void) {
 					if (bloque->copia2 != NULL)
 						nombre2 = bloque->copia2->nroNodo;
 
-					printf(
+					log_trace(logger,
 							"No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
 							bloque->nroBloque, nombre1, nombre2);
 					return;
@@ -1206,7 +1205,7 @@ int main(void) {
 		t_archivo* unArchivo = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 		if(unArchivo == NULL)
 		{
-			printf("El archivo %s no existe", path);
+			log_trace(logger, "El archivo %s no existe", path);
 			return;
 		}
 
@@ -1257,7 +1256,7 @@ int main(void) {
 					directorioAEliminar->padre=-2;
 				}
 				else {
-					printf("No se puede eliminar el directorio porque no esta vacio \n");
+					log_trace(logger, "No se puede eliminar el directorio porque no esta vacio \n");
 				}
 		}
 
@@ -1269,7 +1268,7 @@ int main(void) {
 			t_archivo* unArchivo = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 			if(unArchivo == NULL)
 			{
-				printf("El archivo %s no existe", path);
+				log_trace(logger, "El archivo %s no existe", path);
 				return;
 			}
 
@@ -1281,29 +1280,29 @@ int main(void) {
 			t_bloque* bloque=list_find(unArchivo->bloques, buscarBloque);
 			if(bloque == NULL)
 			{
-				printf("No existe el numero de bloque \n");
+				log_trace(logger, "No existe el numero de bloque \n");
 			}
 			if((bloque->copia1 == NULL && nroCopia == 2)|| (bloque->copia2 == NULL && nroCopia == 1)){
-				printf("No se puede eliminar ya que solo posee una copia \n");
+				log_trace(logger, "No se puede eliminar ya que solo posee una copia \n");
 			}
 			if(nroCopia == 1 && bloque->copia1 != NULL){
 				t_nodo* nodo=buscar_nodo(bloque->copia1->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia1->nroBloque);
 				free(bloque->copia1);
 				bloque->copia1 = NULL;
-				printf("Eliminando copia 1 \n");
+				log_trace(logger, "Eliminando copia 1 \n");
 			}
 			else if(nroCopia == 2 && bloque->copia2 != NULL) {
 				t_nodo* nodo=buscar_nodo(bloque->copia2->nroNodo);
 				bitarray_clean_bit(nodo->bitmap,bloque->copia2->nroBloque);
 				free(bloque->copia2);
 				bloque->copia2 = NULL;
-				printf("Eliminando copia 2 \n");
+				log_trace(logger, "Eliminando copia 2 \n");
 			}
 	}
 
 	void hiloFileSystem_Consola(void * unused) {
-		printf("Consola Iniciada. Ingrese una opcion: \n");
+		log_trace(logger, "Consola Iniciada. Ingrese una opcion: \n");
 		char * linea;
 		char* primeraPalabra;
 		char* context;
@@ -1444,7 +1443,7 @@ int main(void) {
 
 					free(linea);
 				} else {
-					printf("Opcion no valida.\n");
+					log_trace(logger, "Opcion no valida.\n");
 					free(linea);
 				}
 				actualizarArchivoDeDirectorios();
@@ -1527,13 +1526,13 @@ int main(void) {
 
 		t_nodo* nodolibre = buscar_nodo_libre(0);
 		if(nodolibre == NULL){
-			printf("no hay nodo libre\n");
+			log_trace(logger, "no hay nodo libre\n");
 			return NULL;
 		}
 
 		int numBloque = buscarBloque(nodolibre);
 		if(numBloque == -1){
-			printf("no hay bloque libre\n");
+			log_trace(logger, "no hay bloque libre\n");
 			return NULL;
 		}
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
@@ -1543,12 +1542,12 @@ int main(void) {
 
 		nodolibre = buscar_nodo_libre(nodolibre->nroNodo);
 		if(nodolibre == NULL){
-			printf("no hay nodo libre\n");
+			log_trace(logger, "no hay nodo libre\n");
 			return NULL;
 		}
 		numBloque = buscarBloque(nodolibre);
 		if(numBloque == -1){
-			printf("no hay bloque libre\n");
+			log_trace(logger, "no hay bloque libre\n");
 			return NULL;
 		}
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre,
@@ -1569,7 +1568,7 @@ int main(void) {
 
 			fp = fopen("metadata/directorios.txt", "r");
 			if (fp == NULL){
-				printf("No se pudo recuperar el estado anterior de la tabla de directorios.\n");
+				log_trace(logger, "No se pudo recuperar el estado anterior de la tabla de directorios.\n");
 				return false;
 			}
 			int i = 0;
@@ -1590,7 +1589,7 @@ int main(void) {
 			return true;
 		} else {
 		    // file doesn't exist
-			printf("No existe un estado anterior de directorios. \n");
+			log_trace(logger, "No existe un estado anterior de directorios. \n");
 			return false;
 		}
 	}
@@ -1832,7 +1831,7 @@ int main(void) {
 
 		fp = fopen(path, "r");
 		if (fp == NULL){
-			printf("No se pudo recuperar el estado anterior del archivo");
+			log_trace(logger, "No se pudo recuperar el estado anterior del archivo");
 			exit(EXIT_FAILURE);
 		}
 		int i = 0;
@@ -1983,7 +1982,7 @@ int main(void) {
 			else
 				tipoArchivo = "BINARIO";
 
-			printf("Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
+			log_trace(logger, "Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
 					archivoEncontrado->nombre, archivoEncontrado->tamanio,
 					tipoArchivo);
 			//imprimir nombre, tamanio y tipo de archivo
@@ -1991,24 +1990,24 @@ int main(void) {
 			void imprimirInfoBloque(void* elem) {
 				t_bloque* bloque = (t_bloque*) elem;
 
-				printf("Bloque numero %i  ---- Fin Bloque %lu\n",
+				log_trace(logger, "Bloque numero %i  ---- Fin Bloque %lu\n",
 						bloque->nroBloque, bloque->finBloque);
 				//imprimir numero bloque y fin bloque
 
 				if (bloque->copia1 != NULL) {
 					//imprimir numero bloque y nodo
-					printf("       Copia 1- Nodo %s  - Numero Bloque %i \n",
+					log_trace(logger, "       Copia 1- Nodo %s  - Numero Bloque %i \n",
 							bloque->copia1->nroNodo, bloque->copia1->nroBloque);
 				} else {
-					printf("       Copia 1 - NO EXISTE!\n");
+					log_trace(logger, "       Copia 1 - NO EXISTE!\n");
 				}
 
 				if (bloque->copia2 != NULL) {
 					//imprimir numero bloque y nodo
-					printf("       Copia 2- Nodo %s  - Numero Bloque %i \n",
+					log_trace(logger, "       Copia 2- Nodo %s  - Numero Bloque %i \n",
 							bloque->copia2->nroNodo, bloque->copia2->nroBloque);
 				} else {
-					printf("       Copia 2 - NO EXISTE!\n");
+					log_trace(logger, "       Copia 2 - NO EXISTE!\n");
 				}
 
 			}
@@ -2017,7 +2016,7 @@ int main(void) {
 		} else {
 			//imprimir por pantalla que no existe el archivo
 
-			printf("El archivo %s no existe\n", path);
+			log_trace(logger, "El archivo %s no existe\n", path);
 		}
 	}
 
@@ -2039,7 +2038,7 @@ int main(void) {
 				break;
 			directorioActual = buscarDirectorio(indicePadre, directorios[i]);
 			if (directorioActual == NULL) {
-				printf("El directorio %s no existe para el padre %i\n",
+				log_trace(logger, "El directorio %s no existe para el padre %i\n",
 						directorios[i], indicePadre);
 
 			}
@@ -2072,7 +2071,7 @@ int main(void) {
 				free(archivoEncontrado->path);
 				archivoEncontrado->path=path;
 			}else{
-				printf("El archivo no existe\n");
+				log_trace(logger, "El archivo no existe\n");
 			}
 		}else if(string_equals_ignore_case(modo, "d")){
 			if (!string_ends_with(path_origen, "/")) {
@@ -2088,7 +2087,7 @@ int main(void) {
 					break;
 				directorioActual = buscarDirectorio(indicePadre, directorios[i]);
 				if (directorioActual == NULL) {
-					printf("El directorio %s no existe para el padre %i\n",
+					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
 					return;
 				}
@@ -2096,7 +2095,7 @@ int main(void) {
 			}
 			directorioActual->nombre =string_duplicate(nuevo_nombre);
 		}else{
-			printf("El modo debe ser 'a' o 'd' \n");
+			log_trace(logger, "El modo debe ser 'a' o 'd' \n");
 		}
 	}
 
@@ -2120,7 +2119,7 @@ int main(void) {
 				directorioOrigen = buscarDirectorio(indicePadre,
 						directorios[i]);
 				if (directorioOrigen == NULL) {
-					printf("El directorio %s no existe para el padre %i\n",
+					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
 
 				}
@@ -2142,7 +2141,7 @@ int main(void) {
 				directorioDestino = buscarDirectorio(indicePadre,
 						directorios[i]);
 				if (directorioDestino == NULL) {
-					printf("El directorio %s no existe para el padre %i\n",
+					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
 
 				}
@@ -2166,7 +2165,7 @@ int main(void) {
 				Mover_Archivo(path_destino, archivoEncontrado);
 
 			} else {
-				printf("El archivo %s no existe\n", path_origen);
+				log_trace(logger, "El archivo %s no existe\n", path_origen);
 			}
 		}
 	}

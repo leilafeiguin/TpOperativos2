@@ -34,7 +34,6 @@ int main(int argc, char** argv) {
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
 
-	printf("Inicializando proceso Master\n");
 	logger = log_create(fileLog, "Master Logs", 0, 1);
 	log_trace(logger, "Inicializando proceso Master");
 
