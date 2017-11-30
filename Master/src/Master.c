@@ -187,11 +187,12 @@ int main(int argc, char** argv) {
 	}else if(paqueteRecibido->codigo_operacion == cop_estado_reduccion_local){
 
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
-		//lanza hilo
+			pthread_create(NULL,NULL, hiloReduccionGlobal, paqueteRecibido);
 	}
-
 	return EXIT_SUCCESS;
 }
+
+
 
 char *str_replace(char *orig, char *rep, char *with) {
 		char *result; // the return string
@@ -239,6 +240,113 @@ char *str_replace(char *orig, char *rep, char *with) {
 		return result;
 	}
 
+void hiloReduccionGlobal(void* parametros){
+	char* ipEncargado;
+	int puertoEncargado;
+	char* idEncargado;
+	char* redGlobal;
+	int longitudIp;
+	int longitudId;
+	int longitudRedGlobal;
+	int cantidadWorkers;
+	t_list* workers;
+	int desplazamiento = 0;
+
+	memcpy(&longitudIp, parametros+ desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&ipEncargado, parametros+ desplazamiento, longitudIp);
+	desplazamiento+=longitudIp;
+	memcpy(&puertoEncargado, parametros+ desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&longitudId, parametros+ desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&idEncargado, parametros+ desplazamiento, longitudId);
+	desplazamiento+=longitudId;
+	memcpy(&cantidadWorkers, parametros+ desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+
+	int i;
+	for(i=0;i<cantidadWorkers;i++){
+		t_workers_global* worker = malloc(sizeof(t_workers_global));
+		int cantidadIp;
+		int cantidadRedLocal;
+		int cantidadId;
+
+		memcpy(&cantidadIp, parametros+ desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(worker->ip, parametros+ desplazamiento, cantidadIp);
+		desplazamiento+=cantidadIp;
+		memcpy(&worker->puerto, parametros+ desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(&cantidadRedLocal, parametros+ desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(worker->archivoReduccionLocal, parametros+ desplazamiento, cantidadRedLocal);
+		desplazamiento+=cantidadRedLocal;
+		memcpy(&cantidadId, parametros+ desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		memcpy(worker->id, parametros+ desplazamiento, cantidadId);
+		desplazamiento+=cantidadId;
+
+		list_add(workers, worker);
+	}
+
+	memcpy(&longitudRedGlobal, parametros+ desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&redGlobal, parametros+ desplazamiento, longitudRedGlobal);
+	desplazamiento+=longitudRedGlobal;
+
+	int sizeLista=0;
+	int j;
+	for(j=0; j<cantidadWorkers;j++){
+		t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
+		workers = list_get(workers, j);
+		sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->id)+1;
+	}
+
+	void* bufferRG= malloc(sizeof(int) + sizeLista);
+
+	int desplazamientoRG=0;
+	int k;
+	for(k=0; j<cantidadWorkers;k++){
+		t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
+		workerGlobal = list_get(workers, k);
+
+		int longitudIpW = strlen(workerGlobal->ip)+1;
+		memcpy(bufferRG, &longitudIpW, sizeof(int));
+		desplazamientoRG+=sizeof(int);
+
+		memcpy(bufferRG, workerGlobal->ip, longitudIpW);
+		desplazamientoRG+=longitudIpW;
+
+		memcpy(bufferRG, &workerGlobal->puerto, sizeof(int));
+		desplazamientoRG+=sizeof(int);
+
+		int longitudArchivo = strlen(workerGlobal->archivoReduccionLocal)+1;
+		memcpy(bufferRG, &longitudArchivo, sizeof(int));
+		desplazamientoRG+=sizeof(int);
+
+		memcpy(bufferRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
+		desplazamientoRG+=longitudArchivo;
+
+		int longitudIdW = strlen(workerGlobal->id)+1;
+		memcpy(bufferRG, &longitudIdW, sizeof(int));
+		desplazamientoRG+=sizeof(int);
+
+		memcpy(bufferRG, workerGlobal->id, longitudArchivo);
+		desplazamientoRG+=longitudIdW;
+	}
+
+
+	memcpy(bufferRG, longitudRedGlobal, sizeof(int));
+	desplazamientoRG+=sizeof(int);
+	memcpy(bufferRG, redGlobal, longitudRedGlobal);
+	desplazamientoRG+=longitudRedGlobal;
+
+	un_socket socketRedGlobal = conectar_a(ipEncargado,puertoEncargado);
+	realizar_handshake(socketRedGlobal, cop_handshake_master);
+	enviar(socketRedGlobal,cop_worker_reduccionGlobal,desplazamiento,bufferRG);
+
+}
 
 void hiloWorker(void* parametros){
 	t_parametrosHiloWorker* parametrosCasteado = (t_parametrosHiloWorker*) parametros;
@@ -332,6 +440,8 @@ void hiloWorker(void* parametros){
 	desplazamiento2 += longitudMensaje;
 
 	enviar(yamaSocket, cop_master_estados_workers,desplazamiento2,estadoWorker);
+
+
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)
