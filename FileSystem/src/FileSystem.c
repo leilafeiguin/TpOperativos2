@@ -387,8 +387,11 @@ int main(void) {
 				int longitudNombre;
 				int longitudArchivo;
 				int desplazamiento=0;
+				int socket;
 
-				memcpy(&longitudNombre,paqueteRecibido->data,sizeof(int));
+				memcpy(&socket,paqueteRecibido->data+desplazamiento,sizeof(int));
+				desplazamiento+=sizeof(int);
+				memcpy(&longitudNombre,paqueteRecibido->data+desplazamiento,sizeof(int));
 				desplazamiento+=sizeof(int);
 				char* nombreArchivo = malloc(longitudNombre);
 				memcpy(nombreArchivo,paqueteRecibido->data+desplazamiento,longitudNombre);
@@ -399,10 +402,23 @@ int main(void) {
 				FILE* fp = fopen("archivoTemp", "w");
 				if(fp){
 					fwrite(paqueteRecibido->data+desplazamiento,longitudArchivo,1,fp);
+					desplazamiento+=longitudArchivo;
 					fclose(fp);
 				}
 				CP_FROM("archivoTemp",nombreArchivo,0);
 				remove("archivoTemp");
+
+				int tamBuf=sizeof(int)+longitudNombre+sizeof(int);
+				char* buffer = malloc(sizeof(int)+sizeof(int)+longitudNombre);
+				desplazamiento = 0;
+				memcpy(buffer+desplazamiento,&socket,sizeof(int));
+				desplazamiento+=sizeof(int);
+				memcpy(buffer+desplazamiento,&longitudNombre,sizeof(int));
+				desplazamiento+=sizeof(int);
+				memcpy(buffer+desplazamiento,nombreArchivo,longitudNombre);
+
+				enviar(socketYama,cop_yama_almacenado,tamBuf,buffer);
+				free(buffer);
 				free(nombreArchivo);
 			}
 			}

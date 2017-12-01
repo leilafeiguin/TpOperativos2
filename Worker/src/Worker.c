@@ -172,8 +172,6 @@ int main(void) {
 								chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
 								transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
 
-							//falta enviar a worker el estado trans
-
 								char* mensaje = malloc(3);
 								mensaje = "ok";
 								enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);

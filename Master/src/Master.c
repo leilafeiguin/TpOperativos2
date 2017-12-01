@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include "socketConfig.h"
 
+un_socket yamaSocket;
 t_log* logger;
 char* SCRIPT_TRANSF;
 char* SCRIPT_REDUC;
@@ -40,7 +41,7 @@ int main(int argc, char** argv) {
 	log_trace(logger, "Archivo de configuracion levantado");
 
 	//Se conecta al YAMA
-	un_socket yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
+	yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);
 	//Master avisa a yama sobre que archivo del FS necesita ejecutar
 
@@ -318,8 +319,8 @@ void hiloReduccionGlobal(void* parametros){
 	realizar_handshake(socketRedGlobal, cop_handshake_master);
 	enviar(socketRedGlobal,cop_worker_reduccionGlobal,desplazamiento,bufferRG);
 
-	//todo recibir respuesta
-
+	t_paquete* paquete_recibido = recibir(socketRedGlobal);
+	enviar(yamaSocket,cop_master_finalizado,paquete_recibido->tamanio,paquete_recibido->data);
 }
 
 void hiloWorker(void* parametros){
