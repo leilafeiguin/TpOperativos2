@@ -190,7 +190,11 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
+<<<<<<< Updated upstream
 
+=======
+							char* worker_id;
+>>>>>>> Stashed changes
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -235,7 +239,6 @@ int main(void) {
 							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
 							desplazamiento += sizeof(int);
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
-							//preguntar
 							desplazamiento+=sizeof(bool);
 							memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 							desplazamiento+=sizeof(int);

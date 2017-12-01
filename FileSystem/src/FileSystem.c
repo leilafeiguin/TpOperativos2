@@ -2170,6 +2170,8 @@ int main(void) {
 		}
 	}
 
+
+
 	bool elArchivoPuedeSercargado(int cantidadBloques){
 		int libreTotal=0;
 		void bloquesLibres(t_nodo* unNodo){
