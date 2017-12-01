@@ -1,5 +1,6 @@
 #include <socketConfig.h>
 #include <commons/log.h>
+#include <time.h>
 #include <commons/collections/list.h>
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
@@ -42,12 +43,16 @@ typedef struct t_job{
 	char* temporalReduccionGlobal;
 	t_estado_yama estado;
 	t_tabla_planificacion* planificacion;
+	time_t tiempoInicio;
+	time_t tiempoFinal;
 } t_job;
 
 typedef struct t_estados{
 	char* archivo;
 	int socketMaster;
 	t_list* contenido;
+	int numeroFallos;
+	time_t tiempoInicio;
 } t_estados;
 
 

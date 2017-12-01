@@ -105,6 +105,8 @@ typedef struct {
 	char* nombreNodo;
 } t_paquete_datanode_info_list;
 
+
+
 typedef struct t_workerBloques{
 	char* idWorker;
 	char* ip;
