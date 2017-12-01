@@ -10,6 +10,8 @@
 
 
 #define MAX_LINE 4096
+t_log* logger;
+
 
 //---------------------------------FUNCIONES---------------------------------------------
 unsigned long int lineCountFile(const char *filename){
@@ -95,15 +97,11 @@ bool apareo (char* paths [], char* nombre_ordenado){
 }
 
 void* archivo;
-t_log* logger;
 
 int main(void) {
 
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
-	char* paths [2];
-	paths[0] = "fileTest";
-	paths[1] = "fileTest2";
 	log_trace(logger, "Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker");
@@ -190,11 +188,6 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
-<<<<<<< Updated upstream
-
-=======
-							char* worker_id;
->>>>>>> Stashed changes
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
