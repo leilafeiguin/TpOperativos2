@@ -55,6 +55,7 @@ enum codigos_de_operacion {
 	cop_yama_inicio_reduccion_local = 53,
 	cop_yama_inicio_reduccion_global = 54,
 	cop_yama_finalizado = 55,
+	cop_yama_almacenado = 56,
 
 	cop_datanode_get_bloque = 70,
 	cop_datanode_get_bloque_respuesta = 71,
