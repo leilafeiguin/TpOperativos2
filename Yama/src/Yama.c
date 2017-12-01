@@ -21,8 +21,9 @@
 t_list* tabla_estados;
 yama_configuracion configuracion;
 t_log* logger;
-
+t_list* masters ;
 int main(void) {
+	masters= list_create();
 	int socketFS;
 	char* fileLog;
 	fileLog = "YamaLogs.txt";
@@ -110,6 +111,7 @@ int main(void) {
 		//Falta pedir la info de los workers conectados todo mati e aca hay que hacer un recibir
 		//Que pasa si le rechazan la conexion.
 		int socketActual;
+		int socketMaster;
 		//CONEXIONES
 		while(1){
 			if (signal(SIGUSR1, sig_handler) == SIG_ERR){};
@@ -132,6 +134,10 @@ int main(void) {
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
+								int* master= malloc(sizeof(int));
+								*master = socketActual;
+								list_add(masters, master);
+
 							break;
 							case cop_archivo_programa:
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
@@ -728,10 +734,54 @@ int main(void) {
 									if(socketActual == socketFS){
 										printf("Se cayo FS, finaliza Yama.\n");
 										exit(-1);
-									}/*else if (socketActual == socketMaster){
-										//todo eliminar job y planif
-									}*/ // todo leila, aca tenes que  marcar como error - desconexion todos los t_job que tienen socketMaster == socketActual.
-									// buscar todos los t_clock que tienen workerId == a todos los worker id que eliminaste recien
+									}else {
+										bool buscarXSocket(void* elem){
+											return *((int*)elem) == socketActual;
+										}
+
+										if(list_any_satisfy(masters, buscarXSocket)){
+											printf("Se cayo Master. \n");
+											t_tabla_planificacion* tabla;
+											bool hayQueMarcarComoError(void* elem){
+												return ((t_estados*)elem)->socketMaster == socketActual;
+											}
+											t_estados* jobsFinalizados = list_find(tabla_estados, hayQueMarcarComoError);
+
+											void marcarComoError(void* elem){
+												((t_job*)elem)->estado = error;
+												tabla=((t_job*)elem)->planificacion;
+											}
+											list_iterate(jobsFinalizados->contenido, marcarComoError);
+
+											void eliminarJobsDelMaster(void* elem){
+												t_clock* clock = (t_clock*)elem;
+												free(clock->ip);
+												free(clock->worker_id);
+
+												void destruirBloques(void* elemAux){
+													free(((t_infobloque*)elemAux)->dirTemporal);
+													free(((t_infobloque*)elemAux));
+												}
+												list_destroy_and_destroy_elements(clock->bloques, destruirBloques);
+												free(clock);
+											}
+											list_destroy_and_destroy_elements(tabla->workers, eliminarJobsDelMaster);
+											free(tabla->archivo);
+
+											void destruirBloques(void* elem){
+												free(elem);
+											}
+											list_destroy_and_destroy_elements((tabla->archivoNodo->bloquesRelativos), destruirBloques);
+											free(tabla->archivoNodo->pathArchivo);
+											void destruirNodos (void* elem){
+												free(((t_infobloque*)elem)->dirTemporal);
+												free((t_infobloque*)elem);
+											}
+											list_destroy_and_destroy_elements(tabla->archivoNodo->nodos, destruirNodos);
+											free(tabla->archivoNodo);
+											free(tabla);
+										}
+									}
 								}
 								break;
 								case cop_yama_almacenado:
