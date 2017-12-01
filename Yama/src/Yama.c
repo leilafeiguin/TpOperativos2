@@ -17,7 +17,6 @@
 #include <time.h>
 #include "Yama.h"
 
-
 t_list* tabla_estados;
 yama_configuracion configuracion;
 t_log* logger;
@@ -31,30 +30,24 @@ int main(void) {
 	printf("Inicializando proceso Yama\n");
 	logger = log_create(fileLog, "Yama Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Yama");
-
     configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
-
 	t_list* tablas_planificacion= list_create();
 	fd_set master;    // master file descriptor list
 	fd_set read_fds;  // temp file descriptor list for select()
 	int fd_max;        // maximum file descriptor number
-
 	int listener;     // listening socket descriptor
 	int newfd;        // newly accept()ed socket descriptor
 	struct sockaddr_storage remoteaddr; // client address
 	socklen_t addrlen;
-
 	char buf[256];    // buffer for client data
 	int nbytes;
 	char remoteIP[INET6_ADDRSTRLEN];
 	int yes=1;        // for setsockopt() SO_REUSEADDR, below
 	int i, j, rv;
 	struct addrinfo hints, *ai, *p;
-
 	FD_ZERO(&master);    // clear the master and temp sets
 	FD_ZERO(&read_fds);
-
 	// get us a socket and bind it
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -64,7 +57,6 @@ int main(void) {
 		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
 		exit(1);
 	}
-
 	for(p = ai; p != NULL; p = p->ai_next) {
 		listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 		if (listener < 0) {
@@ -72,7 +64,6 @@ int main(void) {
 		}
 		// lose the pesky "address already in use" error message
 		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
 		if (bind(listener, p->ai_addr, p->ai_addrlen) < 0) {
 			close(listener);
 			continue;
@@ -209,7 +200,6 @@ int main(void) {
 									int cantidadElementos = 0;
 									memcpy(&cantidadElementos ,paqueteRecibido->data + desplazamiento,sizeof(int));
 									desplazamiento+= sizeof(int);
-
 									for(i=0;i<cantidadElementos;i++){
 										t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
 										int bloqueAbsoluto = 0;
@@ -226,7 +216,6 @@ int main(void) {
 										memcpy(&finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
 										desplazamiento+=sizeof(int);
 										infoBloque->finBloque = finBloque;
-
 										list_add(nodoBloques->bloques, infoBloque);
 									}
 									list_add(archivoNodo->nodos  ,nodoBloques);
@@ -259,14 +248,12 @@ int main(void) {
 								time(&estadosxjob->tiempoInicio);
 								//Devuelve lista con los workers
 								//Ahora lo debe sacar de archivoNodo workersAsignados
-
 								int cantidadBloquesTotales =list_size(archivoNodo->bloquesRelativos);
 								int cantidadWorkers = list_size(archivoNodo->workersAsignados);
 								desplazamiento=0;
 								void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+sizeof(int)+sizeof(int))+cantidadBloquesTotales*(sizeof(int) + sizeof(int)+15));
 								memcpy(buffer, &cantidadWorkers, sizeof(int)); //int que dice cuantos nodos hay en la lista
 								desplazamiento+=sizeof(int);
-
 								void datosWorker(void* worker){
 									//por cada nodo mando IP (15)
 									memcpy(buffer+desplazamiento, ((t_clock*)worker)->ip, 15);
@@ -283,7 +270,6 @@ int main(void) {
 
 									void datosBloques(void* bloque){
 										//por cada bloque a pedir a cada worker mando
-
 										t_infobloque* infobloque=((t_infobloque*)bloque);
 										//int bloque absoluto (donde esta dentro del nodo)
 										memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
@@ -307,7 +293,6 @@ int main(void) {
 							break;
 							case cop_master_archivo_a_transformar:
 							{
-
 								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo=(char*)paqueteRecibido->data;
@@ -319,6 +304,7 @@ int main(void) {
 								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
 								int desplazamiento = 0;
 								int longitudIdWorker = 0;
+
 								memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
 								desplazamiento+=sizeof(int);
 								char* idWorker = malloc(longitudIdWorker);
@@ -347,8 +333,7 @@ int main(void) {
 								memcpy(mensaje, paqueteRecibido->data + desplazamiento, longitudMensaje);
 								desplazamiento+=longitudMensaje;
 								bool buscarXArchivoYMaster(void* elem){
-									return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) &&
-											((t_estados*)elem)->socketMaster == socketActual;
+									return string_equals_ignore_case(((t_estados*)elem)->archivo, idArchivo) && ((t_estados*)elem)->socketMaster == socketActual;
 								}
 								t_estados* estado=list_find(tabla_estados, buscarXArchivoYMaster);
 
@@ -554,7 +539,6 @@ int main(void) {
 								void actualizarTablaEstados(void* elem){
 									((t_job*)elem)->estado = estado;
 								}
-
 								list_iterate(estadosReduccionLocal, actualizarTablaEstados);
 
 								bool estaTerminado(void* elem){
@@ -562,24 +546,20 @@ int main(void) {
 								}
 								if(list_all_satisfy(estadosReduccionLocal, estaTerminado)){
 									t_list* listaWorkerBloques = list_create(); //t_workerBloques
-
 									void llenarCantBloques(void* elem){
-
 										void llenarCantBloquesWorker(void* elemAux){
-
 											bool buscarXWorkerId(void* elemWorker)
 											{
 												return string_equals_ignore_case(((t_workerBloques*)elemWorker)->idWorker,((t_clock*)elemAux)->worker_id);
 											}
-
 											t_workerBloques* workerBloques = list_find(listaWorkerBloques, buscarXWorkerId);
+
 											if(workerBloques == NULL){
 												workerBloques= malloc(sizeof(t_workerBloques));
 												workerBloques->idWorker = ((t_clock*)elemAux)->worker_id;
 												workerBloques->ip = ((t_clock*)elemAux)->ip;
 												workerBloques->puerto = ((t_clock*)elemAux)->puerto;
 											}
-
 											workerBloques->cantBloques += list_size(((t_clock*)elemAux)->bloques);
 											list_add(listaWorkerBloques, workerBloques);
 										}
@@ -605,20 +585,15 @@ int main(void) {
 
 									void* transformarWorkersJob(void* elem){
 										t_job* job=(t_job*) elem;
-
 										bool buscarXWorkerId(void* elemWorker)
 										{
 											return string_equals_ignore_case(((t_workerBloques*)elemWorker)->idWorker,job->worker_id);
 										}
-
 										t_workerBloques* worker= list_find(listaWorkerBloques, buscarXWorkerId);
 										worker->archivoReduccionLocal = string_duplicate(job->temporalReduccionLocal);
 										return worker;
 									}
-
 									t_list* workersGlobal=list_map(estados->contenido, transformarWorkersJob);
-
-
 									char* temporalReduccionGlobal = generarDirectorioTemporal();
 									int cantWorkersGlobal = list_size(workersGlobal);
 									int sizeLista = 0;
@@ -701,32 +676,36 @@ int main(void) {
 								memcpy(&cantidadArchivo, paqueteRecibido->data + desplazamiento, sizeof(int));
 								desplazamiento += sizeof(int);
 								archivo= malloc(cantidadArchivo);
+
 								memcpy(nombreArchivo, paqueteRecibido->data + desplazamiento, cantidadArchivo);
 								desplazamiento += cantidadArchivo;
+
 								memcpy(&tamanioArchivo, paqueteRecibido->data + desplazamiento, sizeof(int));
 								desplazamiento += sizeof(int);
 								archivo = malloc(tamanioArchivo);
+
 								memcpy(archivo, paqueteRecibido->data + desplazamiento, cantidadArchivo);
 								desplazamiento += tamanioArchivo;
-
 								//deserializar lo que manda master y serializar primero socket actual (socket master) y
-
-
 								void* buffer = malloc(sizeof(int) + sizeof(int) + cantidadArchivo + sizeof(int) + tamanioArchivo);
 								int desplazamiento2 = 0;
 
 								memcpy(&buffer + desplazamiento2, socketActual , sizeof(int));
 								desplazamiento2 += sizeof(int);
+
 								memcpy(&buffer + desplazamiento2, cantidadArchivo , sizeof(int));
 								desplazamiento2 += sizeof(int);
+
 								memcpy(&buffer + desplazamiento2, nombreArchivo, cantidadArchivo);
 								desplazamiento2 += cantidadArchivo;
+
 								memcpy(&buffer + desplazamiento2, tamanioArchivo , sizeof(int));
 								desplazamiento2 += sizeof(int);
+
 								memcpy(&buffer + desplazamiento2, archivo, tamanioArchivo);
 								desplazamiento2 += tamanioArchivo;
-								enviar(socketFS,cop_yama_finalizado, desplazamiento2, buffer);
 
+								enviar(socketFS,cop_yama_finalizado, desplazamiento2, buffer);
 							}
 								break;
 								case -1:
@@ -738,10 +717,10 @@ int main(void) {
 										bool buscarXSocket(void* elem){
 											return *((int*)elem) == socketActual;
 										}
-
 										if(list_any_satisfy(masters, buscarXSocket)){
-											printf("Se cayo Master. \n");
+											printf("Se cayo un Master. \n");
 											t_tabla_planificacion* tabla;
+
 											bool hayQueMarcarComoError(void* elem){
 												return ((t_estados*)elem)->socketMaster == socketActual;
 											}
@@ -757,7 +736,6 @@ int main(void) {
 												t_clock* clock = (t_clock*)elem;
 												free(clock->ip);
 												free(clock->worker_id);
-
 												void destruirBloques(void* elemAux){
 													free(((t_infobloque*)elemAux)->dirTemporal);
 													free(((t_infobloque*)elemAux));
@@ -767,7 +745,6 @@ int main(void) {
 											}
 											list_destroy_and_destroy_elements(tabla->workers, eliminarJobsDelMaster);
 											free(tabla->archivo);
-
 											void destruirBloques(void* elem){
 												free(elem);
 											}
@@ -795,27 +772,27 @@ int main(void) {
 
 									memcpy(&socket,paqueteRecibido->data + desplazamiento ,sizeof(int));
 									desplazamiento+=sizeof(int);
+
 									memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento ,sizeof(int));
 									desplazamiento+=sizeof(int);
+
 									memcpy(nombreArchivo,paqueteRecibido->data + desplazamiento,longitudNombre);
 									desplazamiento+=longitudNombre;
+
 									memcpy(&estado,paqueteRecibido->data + desplazamiento,sizeof(bool));
 									desplazamiento+=sizeof(bool);
-
 
 									bool buscarXArchivoYMaster(void* elem){
 										return string_equals_ignore_case(((t_estados*)elem)->archivo, archivo) &&
 												((t_estados*)elem)->socketMaster == socketActual;
 									}
 									t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
-
 									time_t tiempoFinal=time(NULL);
 
 									//Tiempo total de Ejecución del Job.
 									double tiempoTotal = difftime(tiempoFinal, estados->tiempoInicio);
 
 									//Tiempo de ejecucion en cada etapa.
-
 									double tiempoTransformacion=0;
 									double tiempoRL=0;
 									double tiempoRG=0;
@@ -828,36 +805,28 @@ int main(void) {
 											double diff= difftime(job->tiempoFinal,job->tiempoInicio);
 											if(job->etapa == transformacion)
 												tiempoTransformacion += diff;
-
 											if(job->etapa == reduccionLocal)
 												tiempoRL += diff;
-
 											if(job->etapa == reduccionGlobal)
 												tiempoRG += diff;
-
 										}
-
-										tabla=job->planificacion;
+										tabla = job->planificacion;
 									}
-
 									int cantidadBloques=list_size(tabla->archivoNodo->bloquesRelativos);
-											//cant tareas en transf= cantidad bloques
+									//cant tareas en transf= cantidad bloques
 									int cantTareasTransformacion = cantidadBloques;
 									//cant tareas en reduc  = cant bloques
 									int cantTareasRL = cantidadBloques;
 									//cant tareas reduc glob = 1
 									int cantTareasRG = 1;
-
 									//Cant maxima de tareas en paralelo
 									bool tieneAlMenosUnBloque(void* elem){
 										return list_size(((t_clock*)elem)->bloques) >1;
 									}
 									int cantidadWorkersConAlMenosUnWorker= list_count_satisfying(tabla->workers, tieneAlMenosUnBloque);
-
 									int cantMaxEnParalelo = cantidadWorkersConAlMenosUnWorker;
 									//Cantidad de fallos obtenidos en la realización de un Job.
 									int cantidadFallos = estados->numeroFallos;
-
 									//orden
 	//								double tiempoTotal;
 	//								double tiempoTransformacion;
@@ -874,34 +843,39 @@ int main(void) {
 
 									memcpy(buffer+desplazamiento, &tiempoTotal, sizeof(double));
 									desplazamiento =+ sizeof(double);
+
 									memcpy(buffer+desplazamiento, &tiempoTransformacion, sizeof(double));
 									desplazamiento =+ sizeof(double);
+
 									memcpy(buffer+desplazamiento, &tiempoRL, sizeof(double));
 									desplazamiento =+ sizeof(double);
+
 									memcpy(buffer+desplazamiento, &tiempoRG, sizeof(double));
 									desplazamiento =+ sizeof(double);
+
 									memcpy(buffer+desplazamiento, &cantTareasTransformacion, sizeof(int));
 									desplazamiento =+ sizeof(int);
+
 									memcpy(buffer+desplazamiento, &cantTareasRL, sizeof(int));
 									desplazamiento =+ sizeof(int);
+
 									memcpy(buffer+desplazamiento, &cantTareasRG, sizeof(int));
 									desplazamiento =+ sizeof(int);
+
 									memcpy(buffer+desplazamiento, &cantidadFallos, sizeof(int));
 									desplazamiento =+ sizeof(int);
+
 									memcpy(buffer+desplazamiento, &cantMaxEnParalelo, sizeof(int));
 									desplazamiento =+ sizeof(int);
-
 									//ENVIAR A SOCKET
 								}
-
 							}
-													}
+						}
 					}
 			}
 		}
 	return EXIT_SUCCESS;
 }
-
 
 char *str_replace(char *orig, char *rep, char *with) {
 		char *result; // the return string
@@ -911,7 +885,6 @@ char *str_replace(char *orig, char *rep, char *with) {
 		int len_with; // length of with (the string to replace rep with)
 		int len_front; // distance between rep and end of last rep
 		int count;    // number of replacements
-
 		// sanity checks and initialization
 		if (!orig || !rep)
 			return NULL;
@@ -921,18 +894,14 @@ char *str_replace(char *orig, char *rep, char *with) {
 		if (!with)
 			with = "";
 		len_with = strlen(with);
-
 		// count the number of replacements needed
 		ins = orig;
 		for (count = 0; (tmp = strstr(ins, rep)); ++count) {
 			ins = tmp + len_rep;
 		}
-
 		tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
 		if (!result)
 			return NULL;
-
 		// first time through the loop, all the variable are set correctly
 		// from here on,
 		//    tmp points to the end of the result string
@@ -986,14 +955,10 @@ void sig_handler(int signo){
 void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob, char* workerIdCaido){
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
-
 	if(workerIdCaido != NULL){
-
 		bool buscarNodoCaido(void* elem){
-
 			return string_equals_ignore_case(workerIdCaido, ((t_nodoxbloques*)elem)->idNodo);
 		}
-
 		list_remove_by_condition(archivo->nodos, buscarNodoCaido);
 	}
 
@@ -1005,7 +970,6 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 	bool existeBloqueEnWorker(void* elem){
 		return numeroBloque == ((t_infobloque*)elem)->bloqueRelativo;
 	}
-
 	t_infobloque* infoBloque = list_find(nodoWorker->bloques,existeBloqueEnWorker);
 
 	bool workerContieneBloque(void* elem){
@@ -1015,7 +979,6 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 
 	void asignarBloqueAWorker(t_clock* worker,int* numeroBloque, t_archivoxnodo* archivo){
 		worker->disponibilidad--;
-
 		t_job* jobBloque=malloc(sizeof(t_job));
 		jobBloque->bloque= *numeroBloque;
 		jobBloque->estado = enProceso;
@@ -1027,18 +990,14 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		time(&jobBloque->tiempoInicio);
 		list_add(estadoxjob->contenido, jobBloque);
 		list_add(worker->bloques, infoBloque);
-
 		bool existeWorkerAsignado(void* elem){
 			return string_equals_ignore_case(((t_clock*)elem)->worker_id , worker->worker_id);
 		}
-
 		if(!list_any_satisfy(archivo->workersAsignados, existeWorkerAsignado))
 		{
 			list_add(archivo->workersAsignados, worker);
 		}
-
 	}
-
 	if(list_any_satisfy(archivo->nodos, workerContieneBloque)){
 		if(CalcularDisponibilidad(((t_clock*)tabla->clock_actual->data), tabla)> 0)
 		{
@@ -1046,7 +1005,6 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 			tabla->clock_actual = tabla->clock_actual->next;
 			if(tabla->clock_actual == NULL)
 				tabla->clock_actual = tabla->workers->head;
-
 			if(((t_clock*)tabla->clock_actual->data)->disponibilidad ==0)
 			{
 				((t_clock*)tabla->clock_actual->data)->disponibilidad= configuracion.DISPONIBILIDAD_BASE;

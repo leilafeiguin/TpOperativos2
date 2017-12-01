@@ -8,11 +8,8 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-
 #define MAX_LINE 4096
 t_log* logger;
-
-
 //---------------------------------FUNCIONES---------------------------------------------
 unsigned long int lineCountFile(const char *filename){
     FILE *fp = fopen(filename, "r");
@@ -99,27 +96,23 @@ bool apareo (char* paths [], char* nombre_ordenado){
 void* archivo;
 
 int main(void) {
-
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
-	log_trace(logger, "Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
+	log_trace(logger, "Inicializando proceso Worker\n");
 	log_trace(logger, "Inicializando proceso Worker");
 	worker_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
-
 	struct stat sb;
 	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
 		ftruncate(fileno(fd), 20*1024*1024);
 		fclose(fd);
 	}
-
 	//Se abre data bin en modo read
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
 	fstat(fd, &sb);
 	archivo= mmap(NULL,sb.st_size,PROT_READ,  MAP_SHARED,fd,0); //PROT_READ ??
-
 	un_socket socketServer=socket_escucha("127.0.0.1", configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
 	while(1){
@@ -154,6 +147,7 @@ int main(void) {
 								//memcpy(origen, destino, cuantoQuieroCopiar)
 								memcpy(&paquete_transformacion->cant_script, paquete_recibido->data, sizeof(int));
 								desplazamiento += sizeof(int);
+
 								paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
 								memcpy(paquete_transformacion->script, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_script);
 								desplazamiento += paquete_transformacion->cant_script;
@@ -162,21 +156,19 @@ int main(void) {
 								desplazamiento += sizeof(int);
 								paquete_transformacion->cant_archivo_temporal = 11;
 								paquete_transformacion->archivo_temporal = malloc(paquete_transformacion->cant_archivo_temporal);
+
 								memcpy(paquete_transformacion->archivo_temporal, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_archivo_temporal);
 								desplazamiento += paquete_transformacion->cant_archivo_temporal;
-								memcpy(&paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
 
+								memcpy(&paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
 
 								FILE *archivoPaqueteTransformacion = fopen("./archivoPaqueteTransformacion", "wb");
 								fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
 								chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
 								transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
-
 								char* mensaje = malloc(3);
 								mensaje = "ok";
 								enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);
-
-
 							}
 						}
 						break;
@@ -196,13 +188,11 @@ int main(void) {
 								int tamanioElemento;
 								memcpy(&tamanioElemento, paquete_recibido->data + desplazamiento, sizeof(int));
 								desplazamiento += sizeof(int);
-
 								archivosAReducir[i] = malloc(tamanioElemento + 1);
 
 								memcpy(archivosAReducir[i], paquete_recibido->data + desplazamiento, tamanioElemento + 1); //tamanaio ele + 1 ??
 								desplazamiento += tamanioElemento;
 							}
-
 							int tamanio_archivo_reducido;
 							memcpy(&tamanio_archivo_reducido, paquete_recibido->data + desplazamiento, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -213,27 +203,31 @@ int main(void) {
 
 							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
 							desplazamiento+=sizeof(int);
-
 							worker_id = malloc(longitudIdWorker);
+
 							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
 							desplazamiento+=longitudIdWorker;
 
-
 							bool resultado = apareo(archivosAReducir, archivo_reducido);
-
 							int longitudIp = strlen(configuracion.IP_NODO);
 							char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool)+sizeof(int)+longitudIdWorker);
 							desplazamiento = 0;
+
 							memcpy(buffer, &longitudIp, sizeof(int));
 							desplazamiento += sizeof(int);
+
 							memcpy(buffer + desplazamiento, configuracion.IP_NODO, longitudIp + 1);
 							desplazamiento += longitudIp;
+
 							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
 							desplazamiento += sizeof(int);
+
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
 							desplazamiento+=sizeof(bool);
+
 							memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 							desplazamiento+=sizeof(int);
+
 							memcpy(buffer+desplazamiento,worker_id,longitudIdWorker);
 							desplazamiento+=longitudIdWorker;
 
@@ -249,7 +243,6 @@ int main(void) {
 							int i = 0;
 							memcpy(&cantidadElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento+=sizeof(int);
-
 							for(;i<cantidadElementos;i++){
 								t_archivoRG* unPedido = malloc(sizeof(t_archivoRG));
 								int tamIp;
@@ -301,13 +294,11 @@ int main(void) {
 										fclose(fp);
 									}
 								}
-									unPedido->archivo = malloc(strlen(unPedido->archivo)+1);
-									list_add(archivosAReucir, unPedido->archivo);
-									return;
+								unPedido->archivo = malloc(strlen(unPedido->archivo)+1);
+								list_add(archivosAReucir, unPedido->archivo);
+								return;
 							}
-
 							list_iterate(archivosPorSolicitar,(void*)solicitarArchivo);
-
 							i = 0;
 							int cantidadArchivos = list_size(archivosAReucir);
 							char* archivosAReucirPosta[cantidadArchivos-1];
@@ -315,7 +306,6 @@ int main(void) {
 								archivosAReucirPosta[i] = malloc(strlen(list_get(archivosAReucir,i))+1);
 								archivosAReucirPosta[i] = list_get(archivosAReucir,i);
 							}
-
 							bool resultado = apareo(archivosAReucirPosta,archFin);
 							if(resultado){
 								desplazamiento = 0;
@@ -330,10 +320,13 @@ int main(void) {
 									buffer = malloc(tamBuffer);
 									memcpy(buffer + desplazamiento,&tamArchFin,sizeof(int));
 									desplazamiento +=sizeof(int);
+
 									memcpy(buffer + desplazamiento, archFin, tamArchFin);
 									desplazamiento +=tamArchFin;
+
 									memcpy(buffer+desplazamiento, &tamanioArchivo, sizeof(int));
 									desplazamiento+=sizeof(int);
+
 									fread(buffer+desplazamiento,tamanioArchivo,1,fp);
 									fclose(fp);
 								}
@@ -364,10 +357,10 @@ int main(void) {
 					}
 				}
 			break;
+			}
 		}
 	}
-}
-return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 
 char* obtenerBloque(int numeroBloque, int tamanioBloque){
@@ -376,7 +369,6 @@ char* obtenerBloque(int numeroBloque, int tamanioBloque){
 	memcpy (bloque, archivo + posicion, tamanioBloque);
 	return bloque;
 }
-
 
 void transformacion(char* script, char* bloque, char* destino){
 	char* func =string_from_format("echo %s | %s > %s ", bloque, script, destino);

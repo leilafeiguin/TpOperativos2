@@ -11,13 +11,14 @@
 typedef enum {
 	TEXTO = 0, BINARIO = 1
 } t_tipo_archivo;
+
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct fileSystem_configuracion {
 	char* IP_FS;
 	char* PUERTO_FS;
 } fileSystem_configuracion;
- char* pathConfig =
-		"/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
+
+char* pathConfig = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/FileSystem/configFileSystem.cfg";
 char* estado = "Estable";
 bool existeYama = false;
 
@@ -26,15 +27,12 @@ fileSystem_configuracion get_configuracion() {
 	fileSystem_configuracion configuracion;
 	// Obtiene el archivo de configuracion
 	t_config* archivo_configuracion = config_create(pathConfig);
-	configuracion.IP_FS = get_campo_config_string(archivo_configuracion,
-			"IP_FS");
-	configuracion.PUERTO_FS = get_campo_config_string(archivo_configuracion,
-			"PUERTO_FS");
+	configuracion.IP_FS = get_campo_config_string(archivo_configuracion, "IP_FS");
+	configuracion.PUERTO_FS = get_campo_config_string(archivo_configuracion, "PUERTO_FS");
 	return configuracion;
 }
 
 //Estructuras FileSystem
-
 typedef struct t_directory {
 	int index;
 	char* nombre;

@@ -19,7 +19,6 @@ typedef struct t_archivoRG{
 	char* id;
 }t_archivoRG;
 
-
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/DataNode/configNodo.cfg";
 
 worker_configuracion get_configuracion() {

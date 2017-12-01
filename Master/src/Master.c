@@ -44,12 +44,9 @@ int main(int argc, char** argv) {
 	yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);
 	//Master avisa a yama sobre que archivo del FS necesita ejecutar
-
 	enviar(yamaSocket,cop_master_archivo_a_transformar,sizeof(char*)*strlen(archivoOrigen),archivoOrigen);
-
 	log_trace(logger, "Recibi datos de Yama");
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
-
 	if(paqueteRecibido->codigo_operacion == -1){
 		log_trace(logger,"Se cayo Yama, finaliza Master.\n");
 		exit(-1);
@@ -57,7 +54,6 @@ int main(int argc, char** argv) {
 		t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
 		archivoNodo->bloquesRelativos =  list_create();
 		archivoNodo->workersAsignados= list_create();
-
 		int cantidadWorkers = 0;
 		int desplazamiento = 0;
 		memcpy(&cantidadWorkers, paqueteRecibido->data + desplazamiento, sizeof(int));
@@ -67,25 +63,24 @@ int main(int argc, char** argv) {
 			t_clock* worker = malloc(sizeof(t_clock));
 			memcpy(worker->ip, paqueteRecibido->data + desplazamiento, 15);
 			desplazamiento+= 15;
+
 			memcpy(&worker->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
 
 			int cantidadBloques = 0;
 			memcpy(&cantidadBloques, paqueteRecibido->data + desplazamiento, sizeof(int));
-
 			int j=0;
 			for(j=0;j<cantidadBloques;j++){
 				t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
-
 				memcpy(&infoBloque->bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
 				desplazamiento+= sizeof(int);
+
 				memcpy(&infoBloque->finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
 				desplazamiento+= sizeof(int);
 
 				infoBloque->dirTemporal = malloc(11);
 				memcpy(infoBloque->dirTemporal, paqueteRecibido->data + desplazamiento, 11);
 				desplazamiento+= 11;
-
 				// agregar a la lista de bloques list_add(archivoNodo->bloquesRelativos, worker);
 				list_add(worker->bloques, infoBloque);
 			}
@@ -101,65 +96,60 @@ int main(int argc, char** argv) {
 			parametros->yama_socket = yamaSocket;
 			pthread_create(NULL,NULL, hiloWorker, parametros);
 		}
-
 		list_iterate(archivoNodo->workersAsignados, iniciarHiloWorker);
-		}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
+	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
+		t_hilo_reduccion_local* hilo_reduc_local = malloc(sizeof(t_hilo_reduccion_local));
+		hilo_reduc_local->yamaSocket = yamaSocket;
+		int longitudIdWorker;
+		int cantidadDeElementos;
+		int longitudIp = 0;
+		int desplazamiento = 0;
 
+		memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
 
-			t_hilo_reduccion_local* hilo_reduc_local = malloc(sizeof(t_hilo_reduccion_local));
-			hilo_reduc_local->yamaSocket = yamaSocket;
-			int longitudIdWorker;
-			int cantidadDeElementos;
-			int longitudIp = 0;
-			int desplazamiento = 0;
-			//Deserializo el int del tamaño de la ip
+		hilo_reduc_local->ip =malloc(longitudIp+1);
+		memcpy(hilo_reduc_local->ip, paqueteRecibido->data + desplazamiento, longitudIp);
+		desplazamiento+=longitudIp;
 
-			memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
-			desplazamiento+=sizeof(int);
-			//Deserializo la IP
-			hilo_reduc_local->ip =malloc(longitudIp+1);
-			memcpy(hilo_reduc_local->ip, paqueteRecibido->data + desplazamiento, longitudIp);
-			desplazamiento+=longitudIp;
-			//Deserializo el puerto
-			memcpy(&hilo_reduc_local->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
-			desplazamiento+=sizeof(int);
-			//Deserializo cantidad de elementos
-			memcpy(&cantidadDeElementos, paqueteRecibido->data + desplazamiento, sizeof(int));
-			desplazamiento+=sizeof(int);
+		memcpy(&hilo_reduc_local->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
 
-			t_serializacionTemporal* serializacion;
-			int i;
-			for(i=0;i<cantidadDeElementos;i++){
-				serializacion = malloc(sizeof(t_serializacionTemporal));//consultar
+		memcpy(&cantidadDeElementos, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
 
-				memcpy(&serializacion->cantidadTemporal, paqueteRecibido->data + desplazamiento, sizeof(int));
-				desplazamiento+= sizeof(int);
-				serializacion->temporal = malloc(serializacion->cantidadTemporal);
-				memcpy(serializacion->temporal, paqueteRecibido->data + desplazamiento, serializacion->cantidadTemporal);
-				desplazamiento+= serializacion->cantidadTemporal;
-				list_add(hilo_reduc_local->listaTemp, serializacion);
-			}
-			int cantidadTempDestino = 0;
-			memcpy(&cantidadTempDestino, paqueteRecibido->data + desplazamiento, sizeof(int));
+		t_serializacionTemporal* serializacion;
+		int i;
+		for(i=0;i<cantidadDeElementos;i++){
+			serializacion = malloc(sizeof(t_serializacionTemporal));//consultar
+			memcpy(&serializacion->cantidadTemporal, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento+= sizeof(int);
-			hilo_reduc_local->tempDestino =malloc(cantidadTempDestino);
-			memcpy(hilo_reduc_local->tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
-			desplazamiento+= cantidadTempDestino;
+			serializacion->temporal = malloc(serializacion->cantidadTemporal);
 
-			memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
-			desplazamiento +=sizeof(int);
-			memcpy(hilo_reduc_local->idWorker, paqueteRecibido->data +desplazamiento, longitudIdWorker);
-			desplazamiento +=longitudIdWorker;
+			memcpy(serializacion->temporal, paqueteRecibido->data + desplazamiento, serializacion->cantidadTemporal);
+			desplazamiento+= serializacion->cantidadTemporal;
+			list_add(hilo_reduc_local->listaTemp, serializacion);
+		}
+		int cantidadTempDestino = 0;
+		memcpy(&cantidadTempDestino, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento+= sizeof(int);
+		hilo_reduc_local->tempDestino =malloc(cantidadTempDestino);
 
-			pthread_create(NULL,NULL,hilo_reduccion_local,hilo_reduc_local);
+		memcpy(hilo_reduc_local->tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
+		desplazamiento+= cantidadTempDestino;
 
+		memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
+		desplazamiento +=sizeof(int);
+
+		memcpy(hilo_reduc_local->idWorker, paqueteRecibido->data +desplazamiento, longitudIdWorker);
+		desplazamiento +=longitudIdWorker;
+
+		pthread_create(NULL,NULL,hilo_reduccion_local,hilo_reduc_local);
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
-			pthread_create(NULL,NULL, hiloReduccionGlobal, paqueteRecibido);
+		pthread_create(NULL,NULL, hiloReduccionGlobal, paqueteRecibido);
 	}
 	return EXIT_SUCCESS;
 }
-
-
 
 char *str_replace(char *orig, char *rep, char *with) {
 		char *result; // the return string
@@ -169,7 +159,6 @@ char *str_replace(char *orig, char *rep, char *with) {
 		int len_with; // length of with (the string to replace rep with)
 		int len_front; // distance between rep and end of last rep
 		int count;    // number of replacements
-
 		// sanity checks and initialization
 		if (!orig || !rep)
 			return NULL;
@@ -179,18 +168,14 @@ char *str_replace(char *orig, char *rep, char *with) {
 		if (!with)
 			with = "";
 		len_with = strlen(with);
-
 		// count the number of replacements needed
 		ins = orig;
 		for (count = 0; (tmp = strstr(ins, rep)); ++count) {
 			ins = tmp + len_rep;
 		}
-
 		tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
 		if (!result)
 			return NULL;
-
 		// first time through the loop, all the variable are set correctly
 		// from here on,
 		//    tmp points to the end of the result string
@@ -222,15 +207,20 @@ void hiloReduccionGlobal(void* parametros){
 	memcpy(&longitudIp, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
 	ipEncargado=malloc(longitudIp);
+
 	memcpy(ipEncargado, parametros+ desplazamiento, longitudIp);
 	desplazamiento+=longitudIp;
+
 	memcpy(&puertoEncargado, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
+
 	memcpy(&longitudId, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
     idEncargado=malloc(longitudId);
+
 	memcpy(idEncargado, parametros+ desplazamiento, longitudId);
 	desplazamiento+=longitudId;
+
 	memcpy(&cantidadWorkers, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
 
@@ -243,25 +233,31 @@ void hiloReduccionGlobal(void* parametros){
 
 		memcpy(&cantidadIp, parametros+ desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+
 		memcpy(worker->ip, parametros+ desplazamiento, cantidadIp);
 		desplazamiento+=cantidadIp;
+
 		memcpy(&worker->puerto, parametros+ desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+
 		memcpy(&cantidadRedLocal, parametros+ desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+
 		memcpy(worker->archivoReduccionLocal, parametros+ desplazamiento, cantidadRedLocal);
 		desplazamiento+=cantidadRedLocal;
+
 		memcpy(&cantidadId, parametros+ desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
+
 		memcpy(worker->idWorker, parametros+ desplazamiento, cantidadId);
 		desplazamiento+=cantidadId;
 
 		list_add(workers, worker);
 	}
-
 	memcpy(&longitudRedGlobal, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
 	redGlobal=malloc(longitudRedGlobal);
+
 	memcpy(redGlobal, parametros+ desplazamiento, longitudRedGlobal);
 	desplazamiento+=longitudRedGlobal;
 
@@ -272,14 +268,10 @@ void hiloReduccionGlobal(void* parametros){
 		workers = list_get(workers, j);
 		sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->idWorker)+1;
 	}
-
 	void* bufferRG= malloc(sizeof(int) + sizeLista);
-
 	int desplazamientoRG=0;
-
 	memcpy(bufferRG+desplazamientoRG, &cantidadWorkers, sizeof(int));
 	desplazamientoRG+=sizeof(int);
-
 	int k;
 	for(k=0; j<cantidadWorkers;k++){
 		t_workerBloques* workerGlobal = malloc(sizeof(t_workerBloques));
@@ -309,16 +301,15 @@ void hiloReduccionGlobal(void* parametros){
 		memcpy(bufferRG+desplazamientoRG, workerGlobal->idWorker, longitudArchivo);
 		desplazamientoRG+=longitudIdW;
 	}
-
 	memcpy(bufferRG+desplazamientoRG, &longitudRedGlobal, sizeof(int));
 	desplazamientoRG+=sizeof(int);
+
 	memcpy(bufferRG+desplazamientoRG, redGlobal, longitudRedGlobal);
 	desplazamientoRG+=longitudRedGlobal;
 
 	un_socket socketRedGlobal = conectar_a(ipEncargado,string_from_format("%i",puertoEncargado));
 	realizar_handshake(socketRedGlobal, cop_handshake_master);
 	enviar(socketRedGlobal,cop_worker_reduccionGlobal,desplazamiento,bufferRG);
-
 	t_paquete* paquete_recibido = recibir(socketRedGlobal);
 	enviar(yamaSocket,cop_master_finalizado,paquete_recibido->tamanio,paquete_recibido->data);
 }
@@ -334,28 +325,21 @@ void hiloWorker(void* parametros){
 		log_trace(logger, "No se puede abrir el archivo.\n");
 		exit(-1);
 	}
-
 	struct stat st_script;
 	stat(SCRIPT_TRANSF, &st_script);
 	void* bufferScript = malloc (st_script.st_size);
-
 	int MAX_LINE=4096;
 	char singleline[MAX_LINE];
 	while(fgets(singleline, MAX_LINE, fileIN) != NULL){
 		strcat(bufferScript, singleline);
 	}
-
 	int cantElementos = list_size(worker->bloques);
-
 	//Leer el archivo de script que corresponda segun la etapa (transformacion o reduccion)
 	//Hacer un strlen+1 del buffer donde tenemos el contenido del archivo
 	void* buffer= malloc(sizeof(int) + cantElementos * (sizeof(int)+ strlen(bufferScript)+1 + sizeof(int)+ 11+ sizeof(int)));
-
 	void infoBloque(void* bloque){
 		t_infobloque* infobloque=((t_infobloque*)bloque);
-
 		struct stat st;
-
 		memcpy(buffer+desplazamiento, &st.st_size, sizeof(int));
 		desplazamiento+=sizeof(int);
 
@@ -372,14 +356,12 @@ void hiloWorker(void* parametros){
 		desplazamiento+=sizeof(int);
 	}
 	list_iterate(((t_clock*)worker)->bloques, infoBloque);
-
 	char* puerto = malloc(10);
 	snprintf(puerto , 10, "%i", worker->puerto);
 	un_socket workerSocket = conectar_a(worker->ip, puerto);
 	realizar_handshake(workerSocket, cop_handshake_master);
 	enviar(workerSocket,cop_worker_transformacion,desplazamiento,buffer);
 	t_paquete* paqueteRecibido = recibir(workerSocket);
-
 	char* mensaje = "";
 	t_estado_master estado ;
 	if(paqueteRecibido->data == NULL){
@@ -391,36 +373,38 @@ void hiloWorker(void* parametros){
 		mensaje= "Todo ok";
 		estado=finalizado;
 	}
-
 	int desplazamiento2 = 0;
 	int longitudIdWorker = strlen(worker->worker_id);
 	int longitudIdArchivo = strlen(ARCHIVO_ORIGEN) + 1;
 	int longitudMensaje = strlen(mensaje) + 1;
-
 	void* estadoWorker= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
-//mati
+
 	memcpy(estadoWorker+desplazamiento2, &longitudIdWorker, sizeof(int));
 	desplazamiento2 += sizeof(int);
+
 	memcpy(estadoWorker+desplazamiento2, worker->worker_id, longitudIdWorker);
 	desplazamiento2 += longitudIdWorker;
+
 	memcpy(estadoWorker+desplazamiento2, &longitudIdArchivo, sizeof(int));
 	desplazamiento2 += sizeof(int);
+
 	memcpy(estadoWorker+desplazamiento2, ARCHIVO_ORIGEN, longitudIdArchivo);
 	desplazamiento2 += longitudIdArchivo;
+
 	memcpy(estadoWorker+desplazamiento2, &estado, sizeof(t_estado_master));
 	desplazamiento2 += sizeof(t_estado_master);
+
 	memcpy(estadoWorker+desplazamiento2, &longitudMensaje , sizeof(int));
 	desplazamiento2 += sizeof(int);
+
 	memcpy(estadoWorker+desplazamiento2, mensaje , longitudMensaje);
 	desplazamiento2 += longitudMensaje;
 
 	enviar(yamaSocket, cop_master_estados_workers,desplazamiento2,estadoWorker);
 	free(estadoWorker);
-
 }
 
 void hilo_reduccion_local(void* parametros){
-
 	t_hilo_reduccion_local* estructura = (t_hilo_reduccion_local*) parametros;
 	un_socket socketWorker;
 	socketWorker = conectar_a(estructura->ip, string_from_format("%i",estructura->puerto));
@@ -441,17 +425,17 @@ void hilo_reduccion_local(void* parametros){
 		int aux = ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->cantidadTemporal;
 		memcpy(buffer+desplazamiento, &aux,sizeof(int));
 		desplazamiento += sizeof(int);
+
 		memcpy(buffer+desplazamiento, ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->temporal,aux+1);
 		desplazamiento +=aux;
 	}
 	int cantidadTempDestino = strlen(estructura->tempDestino)+1;
 	memcpy(buffer+desplazamiento,&cantidadTempDestino,sizeof(int));
 	desplazamiento +=sizeof(int);
-	memcpy(buffer+desplazamiento,estructura->tempDestino,cantidadTempDestino);
 
+	memcpy(buffer+desplazamiento,estructura->tempDestino,cantidadTempDestino);
 	enviar(socketWorker, cop_worker_reduccionLocal,tamanioData,buffer);
 	free(buffer);
-
 	t_paquete* paqueteRecibido;
 	paqueteRecibido = recibir(socketWorker);
 	//Deserializacion
@@ -466,15 +450,20 @@ void hilo_reduccion_local(void* parametros){
 	memcpy(&longIp,paqueteRecibido->data+desplazamiento,sizeof(int));
 	desplazamiento += sizeof(int);
 	ipW = malloc(longIp);
+
 	memcpy(ipW,paqueteRecibido->data +desplazamiento,longIp);
 	desplazamiento+=longIp;
+
 	memcpy(&puerto,paqueteRecibido->data+desplazamiento,sizeof(int));
 	desplazamiento+=sizeof(int);
+
 	memcpy(&resultado,paqueteRecibido->data+desplazamiento,sizeof(bool));
 	desplazamiento+=sizeof(bool);
+
 	memcpy(&longIdWorker,paqueteRecibido->data+desplazamiento,sizeof(int));
 	desplazamiento+=sizeof(int);
 	idWorker=malloc(longIdWorker);
+
 	memcpy(idWorker,paqueteRecibido->data+desplazamiento,longIdWorker);
 	desplazamiento+=longIdWorker;
 
@@ -486,35 +475,38 @@ void hilo_reduccion_local(void* parametros){
 	t_estado_master 	estado;
 	int		longitudMensaje;
 	char* 	mensaje;
-
 	char* buffer1 =malloc(longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje);
 	desplazamiento = 0;
+
 	memcpy(buffer1+desplazamiento,&longitudIdWorker,sizeof(int));
 	desplazamiento += sizeof(int);
 	worker_id=malloc(longitudIdWorker);
+
 	memcpy(buffer1+desplazamiento,estructura->idWorker, longitudIdWorker);
 	desplazamiento += longitudIdWorker;
+
 	memcpy(buffer1+desplazamiento, &longitudIdArchivo, sizeof(int));
 	desplazamiento+=sizeof(int);
 	archivo=malloc(longitudIdArchivo);
+
 	memcpy(buffer1+desplazamiento, archivo,longitudIdArchivo);
 	desplazamiento+=longitudIdArchivo;
+
 	memcpy(buffer1+desplazamiento, &estado,sizeof(t_estado_master));
 	desplazamiento +=sizeof(t_estado_master);
+
 	memcpy(buffer1+desplazamiento, &longitudMensaje,sizeof(int));
 	desplazamiento +=sizeof(int);
+
 	mensaje=malloc(longitudMensaje);
 	memcpy(buffer1+desplazamiento,mensaje,longitudMensaje);
 	desplazamiento += longitudMensaje;
-
 	enviar(estructura->yamaSocket,cop_master_estado_reduccion_local,desplazamiento,buffer1);
 	free(buffer1);
 	free(worker_id);
 	free(archivo);
 	free(mensaje);
 }
-
-
 
 size_t cantidadCaracterEnString(const char *str, char token)
 {
@@ -535,7 +527,6 @@ char** str_split(char* a_str, const char a_delim)
     char delim[2];
     delim[0] = a_delim;
     delim[1] = 0;
-
     /* Count how many elements will be extracted. */
     while (*tmp)
     {
@@ -546,21 +537,16 @@ char** str_split(char* a_str, const char a_delim)
         }
         tmp++;
     }
-
     /* Add space for trailing token. */
     count += last_comma < (a_str + strlen(a_str) - 1);
-
     /* Add space for terminating null string so caller
        knows where the list of returned strings ends. */
     count++;
-
     result = malloc(sizeof(char*) * count);
-
     if (result)
     {
         size_t idx  = 0;
         char* token = strtok(a_str, delim);
-
         while (token)
         {
             assert(idx < count);
@@ -570,6 +556,5 @@ char** str_split(char* a_str, const char a_delim)
         assert(idx == count - 1);
         *(result + idx) = 0;
     }
-
     return result;
 }
