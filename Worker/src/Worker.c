@@ -188,6 +188,7 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
+							char* worker_id;
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -215,7 +216,7 @@ int main(void) {
 							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
 							desplazamiento+=sizeof(int);
 
-							char* worker_id = malloc(longitudIdWorker);
+							worker_id = malloc(longitudIdWorker);
 							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
 							desplazamiento+=longitudIdWorker;
 
