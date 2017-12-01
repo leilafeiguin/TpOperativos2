@@ -686,11 +686,40 @@ int main(void) {
 								break;
 							case cop_master_finalizado:
 							{
+								int cantidadArchivo;
+								void* nombreArchivo;
+								int tamanioArchivo;
+								void* archivo;
+								int desplazamiento=0;
+
+								memcpy(&cantidadArchivo, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento += sizeof(int);
+								archivo= malloc(cantidadArchivo);
+								memcpy(nombreArchivo, paqueteRecibido->data + desplazamiento, cantidadArchivo);
+								desplazamiento += cantidadArchivo;
+								memcpy(&tamanioArchivo, paqueteRecibido->data + desplazamiento, sizeof(int));
+								desplazamiento += sizeof(int);
+								archivo = malloc(tamanioArchivo);
+								memcpy(archivo, paqueteRecibido->data + desplazamiento, cantidadArchivo);
+								desplazamiento += tamanioArchivo;
 
 								//deserializar lo que manda master y serializar primero socket actual (socket master) y
 
-								enviar(socketActual,cop_yama_finalizado,paqueteRecibido->tamanio,paqueteRecibido->data);
 
+								void* buffer = malloc(sizeof(int) + sizeof(int) + cantidadArchivo + sizeof(int) + tamanioArchivo);
+								int desplazamiento2 = 0;
+
+								memcpy(&buffer + desplazamiento2, socketActual , sizeof(int));
+								desplazamiento2 += sizeof(int);
+								memcpy(&buffer + desplazamiento2, cantidadArchivo , sizeof(int));
+								desplazamiento2 += sizeof(int);
+								memcpy(&buffer + desplazamiento2, nombreArchivo, cantidadArchivo);
+								desplazamiento2 += cantidadArchivo;
+								memcpy(&buffer + desplazamiento2, tamanioArchivo , sizeof(int));
+								desplazamiento2 += sizeof(int);
+								memcpy(&buffer + desplazamiento2, archivo, tamanioArchivo);
+								desplazamiento2 += tamanioArchivo;
+								enviar(socketFS,cop_yama_finalizado, desplazamiento2, buffer);
 
 							}
 								break;
@@ -705,103 +734,118 @@ int main(void) {
 									// buscar todos los t_clock que tienen workerId == a todos los worker id que eliminaste recien
 								}
 								break;
-							}
-							case cop_yama_almacenado:
-							{
+								case cop_yama_almacenado:
+								{//todo mati E HACE LOS MALLOCS
+									int longitudNombre;
+									char* nombreArchivo;
+									char* archivo;
+									int socket;
+									int desplazamiento=0;
+									bool estado;
 
-								char* archivo;
+									memcpy(&socket,paqueteRecibido->data + desplazamiento ,sizeof(int));
+									desplazamiento+=sizeof(int);
+									memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento ,sizeof(int));
+									desplazamiento+=sizeof(int);
+									memcpy(nombreArchivo,paqueteRecibido->data + desplazamiento,longitudNombre);
+									desplazamiento+=longitudNombre;
+									memcpy(&estado,paqueteRecibido->data + desplazamiento,sizeof(bool));
+									desplazamiento+=sizeof(bool);
 
-								bool buscarXArchivoYMaster(void* elem){
-									return string_equals_ignore_case(((t_estados*)elem)->archivo, archivo) &&
-											((t_estados*)elem)->socketMaster == socketActual;
-								}
-								t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
 
-								time_t tiempoFinal=time(NULL);
+									bool buscarXArchivoYMaster(void* elem){
+										return string_equals_ignore_case(((t_estados*)elem)->archivo, archivo) &&
+												((t_estados*)elem)->socketMaster == socketActual;
+									}
+									t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
 
-								//Tiempo total de Ejecución del Job.
-								double tiempoTotal = difftime(tiempoFinal, estados->tiempoInicio);
+									time_t tiempoFinal=time(NULL);
 
-								//Tiempo de ejecucion en cada etapa.
+									//Tiempo total de Ejecución del Job.
+									double tiempoTotal = difftime(tiempoFinal, estados->tiempoInicio);
 
-								double tiempoTransformacion=0;
-								double tiempoRL=0;
-								double tiempoRG=0;
+									//Tiempo de ejecucion en cada etapa.
 
-								t_tabla_planificacion* tabla;
-								void calcularTiempos(void* elem){
-									t_job* job = (t_job*)elem;
-									if(job->estado == finalizado)
-									{
-										double diff= difftime(job->tiempoFinal,job->tiempoInicio);
-										if(job->etapa == transformacion)
-											tiempoTransformacion += diff;
+									double tiempoTransformacion=0;
+									double tiempoRL=0;
+									double tiempoRG=0;
 
-										if(job->etapa == reduccionLocal)
-											tiempoRL += diff;
+									t_tabla_planificacion* tabla;
+									void calcularTiempos(void* elem){
+										t_job* job = (t_job*)elem;
+										if(job->estado == finalizado)
+										{
+											double diff= difftime(job->tiempoFinal,job->tiempoInicio);
+											if(job->etapa == transformacion)
+												tiempoTransformacion += diff;
 
-										if(job->etapa == reduccionGlobal)
-											tiempoRG += diff;
+											if(job->etapa == reduccionLocal)
+												tiempoRL += diff;
 
+											if(job->etapa == reduccionGlobal)
+												tiempoRG += diff;
+
+										}
+
+										tabla=job->planificacion;
 									}
 
-									tabla=job->planificacion;
+									int cantidadBloques=list_size(tabla->archivoNodo->bloquesRelativos);
+											//cant tareas en transf= cantidad bloques
+									int cantTareasTransformacion = cantidadBloques;
+									//cant tareas en reduc  = cant bloques
+									int cantTareasRL = cantidadBloques;
+									//cant tareas reduc glob = 1
+									int cantTareasRG = 1;
+
+									//Cant maxima de tareas en paralelo
+									bool tieneAlMenosUnBloque(void* elem){
+										return list_size(((t_clock*)elem)->bloques) >1;
+									}
+									int cantidadWorkersConAlMenosUnWorker= list_count_satisfying(tabla->workers, tieneAlMenosUnBloque);
+
+									int cantMaxEnParalelo = cantidadWorkersConAlMenosUnWorker;
+									//Cantidad de fallos obtenidos en la realización de un Job.
+									int cantidadFallos = estados->numeroFallos;
+
+									//orden
+	//								double tiempoTotal;
+	//								double tiempoTransformacion;
+	//								double tiempoRL;
+	//								double tiempoRG;
+	//								int cantTareasTransformacion;
+	//								int cantTareasRL;
+	//								int cantTareasRG;
+	//								int cantidadFallos;
+	//								int cantMaxEnParalelo;
+
+									void* buffer = malloc(sizeof(double) * 4 + sizeof(int) *5);
+									desplazamiento=0;
+
+									memcpy(buffer+desplazamiento, &tiempoTotal, sizeof(double));
+									desplazamiento =+ sizeof(double);
+									memcpy(buffer+desplazamiento, &tiempoTransformacion, sizeof(double));
+									desplazamiento =+ sizeof(double);
+									memcpy(buffer+desplazamiento, &tiempoRL, sizeof(double));
+									desplazamiento =+ sizeof(double);
+									memcpy(buffer+desplazamiento, &tiempoRG, sizeof(double));
+									desplazamiento =+ sizeof(double);
+									memcpy(buffer+desplazamiento, &cantTareasTransformacion, sizeof(int));
+									desplazamiento =+ sizeof(int);
+									memcpy(buffer+desplazamiento, &cantTareasRL, sizeof(int));
+									desplazamiento =+ sizeof(int);
+									memcpy(buffer+desplazamiento, &cantTareasRG, sizeof(int));
+									desplazamiento =+ sizeof(int);
+									memcpy(buffer+desplazamiento, &cantidadFallos, sizeof(int));
+									desplazamiento =+ sizeof(int);
+									memcpy(buffer+desplazamiento, &cantMaxEnParalelo, sizeof(int));
+									desplazamiento =+ sizeof(int);
+
+									//ENVIAR A SOCKET
 								}
-
-								int cantidadBloques=list_size(tabla->archivoNodo->bloquesRelativos);
-										//cant tareas en transf= cantidad bloques
-								int cantTareasTransformacion = cantidadBloques;
-								//cant tareas en reduc  = cant bloques
-								int cantTareasRL = cantidadBloques;
-								//cant tareas reduc glob = 1
-								int cantTareasRG = 1;
-
-								//Cant maxima de tareas en paralelo
-								bool tieneAlMenosUnBloque(void* elem){
-									return list_size(((t_clock*)elem)->bloques) >1;
-								}
-								int cantidadWorkersConAlMenosUnWorker= list_count_satisfying(tabla->workers, tieneAlMenosUnBloque);
-
-								int cantMaxEnParalelo = cantidadWorkersConAlMenosUnWorker;
-								//Cantidad de fallos obtenidos en la realización de un Job.
-								int cantidadFallos = estados->numeroFallos;
-
-								//orden
-//								double tiempoTotal;
-//								double tiempoTransformacion;
-//								double tiempoRL;
-//								double tiempoRG;
-//								int cantTareasTransformacion;
-//								int cantTareasRL;
-//								int cantTareasRG;
-//								int cantidadFallos;
-//								int cantMaxEnParalelo;
-
-								void* buffer = malloc(sizeof(double) * 4 + sizeof(int) *5);
-								int desplazamiento=0;
-
-								memcpy(buffer+desplazamiento, tiempoTotal, sizeof(double));
-								desplazamiento =+ sizeof(double);
-								memcpy(buffer+desplazamiento, tiempoTransformacion, sizeof(double));
-								desplazamiento =+ sizeof(double);
-								memcpy(buffer+desplazamiento, tiempoRL, sizeof(double));
-								desplazamiento =+ sizeof(double);
-								memcpy(buffer+desplazamiento, tiempoRG, sizeof(double));
-								desplazamiento =+ sizeof(double);
-								memcpy(buffer+desplazamiento, cantTareasTransformacion, sizeof(int));
-								desplazamiento =+ sizeof(int);
-								memcpy(buffer+desplazamiento, cantTareasRL, sizeof(int));
-								desplazamiento =+ sizeof(int);
-								memcpy(buffer+desplazamiento, cantTareasRG, sizeof(int));
-								desplazamiento =+ sizeof(int);
-								memcpy(buffer+desplazamiento, cantidadFallos, sizeof(int));
-								desplazamiento =+ sizeof(int);
-								memcpy(buffer+desplazamiento, cantMaxEnParalelo, sizeof(int));
-								desplazamiento =+ sizeof(int);
-
 
 							}
-						}
+													}
 					}
 			}
 		}
