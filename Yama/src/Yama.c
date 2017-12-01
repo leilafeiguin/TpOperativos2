@@ -14,7 +14,9 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
+#include <time.h>
 #include "Yama.h"
+
 
 t_list* tabla_estados;
 yama_configuracion configuracion;
@@ -254,7 +256,7 @@ int main(void) {
 								}
 								list_add(tabla_estados, estadosxjob);
 								list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
-
+								time(&estadosxjob->tiempoInicio);
 								//Devuelve lista con los workers
 								//Ahora lo debe sacar de archivoNodo workersAsignados
 
@@ -305,6 +307,7 @@ int main(void) {
 							break;
 							case cop_master_archivo_a_transformar:
 							{
+
 								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo=(char*)paqueteRecibido->data;
@@ -374,6 +377,8 @@ int main(void) {
 										nuevoJob->temporalReduccionLocal = job->temporalReduccionLocal;
 										nuevoJob->temporalReduccionGlobal = job->temporalReduccionGlobal;
 										nuevoJob->worker_id = job->worker_id;
+										time(&job->tiempoFinal);
+										time(&nuevoJob->tiempoInicio);
 										switch(job->etapa){
 											case transformacion:
 												nuevoJob->etapa = reduccionLocal;
@@ -452,6 +457,7 @@ int main(void) {
 									void replanificarBloques(void* elem){
 										t_job* job = (t_job*)elem;
 										job->estado = error;
+										estado->numeroFallos++;
 										planificarBloque(tabla , job->bloque, archivoNodo,estado, idWorker);
 										usleep(configuracion.RETARDO_PLANIFICACION);
 									}
@@ -686,7 +692,12 @@ int main(void) {
 								break;
 							case cop_master_finalizado:
 							{
+
+								//deserializar lo que manda master y serializar primero socket actual (socket master) y
+
 								enviar(socketActual,cop_yama_finalizado,paqueteRecibido->tamanio,paqueteRecibido->data);
+
+
 							}
 								break;
 								case -1:
@@ -744,6 +755,101 @@ int main(void) {
 									}
 								}
 								break;
+							}
+							case cop_yama_almacenado:
+							{
+
+								char* archivo;
+
+								bool buscarXArchivoYMaster(void* elem){
+									return string_equals_ignore_case(((t_estados*)elem)->archivo, archivo) &&
+											((t_estados*)elem)->socketMaster == socketActual;
+								}
+								t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
+
+								time_t tiempoFinal=time(NULL);
+
+								//Tiempo total de Ejecución del Job.
+								double tiempoTotal = difftime(tiempoFinal, estados->tiempoInicio);
+
+								//Tiempo de ejecucion en cada etapa.
+
+								double tiempoTransformacion=0;
+								double tiempoRL=0;
+								double tiempoRG=0;
+
+								t_tabla_planificacion* tabla;
+								void calcularTiempos(void* elem){
+									t_job* job = (t_job*)elem;
+									if(job->estado == finalizado)
+									{
+										double diff= difftime(job->tiempoFinal,job->tiempoInicio);
+										if(job->etapa == transformacion)
+											tiempoTransformacion += diff;
+
+										if(job->etapa == reduccionLocal)
+											tiempoRL += diff;
+
+										if(job->etapa == reduccionGlobal)
+											tiempoRG += diff;
+
+									}
+
+									tabla=job->planificacion;
+								}
+
+								int cantidadBloques=list_size(tabla->archivoNodo->bloquesRelativos);
+										//cant tareas en transf= cantidad bloques
+								int cantTareasTransformacion = cantidadBloques;
+								//cant tareas en reduc  = cant bloques
+								int cantTareasRL = cantidadBloques;
+								//cant tareas reduc glob = 1
+								int cantTareasRG = 1;
+
+								//Cant maxima de tareas en paralelo
+								bool tieneAlMenosUnBloque(void* elem){
+									return list_size(((t_clock*)elem)->bloques) >1;
+								}
+								int cantidadWorkersConAlMenosUnWorker= list_count_satisfying(tabla->workers, tieneAlMenosUnBloque);
+
+								int cantMaxEnParalelo = cantidadWorkersConAlMenosUnWorker;
+								//Cantidad de fallos obtenidos en la realización de un Job.
+								int cantidadFallos = estados->numeroFallos;
+
+								//orden
+//								double tiempoTotal;
+//								double tiempoTransformacion;
+//								double tiempoRL;
+//								double tiempoRG;
+//								int cantTareasTransformacion;
+//								int cantTareasRL;
+//								int cantTareasRG;
+//								int cantidadFallos;
+//								int cantMaxEnParalelo;
+
+								void* buffer = malloc(sizeof(double) * 4 + sizeof(int) *5);
+								int desplazamiento=0;
+
+								memcpy(buffer+desplazamiento, tiempoTotal, sizeof(double));
+								desplazamiento =+ sizeof(double);
+								memcpy(buffer+desplazamiento, tiempoTransformacion, sizeof(double));
+								desplazamiento =+ sizeof(double);
+								memcpy(buffer+desplazamiento, tiempoRL, sizeof(double));
+								desplazamiento =+ sizeof(double);
+								memcpy(buffer+desplazamiento, tiempoRG, sizeof(double));
+								desplazamiento =+ sizeof(double);
+								memcpy(buffer+desplazamiento, cantTareasTransformacion, sizeof(int));
+								desplazamiento =+ sizeof(int);
+								memcpy(buffer+desplazamiento, cantTareasRL, sizeof(int));
+								desplazamiento =+ sizeof(int);
+								memcpy(buffer+desplazamiento, cantTareasRG, sizeof(int));
+								desplazamiento =+ sizeof(int);
+								memcpy(buffer+desplazamiento, cantidadFallos, sizeof(int));
+								desplazamiento =+ sizeof(int);
+								memcpy(buffer+desplazamiento, cantMaxEnParalelo, sizeof(int));
+								desplazamiento =+ sizeof(int);
+
+
 							}
 						}
 					}
@@ -874,6 +980,7 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		jobBloque->puerto = worker->puerto;
 		jobBloque->worker_id= string_duplicate(worker->worker_id);
 		jobBloque->temporalTransformacion = generarDirectorioTemporal();
+		time(&jobBloque->tiempoInicio);
 		list_add(estadoxjob->contenido, jobBloque);
 		list_add(worker->bloques, infoBloque);
 

@@ -136,7 +136,7 @@ void hiloFileSystem_Consola();
 t_bitarray leerBitmap(char*);
 
 // Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.
-void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo);
+bool CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo);
 
 //
 t_archivo_partido* LeerArchivo(char* archivo, t_tipo_archivo tipoArchivo);
@@ -266,3 +266,7 @@ bool elArchivoPuedeSercargado(int);
 void cargarArchivoTablaNodos();
 
 void cargarBitmapDesdeArchivo(t_nodo*);
+
+bool estadoEstable();
+
+int remove_directory(const char *path);

@@ -10,6 +10,8 @@
 
 
 #define MAX_LINE 4096
+t_log* logger;
+
 
 //---------------------------------FUNCIONES---------------------------------------------
 unsigned long int lineCountFile(const char *filename){
@@ -17,7 +19,7 @@ unsigned long int lineCountFile(const char *filename){
     unsigned long int linecount = 0;
     int c;
     if(fp == NULL){
-    	printf("No se puede abrir el archivo.\n");
+    	log_trace(logger, "No se puede abrir el archivo.\n");
         fclose(fp);
         return 0;
     }
@@ -56,7 +58,7 @@ bool apareo (char* paths [], char* nombre_ordenado){
 		FILE *fileIN;
 		fileIN = fopen(paths[i], "rb");
 		if(!fileIN){
-			printf("No se puede abrir el archivo.\n");
+			log_trace(logger, "No se puede abrir el archivo.\n");
 			return false;
 		}
 		unsigned long int linecount = lineCountFile(paths[i]);
@@ -81,7 +83,7 @@ bool apareo (char* paths [], char* nombre_ordenado){
 	sortfile(arrayGlobal, linecountGlobal);
 	FILE *archivoOrdenado = fopen(nombre_ordenado, "wb");
 	if(!archivoOrdenado){
-		printf("No se puede abrir el archivo.\n");
+		log_trace(logger, "No se puede abrir el archivo.\n");
 		return false;
 	}
 	for(i=0; i<linecountGlobal; i++){
@@ -97,10 +99,10 @@ bool apareo (char* paths [], char* nombre_ordenado){
 void* archivo;
 
 int main(void) {
-	t_log* logger;
+
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
-	printf("Inicializando proceso Worker\n");
+	log_trace(logger, "Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker");
 	worker_configuracion configuracion = get_configuracion();
@@ -170,8 +172,6 @@ int main(void) {
 								chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
 								transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
 
-							//falta enviar a worker el estado trans
-
 								char* mensaje = malloc(3);
 								mensaje = "ok";
 								enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);
@@ -186,7 +186,7 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
-
+							char* worker_id;
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -214,7 +214,7 @@ int main(void) {
 							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
 							desplazamiento+=sizeof(int);
 
-							char* worker_id = malloc(longitudIdWorker);
+							worker_id = malloc(longitudIdWorker);
 							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
 							desplazamiento+=longitudIdWorker;
 
@@ -231,7 +231,6 @@ int main(void) {
 							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
 							desplazamiento += sizeof(int);
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
-							//preguntar
 							desplazamiento+=sizeof(bool);
 							memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 							desplazamiento+=sizeof(int);
@@ -358,7 +357,7 @@ int main(void) {
 						}
 						case -1:
 						{
-							printf("Se cayo Master, finaliza Worker.\n");
+							log_trace(logger, "Se cayo Master, finaliza Worker.\n");
 							exit(-1);
 						}
 						break;
