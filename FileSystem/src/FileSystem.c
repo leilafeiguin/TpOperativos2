@@ -28,7 +28,7 @@ int main(void) {
 	fileLog = "FileSystemLogs.txt";
 	fclose(fopen(fileLog, "w"));
 
-	logger = log_create(fileLog, "FileSystem Logs", 0, 1);
+	logger = log_create(fileLog, "FileSystem Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso FileSystem");
 
 	fileSystem_configuracion configuracion = get_configuracion();
@@ -477,6 +477,7 @@ int main(void) {
 
 		if (archivoEncontrado == NULL) {
 			log_trace(logger, "El path %s no se encuentra en el FS\n", origen);
+			printf("El path %s no se encuentra en el FS\n");
 			return;
 		}
 
@@ -537,8 +538,21 @@ int main(void) {
 	bool CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
 		struct stat st;
 		stat(origen, &st);
+		int esElArchivo(t_archivo* unArchivo){
+			char* aux = str_replace(destino,"yamafs://","");
+			if(strcmp(unArchivo->path,aux)==0){
+				return 1;
+			}
+			return 0;
+		}
+
 		if(st.st_size == 0){
 			log_trace(logger, "El archivo esta vacio.\n");
+			printf("El archivo esta vacio.\n");
+			return false;
+		}else if(list_find(fileSystem.listaArchivos,(void*)esElArchivo)!=NULL){
+			log_trace(logger, "El archivo ya existe.\n");
+			printf("El archivo ya existe.\n");
 			return false;
 		}else{
 			t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
@@ -569,6 +583,7 @@ int main(void) {
 			int i = 0;
 			if(!elArchivoPuedeSercargado(archivoPartido->cantidadBloques)){
 				log_trace(logger, "No hay suficiente espacio en los nodos para almacenar el archivo.\n");
+				printf("No hay suficiente espacio en los nodos para almacenar el archivo.\n");
 				return false;
 			}
 			for (; i < archivoPartido->cantidadBloques; i++) {
@@ -905,12 +920,14 @@ int main(void) {
 
 		remove_directory("metadata");
 		log_trace(logger, "Filesystem formateado.\n");
+		printf("Filesystem formateado.\n");
 	}
 
 	void cp_block(char* path, int numeroBloque, char* nombreNodo) {
 		t_nodo* nodoDestino = buscar_nodo(nombreNodo);
 		if (nodoDestino == NULL || nodoDestino->ocupado) {
 			log_trace(logger, "no existe el nodo %s o está ocupado. \n", nombreNodo);
+			printf("no existe el nodo %s o está ocupado. \n");
 			return;
 
 		}
@@ -924,6 +941,7 @@ int main(void) {
 				buscarArchivoPorPath);
 		if (archivoEncontrado == NULL) {
 			log_trace(logger, "El path %s no se encuentra en el FS. \n", path);
+			printf("El path %s no se encuentra en el FS. \n", path);
 			return;
 		}
 
@@ -936,6 +954,7 @@ int main(void) {
 
 		if (bloque == NULL) {
 			log_trace(logger, "El bloque %i no se encuentra en el FS.\n", numeroBloque);
+			printf("El bloque %i no se encuentra en el FS.\n", numeroBloque);
 			return;
 		}
 
@@ -952,6 +971,7 @@ int main(void) {
 					{
 				//error
 				log_trace(logger, "Erorr, ya existe esa copia ./n");
+				printf("Erorr, ya existe esa copia ./n");
 					}
 			void* contenido = getbloque(ubicacionOrigen->nroBloque, nodoOrigen);
 
@@ -973,6 +993,7 @@ int main(void) {
 				bloque->copia2 = bloqueAsignado;
 		} else {
 			log_trace(logger, "No tiene ninguna copia para tomar de origen.\n");
+			printf("No tiene ninguna copia para tomar de origen.\n");
 			return;
 		}
 	}
@@ -999,6 +1020,8 @@ int main(void) {
 				if (directorioActual == NULL) {
 					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
+					printf("El directorio %s no existe para el padre %i\n",
+							directorios[i], indicePadre);
 					return;
 				}
 				indicePadre = directorioActual->index;
@@ -1011,6 +1034,7 @@ int main(void) {
 		}
 		if (libre == 100) {
 			log_trace(logger, "La tabla de directorios esta llena\n");
+			printf("La tabla de directorios esta llena\n");
 		} else {
 			tablaDeDirectorios[libre]->index = libre;
 			tablaDeDirectorios[libre]->nombre = directorios[cantidadDirectorios
@@ -1039,6 +1063,8 @@ int main(void) {
 			if (directorioActual == NULL) {
 				log_trace(logger, "El directorio %s no existe para el padre %i\n",
 						directorios[i], indicePadre);
+				printf("El directorio %s no existe para el padre %i\n",
+						directorios[i], indicePadre);
 				return;
 			}
 			indicePadre = directorioActual->index;
@@ -1059,11 +1085,13 @@ int main(void) {
 		void imprimirDirectorios(t_directory* elem) {
 			if (elem->nombre != NULL && elem->index != -2) {
 				log_trace(logger, "Directorio: %s\n", elem->nombre);
+				printf("Directorio: %s\n", elem->nombre);
 			}
 		}
 
 		void imprimirArchivos(t_archivo* elem) {
 			log_trace(logger, "Archivo: %s\n", elem->nombre);
+			printf("Archivo: %s\n", elem->nombre);
 		}
 		if(list_size(listaDirectorios)!=0){
 			list_iterate(listaDirectorios, (void*) imprimirDirectorios);
@@ -1137,6 +1165,8 @@ int main(void) {
 					log_trace(logger,
 							"No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
 							bloque->nroBloque, nombre1, nombre2);
+							printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
+									bloque->nroBloque, nombre1, nombre2);
 					return;
 				}
 
@@ -1177,6 +1207,7 @@ int main(void) {
 
 		if (archivoEncontrado == NULL) {
 			log_trace(logger, "El path %s no se encuentra en el FS\n", path);
+			printf("El path %s no se encuentra en el FS\n", path);
 			return;
 		}
 
@@ -1205,6 +1236,8 @@ int main(void) {
 
 					log_trace(logger,
 							"No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
+							bloque->nroBloque, nombre1, nombre2);
+					printf("No se encontro el bloque %i en el nodo %s ni en el nodo %s\n",
 							bloque->nroBloque, nombre1, nombre2);
 					return;
 				}
@@ -1358,6 +1391,7 @@ int main(void) {
 						yama_rename(parametros[1], parametros[2], parametros[3]);
 					} else {
 						log_trace(logger, "El rename debe recibir path_original nombre_final. \n");
+						printf("El rename debe recibir path_original nombre_final. \n");
 					}
 
 					free(linea);
@@ -1370,6 +1404,7 @@ int main(void) {
 					} else {
 						log_trace(logger,
 								"El mv debe recibir path_origen path_destino y tipo ('a' o 'd')\n");
+						printf("El mv debe recibir path_origen path_destino y tipo ('a' o 'd')\n");
 					}
 
 					free(linea);
@@ -1381,6 +1416,7 @@ int main(void) {
 						cat(parametros[1]);
 					} else {
 						log_trace(logger, "El cat debe recibir path archivo. \n");
+						printf("El cat debe recibir path archivo. \n");
 					}
 
 					free(linea);
@@ -1393,6 +1429,7 @@ int main(void) {
 					} else {
 						log_trace(logger,
 								"El mkdir debe recibir el path del directorio. \n");
+						printf("El mkdir debe recibir el path del directorio. \n");
 					}
 
 					free(linea);
@@ -1406,6 +1443,7 @@ int main(void) {
 					} else {
 						log_trace(logger,
 								"El cpfrom debe recibir el path del archivo y el directorio de fs. \n");
+						printf("El cpfrom debe recibir el path del archivo y el directorio de fs. \n");
 					}
 
 					free(linea);
@@ -1417,6 +1455,7 @@ int main(void) {
 					} else {
 						log_trace(logger,
 								"El cpto debe recibir el path_archivo_yamafs y el directorio_filesystem. \n");
+						printf("El cpto debe recibir el path_archivo_yamafs y el directorio_filesystem. \n");
 					}
 
 					free(linea);
@@ -1429,6 +1468,7 @@ int main(void) {
 					} else {
 						log_trace(logger,
 								"El cpblock debe recibir el path_archivo, el nro_bloque y el id_nodo. \n");
+						printf("El cpblock debe recibir el path_archivo, el nro_bloque y el id_nodo. \n");
 					}
 
 					free(linea);
@@ -1440,6 +1480,7 @@ int main(void) {
 					} else {
 						log_trace(logger,
 								"El mds5 debe recibir el path_archivo_yamafs. \n");
+						printf("El mds5 debe recibir el path_archivo_yamafs. \n");
 					}
 
 					free(linea);
@@ -1451,6 +1492,7 @@ int main(void) {
 
 					} else {
 						log_trace(logger, "El ls debe recibir el path_directorio. \n");
+						printf("El ls debe recibir el path_directorio. \n");
 					}
 
 					free(linea);
@@ -1462,11 +1504,13 @@ int main(void) {
 						info_archivo(parametros[1]);
 					} else {
 						log_trace(logger, "El info debe recibir el path_archivo. \n");
+						printf("El info debe recibir el path_archivo. \n");
 					}
 
 					free(linea);
 				} else {
 					log_trace(logger, "Opcion no valida.\n");
+					printf("Opcion no valida.\n");
 					free(linea);
 				}
 				actualizarArchivoDeDirectorios();
@@ -2016,6 +2060,9 @@ int main(void) {
 			log_trace(logger, "Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
 					archivoEncontrado->nombre, archivoEncontrado->tamanio,
 					tipoArchivo);
+			printf("Nombre Archivo: %s \n Tamaño archivo: %lu \n Tipo Archivo: %s \n",
+					archivoEncontrado->nombre, archivoEncontrado->tamanio,
+					tipoArchivo);
 			//imprimir nombre, tamanio y tipo de archivo
 
 			void imprimirInfoBloque(void* elem) {
@@ -2023,22 +2070,30 @@ int main(void) {
 
 				log_trace(logger, "Bloque numero %i  ---- Fin Bloque %lu\n",
 						bloque->nroBloque, bloque->finBloque);
+				printf("Bloque numero %i  ---- Fin Bloque %lu\n",
+						bloque->nroBloque, bloque->finBloque);
 				//imprimir numero bloque y fin bloque
 
 				if (bloque->copia1 != NULL) {
 					//imprimir numero bloque y nodo
 					log_trace(logger, "       Copia 1- Nodo %s  - Numero Bloque %i \n",
 							bloque->copia1->nroNodo, bloque->copia1->nroBloque);
+					printf("       Copia 1- Nodo %s  - Numero Bloque %i \n",
+							bloque->copia1->nroNodo, bloque->copia1->nroBloque);
 				} else {
 					log_trace(logger, "       Copia 1 - NO EXISTE!\n");
+					printf("       Copia 1 - NO EXISTE!\n");
 				}
 
 				if (bloque->copia2 != NULL) {
 					//imprimir numero bloque y nodo
 					log_trace(logger, "       Copia 2- Nodo %s  - Numero Bloque %i \n",
 							bloque->copia2->nroNodo, bloque->copia2->nroBloque);
+					printf("       Copia 2- Nodo %s  - Numero Bloque %i \n",
+							bloque->copia2->nroNodo, bloque->copia2->nroBloque);
 				} else {
 					log_trace(logger, "       Copia 2 - NO EXISTE!\n");
+					printf("       Copia 2 - NO EXISTE!\n");
 				}
 
 			}
@@ -2048,6 +2103,7 @@ int main(void) {
 			//imprimir por pantalla que no existe el archivo
 
 			log_trace(logger, "El archivo %s no existe\n", path);
+			printf("El archivo %s no existe\n", path);
 		}
 	}
 
@@ -2103,6 +2159,7 @@ int main(void) {
 				archivoEncontrado->path=path;
 			}else{
 				log_trace(logger, "El archivo no existe\n");
+				printf("El archivo no existe\n");
 			}
 		}else if(string_equals_ignore_case(modo, "d")){
 			if (!string_ends_with(path_origen, "/")) {
@@ -2120,6 +2177,8 @@ int main(void) {
 				if (directorioActual == NULL) {
 					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
+					printf("El directorio %s no existe para el padre %i\n",
+							directorios[i], indicePadre);
 					return;
 				}
 				indicePadre = directorioActual->index;
@@ -2127,6 +2186,7 @@ int main(void) {
 			directorioActual->nombre =string_duplicate(nuevo_nombre);
 		}else{
 			log_trace(logger, "El modo debe ser 'a' o 'd' \n");
+			printf("El modo debe ser 'a' o 'd' \n");
 		}
 	}
 
@@ -2152,6 +2212,8 @@ int main(void) {
 				if (directorioOrigen == NULL) {
 					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
+					printf("El directorio %s no existe para el padre %i\n",
+							directorios[i], indicePadre);
 
 				}
 				indicePadre = directorioOrigen->index;
@@ -2174,7 +2236,8 @@ int main(void) {
 				if (directorioDestino == NULL) {
 					log_trace(logger, "El directorio %s no existe para el padre %i\n",
 							directorios[i], indicePadre);
-
+					printf("El directorio %s no existe para el padre %i\n",
+							directorios[i], indicePadre);
 				}
 				indicePadre = directorioDestino->index;
 			}
@@ -2197,6 +2260,7 @@ int main(void) {
 
 			} else {
 				log_trace(logger, "El archivo %s no existe\n", path_origen);
+				printf("El archivo %s no existe\n", path_origen);
 			}
 		}
 	}
