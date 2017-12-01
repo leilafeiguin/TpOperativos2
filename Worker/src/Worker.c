@@ -17,7 +17,7 @@ unsigned long int lineCountFile(const char *filename){
     unsigned long int linecount = 0;
     int c;
     if(fp == NULL){
-    	printf("No se puede abrir el archivo.\n");
+    	log_trace(logger, "No se puede abrir el archivo.\n");
         fclose(fp);
         return 0;
     }
@@ -56,7 +56,7 @@ bool apareo (char* paths [], char* nombre_ordenado){
 		FILE *fileIN;
 		fileIN = fopen(paths[i], "rb");
 		if(!fileIN){
-			printf("No se puede abrir el archivo.\n");
+			log_trace(logger, "No se puede abrir el archivo.\n");
 			return false;
 		}
 		unsigned long int linecount = lineCountFile(paths[i]);
@@ -81,7 +81,7 @@ bool apareo (char* paths [], char* nombre_ordenado){
 	sortfile(arrayGlobal, linecountGlobal);
 	FILE *archivoOrdenado = fopen(nombre_ordenado, "wb");
 	if(!archivoOrdenado){
-		printf("No se puede abrir el archivo.\n");
+		log_trace(logger, "No se puede abrir el archivo.\n");
 		return false;
 	}
 	for(i=0; i<linecountGlobal; i++){
@@ -95,12 +95,16 @@ bool apareo (char* paths [], char* nombre_ordenado){
 }
 
 void* archivo;
+t_log* logger;
 
 int main(void) {
-	t_log* logger;
+
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
-	printf("Inicializando proceso Worker\n");
+	char* paths [2];
+	paths[0] = "fileTest";
+	paths[1] = "fileTest2";
+	log_trace(logger, "Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker");
 	worker_configuracion configuracion = get_configuracion();
@@ -186,7 +190,11 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
+<<<<<<< Updated upstream
 
+=======
+							char* worker_id;
+>>>>>>> Stashed changes
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -231,7 +239,6 @@ int main(void) {
 							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
 							desplazamiento += sizeof(int);
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
-							//preguntar
 							desplazamiento+=sizeof(bool);
 							memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 							desplazamiento+=sizeof(int);
@@ -358,7 +365,7 @@ int main(void) {
 						}
 						case -1:
 						{
-							printf("Se cayo Master, finaliza Worker.\n");
+							log_trace(logger, "Se cayo Master, finaliza Worker.\n");
 							exit(-1);
 						}
 						break;

@@ -33,8 +33,6 @@ int main(int argc, char** argv) {
 	PATH_ARCHIVO_ORIGEN= str_replace(ARCHIVO_ORIGEN, "yamafs://", "");
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
-
-	printf("Inicializando proceso Master\n");
 	logger = log_create(fileLog, "Master Logs", 0, 1);
 	log_trace(logger, "Inicializando proceso Master");
 
@@ -222,13 +220,15 @@ void hiloReduccionGlobal(void* parametros){
 
 	memcpy(&longitudIp, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
-	memcpy(&ipEncargado, parametros+ desplazamiento, longitudIp);
+	ipEncargado=malloc(longitudIp);
+	memcpy(ipEncargado, parametros+ desplazamiento, longitudIp);
 	desplazamiento+=longitudIp;
 	memcpy(&puertoEncargado, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
 	memcpy(&longitudId, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
-	memcpy(&idEncargado, parametros+ desplazamiento, longitudId);
+    idEncargado=malloc(longitudId);
+	memcpy(idEncargado, parametros+ desplazamiento, longitudId);
 	desplazamiento+=longitudId;
 	memcpy(&cantidadWorkers, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
@@ -260,7 +260,8 @@ void hiloReduccionGlobal(void* parametros){
 
 	memcpy(&longitudRedGlobal, parametros+ desplazamiento, sizeof(int));
 	desplazamiento+=sizeof(int);
-	memcpy(&redGlobal, parametros+ desplazamiento, longitudRedGlobal);
+	redGlobal=malloc(longitudRedGlobal);
+	memcpy(redGlobal, parametros+ desplazamiento, longitudRedGlobal);
 	desplazamiento+=longitudRedGlobal;
 
 	int sizeLista=0;
@@ -413,7 +414,7 @@ void hiloWorker(void* parametros){
 	desplazamiento2 += longitudMensaje;
 
 	enviar(yamaSocket, cop_master_estados_workers,desplazamiento2,estadoWorker);
-
+	free(estadoWorker);
 
 }
 
@@ -448,6 +449,7 @@ void hilo_reduccion_local(void* parametros){
 	memcpy(buffer+desplazamiento,estructura->tempDestino,cantidadTempDestino);
 
 	enviar(socketWorker, cop_worker_reduccionLocal,tamanioData,buffer);
+	free(buffer);
 
 	t_paquete* paqueteRecibido;
 	paqueteRecibido = recibir(socketWorker);
@@ -462,6 +464,7 @@ void hilo_reduccion_local(void* parametros){
 
 	memcpy(&longIp,paqueteRecibido->data+desplazamiento,sizeof(int));
 	desplazamiento += sizeof(int);
+	ipW = malloc(longIp);
 	memcpy(ipW,paqueteRecibido->data +desplazamiento,longIp);
 	desplazamiento+=longIp;
 	memcpy(&puerto,paqueteRecibido->data+desplazamiento,sizeof(int));
@@ -470,6 +473,7 @@ void hilo_reduccion_local(void* parametros){
 	desplazamiento+=sizeof(bool);
 	memcpy(&longIdWorker,paqueteRecibido->data+desplazamiento,sizeof(int));
 	desplazamiento+=sizeof(int);
+	idWorker=malloc(longIdWorker);
 	memcpy(idWorker,paqueteRecibido->data+desplazamiento,longIdWorker);
 	desplazamiento+=longIdWorker;
 
@@ -486,22 +490,27 @@ void hilo_reduccion_local(void* parametros){
 	desplazamiento = 0;
 	memcpy(buffer1+desplazamiento,&longitudIdWorker,sizeof(int));
 	desplazamiento += sizeof(int);
-	memcpy(buffer+desplazamiento,estructura->idWorker, longitudIdWorker);
+	worker_id=malloc(longitudIdWorker);
+	memcpy(buffer1+desplazamiento,estructura->idWorker, longitudIdWorker);
 	desplazamiento += longitudIdWorker;
 	memcpy(buffer1+desplazamiento, &longitudIdArchivo, sizeof(int));
 	desplazamiento+=sizeof(int);
+	archivo=malloc(longitudIdArchivo);
 	memcpy(buffer1+desplazamiento, archivo,longitudIdArchivo);
 	desplazamiento+=longitudIdArchivo;
 	memcpy(buffer1+desplazamiento, &estado,sizeof(t_estado_master));
 	desplazamiento +=sizeof(t_estado_master);
 	memcpy(buffer1+desplazamiento, &longitudMensaje,sizeof(int));
 	desplazamiento +=sizeof(int);
+	mensaje=malloc(longitudMensaje);
 	memcpy(buffer1+desplazamiento,mensaje,longitudMensaje);
 	desplazamiento += longitudMensaje;
 
 	enviar(estructura->yamaSocket,cop_master_estado_reduccion_local,desplazamiento,buffer1);
-	free(buffer);
 	free(buffer1);
+	free(worker_id);
+	free(archivo);
+	free(mensaje);
 }
 
 
