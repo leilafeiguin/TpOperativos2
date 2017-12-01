@@ -268,3 +268,5 @@ void cargarArchivoTablaNodos();
 void cargarBitmapDesdeArchivo(t_nodo*);
 
 bool estadoEstable();
+
+int remove_directory(const char *path);

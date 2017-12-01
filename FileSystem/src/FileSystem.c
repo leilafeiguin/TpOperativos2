@@ -346,7 +346,7 @@ int main(void) {
 						desplazamiento += longitudIP;
 
 
-						memcpy(buffer + desplazamiento,	((t_nodoxbloques*) elemento)->puerto,sizeof(int));
+						memcpy(buffer + desplazamiento,	&((t_nodoxbloques*) elemento)->puerto,sizeof(int));
 						desplazamiento += sizeof(int);
 
 						int cantidadelementos = list_size(
@@ -877,10 +877,13 @@ int main(void) {
 		list_destroy_and_destroy_elements(fileSystem.listaArchivos, liberar);
 		t_list* nodos = list_create();
 		fileSystem.ListaNodos = nodos;
-
+		t_list* archivos = list_create();
+		fileSystem.listaArchivos = archivos;
 		for (i = 0; i < sizeof(tablaDeDirectorios) / sizeof(t_directory); i++) {
 			tablaDeDirectorios[i]->padre = -1;
 		}
+
+		remove_directory("metadata");
 		log_trace(logger, "Filesystem formateado.\n");
 	}
 
@@ -1815,7 +1818,15 @@ int main(void) {
 			while ((dir = readdir(d)) != NULL){
 				if(dir->d_type==DT_REG){
 					char* path=string_from_format("%s%s", aux, dir->d_name);
-					list_add(fileSystem.listaArchivos,cargarArchivoDesdeArchivo(path,subdirectorio));
+					int esElArchivo(t_archivo* file){
+						if(strcmp(file->nombre,dir->d_name)==0){
+							return 1;
+						}
+						return 0;
+					}
+					if(list_find(fileSystem.listaArchivos,(void*)esElArchivo)==NULL){
+						list_add(fileSystem.listaArchivos,cargarArchivoDesdeArchivo(path,subdirectorio));
+					}
 				}
 			}
 		closedir(d);
@@ -2170,6 +2181,8 @@ int main(void) {
 		}
 	}
 
+
+
 	bool elArchivoPuedeSercargado(int cantidadBloques){
 		int libreTotal=0;
 		void bloquesLibres(t_nodo* unNodo){
@@ -2199,5 +2212,67 @@ int main(void) {
 		}else{
 			return true;
 		}
+	}
+
+	int remove_directory(const char *path)
+	{
+	   DIR *d = opendir(path);
+	   size_t path_len = strlen(path);
+	   int r = -1;
+
+	   if (d)
+	   {
+	      struct dirent *p;
+
+	      r = 0;
+
+	      while (!r && (p=readdir(d)))
+	      {
+	          int r2 = -1;
+	          char *buf;
+	          size_t len;
+
+	          /* Skip the names "." and ".." as we don't want to recurse on them. */
+	          if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
+	          {
+	             continue;
+	          }
+
+	          len = path_len + strlen(p->d_name) + 2;
+	          buf = malloc(len);
+
+	          if (buf)
+	          {
+	             struct stat statbuf;
+
+	             snprintf(buf, len, "%s/%s", path, p->d_name);
+
+	             if (!stat(buf, &statbuf))
+	             {
+	                if (S_ISDIR(statbuf.st_mode))
+	                {
+	                   r2 = remove_directory(buf);
+	                }
+	                else
+	                {
+	                   r2 = unlink(buf);
+	                }
+	             }
+
+	             free(buf);
+	          }
+
+	          r = r2;
+	      }
+
+	      closedir(d);
+	   }
+
+	   if (!r)
+	   {
+	      r = rmdir(path);
+	   }
+
+	   return r;
 	}
 

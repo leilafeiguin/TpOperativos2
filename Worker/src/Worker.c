@@ -10,6 +10,8 @@
 
 
 #define MAX_LINE 4096
+t_log* logger;
+
 
 //---------------------------------FUNCIONES---------------------------------------------
 unsigned long int lineCountFile(const char *filename){
@@ -95,15 +97,11 @@ bool apareo (char* paths [], char* nombre_ordenado){
 }
 
 void* archivo;
-t_log* logger;
 
 int main(void) {
 
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
-	char* paths [2];
-	paths[0] = "fileTest";
-	paths[1] = "fileTest2";
 	log_trace(logger, "Inicializando proceso Worker\n");
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker");
@@ -190,7 +188,7 @@ int main(void) {
 							int desplazamiento;
 							int i = 0;
 							int longitudIdWorker;
-
+							char* worker_id;
 
 							memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 							desplazamiento += sizeof(int);
@@ -218,7 +216,7 @@ int main(void) {
 							memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
 							desplazamiento+=sizeof(int);
 
-							char* worker_id = malloc(longitudIdWorker);
+							worker_id = malloc(longitudIdWorker);
 							memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
 							desplazamiento+=longitudIdWorker;
 
@@ -235,7 +233,6 @@ int main(void) {
 							memcpy(buffer + desplazamiento, &configuracion.PUERTO_WORKER, sizeof(int));
 							desplazamiento += sizeof(int);
 							memcpy(buffer + desplazamiento, &resultado, sizeof(bool));
-							//preguntar
 							desplazamiento+=sizeof(bool);
 							memcpy(buffer+desplazamiento,&longitudIdWorker,sizeof(int));
 							desplazamiento+=sizeof(int);
