@@ -405,17 +405,20 @@ int main(void) {
 					desplazamiento+=longitudArchivo;
 					fclose(fp);
 				}
-				CP_FROM("archivoTemp",nombreArchivo,0);
+
+				bool estado = CP_FROM("archivoTemp",nombreArchivo,0);
 				remove("archivoTemp");
 
 				int tamBuf=sizeof(int)+longitudNombre+sizeof(int);
-				char* buffer = malloc(sizeof(int)+sizeof(int)+longitudNombre);
+				char* buffer = malloc(sizeof(int)+sizeof(int)+longitudNombre+sizeof(bool));
 				desplazamiento = 0;
 				memcpy(buffer+desplazamiento,&socket,sizeof(int));
 				desplazamiento+=sizeof(int);
 				memcpy(buffer+desplazamiento,&longitudNombre,sizeof(int));
 				desplazamiento+=sizeof(int);
 				memcpy(buffer+desplazamiento,nombreArchivo,longitudNombre);
+				desplazamiento+=longitudNombre;
+				memcpy(buffer+desplazamiento,&estado,sizeof(bool));
 
 				enviar(socketYama,cop_yama_almacenado,tamBuf,buffer);
 				free(buffer);
@@ -531,11 +534,12 @@ int main(void) {
 		//por cada bloque voy haciendo un fwrite
 	}
 
-	void CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
+	bool CP_FROM(char* origen, char* destino, t_tipo_archivo tipoArchivo) {
 		struct stat st;
 		stat(origen, &st);
 		if(st.st_size == 0){
 			log_trace(logger, "El archivo esta vacio.\n");
+			return false;
 		}else{
 			t_archivo_partido* archivoPartido = LeerArchivo(origen, tipoArchivo);
 			t_archivo* nuevoArchivo = malloc(sizeof(t_archivo));
@@ -565,7 +569,7 @@ int main(void) {
 			int i = 0;
 			if(!elArchivoPuedeSercargado(archivoPartido->cantidadBloques)){
 				log_trace(logger, "No hay suficiente espacio en los nodos para almacenar el archivo.\n");
-				return;
+				return false;
 			}
 			for (; i < archivoPartido->cantidadBloques; i++) {
 				t_nodoasignado* respuesta = escribir_bloque(list_get(archivoPartido->bloquesPartidos, i));
@@ -604,7 +608,7 @@ int main(void) {
 			}
 			list_add(fileSystem.listaArchivos, nuevoArchivo);
 			free(path);
-
+			return true;
 		}
 
 	}
