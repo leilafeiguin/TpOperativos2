@@ -235,7 +235,7 @@ void hiloReduccionGlobal(void* parametros){
 
 	int i;
 	for(i=0;i<cantidadWorkers;i++){
-		t_workers_global* worker = malloc(sizeof(t_workers_global));
+		t_workerBloques* worker = malloc(sizeof(t_workerBloques));
 		int cantidadIp;
 		int cantidadRedLocal;
 		int cantidadId;
@@ -252,7 +252,7 @@ void hiloReduccionGlobal(void* parametros){
 		desplazamiento+=cantidadRedLocal;
 		memcpy(&cantidadId, parametros+ desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
-		memcpy(worker->id, parametros+ desplazamiento, cantidadId);
+		memcpy(worker->idWorker, parametros+ desplazamiento, cantidadId);
 		desplazamiento+=cantidadId;
 
 		list_add(workers, worker);
@@ -266,9 +266,9 @@ void hiloReduccionGlobal(void* parametros){
 	int sizeLista=0;
 	int j;
 	for(j=0; j<cantidadWorkers;j++){
-		t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
+		t_workerBloques* workerGlobal = malloc(sizeof(t_workerBloques));
 		workers = list_get(workers, j);
-		sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->id)+1;
+		sizeLista += sizeof(int) + strlen(workerGlobal->ip)+1 + sizeof(int) + sizeof(int) + strlen(workerGlobal->archivoReduccionLocal)+1 + sizeof(int) + strlen(workerGlobal->idWorker)+1;
 	}
 
 	void* bufferRG= malloc(sizeof(int) + sizeLista);
@@ -280,7 +280,7 @@ void hiloReduccionGlobal(void* parametros){
 
 	int k;
 	for(k=0; j<cantidadWorkers;k++){
-		t_workers_global* workerGlobal = malloc(sizeof(t_workers_global));
+		t_workerBloques* workerGlobal = malloc(sizeof(t_workerBloques));
 		workerGlobal = list_get(workers, k);
 
 		int longitudIpW = strlen(workerGlobal->ip)+1;
@@ -300,11 +300,11 @@ void hiloReduccionGlobal(void* parametros){
 		memcpy(bufferRG+desplazamientoRG, workerGlobal->archivoReduccionLocal, longitudArchivo);
 		desplazamientoRG+=longitudArchivo;
 
-		int longitudIdW = strlen(workerGlobal->id)+1;
+		int longitudIdW = strlen(workerGlobal->idWorker)+1;
 		memcpy(bufferRG+desplazamientoRG, &longitudIdW, sizeof(int));
 		desplazamientoRG+=sizeof(int);
 
-		memcpy(bufferRG+desplazamientoRG, workerGlobal->id, longitudArchivo);
+		memcpy(bufferRG+desplazamientoRG, workerGlobal->idWorker, longitudArchivo);
 		desplazamientoRG+=longitudIdW;
 	}
 
