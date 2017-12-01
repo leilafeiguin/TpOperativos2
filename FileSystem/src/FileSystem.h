@@ -266,3 +266,5 @@ bool elArchivoPuedeSercargado(int);
 void cargarArchivoTablaNodos();
 
 void cargarBitmapDesdeArchivo(t_nodo*);
+
+bool estadoEstable();

@@ -113,8 +113,13 @@ int main(void) {
 		t_paquete* paqueteRecibido = recibir(socketNuevo);
 		switch (paqueteRecibido->codigo_operacion) { //revisar validaciones de habilitados
 		case cop_handshake_yama: {
-			esperar_handshake(socketNuevo, paqueteRecibido, cop_handshake_yama);
-			socketYama = socketNuevo;
+			if(estadoEstable()){
+				esperar_handshake(socketNuevo, paqueteRecibido, cop_handshake_yama);
+				socketYama = socketNuevo;
+			}else{
+				printf("Se le niega la conexion a Yama, el estado no es estable.\n");
+				close(socketNuevo);
+			}
 		}
 
 			//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
@@ -217,6 +222,7 @@ int main(void) {
 			break;
 		}
 	}
+
 
 		//CONEXIONES
 		while (1) {
@@ -2153,7 +2159,7 @@ int main(void) {
 				return string_equals_ignore_case(((t_archivo*) elem)->path,
 						path_origen);
 			}
-			;
+
 
 			t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos,
 					buscarArchivoPorPath);
@@ -2173,5 +2179,27 @@ int main(void) {
 		}
 		list_iterate(fileSystem.ListaNodos,(void*)bloquesLibres);
 		return libreTotal>cantidadBloques;
+	}
+
+	bool estadoEstable(){
+		bool noEsEstable(t_archivo* unArchivo){
+			int i = 0;
+			int tamList = list_size(unArchivo->bloques);
+			for(;i<tamList;i++){
+				t_bloque* unBloque = list_get(unArchivo->bloques,i);
+				if(unBloque->copia1 == NULL || unBloque->copia2 == NULL){
+					return true;
+				}
+			}
+			return false;
+		}
+		t_list* noEstables = list_create();
+		noEstables = list_filter(fileSystem.listaArchivos,(void*)noEsEstable);
+
+		if(list_size(noEstables)!=0){
+			return  false;
+		}else{
+			return true;
+		}
 	}
 
