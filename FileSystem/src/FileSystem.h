@@ -72,6 +72,7 @@ typedef struct t_nodo {
 	int tamanio;
 	int libre;
 	int cantidadBloques;
+	int puertoDataNode;
 } t_nodo;
 
 typedef struct t_nodoasignado {
@@ -99,13 +100,14 @@ typedef struct t_archivo_partido {
 } t_archivo_partido;
 
 static t_nodo *nodo_create(char* nroNodo, bool ocupado, t_bitarray* bitmap,
-	un_socket socket, char* ipWorker, int puertoWorker, int tamanio, int libre) {
+	un_socket socket, char* ipWorker, int puertoWorker, int tamanio, int libre, int puertoDataNode) {
 	t_nodo *new = malloc(sizeof(t_nodo));
 	new->bitmap = bitmap;
 	new->nroNodo = nroNodo;
 	new->ocupado = ocupado;
 	new->socket = socket;
 	new->libre = libre;
+	new->puertoDataNode = puertoDataNode;
 	new->cantidadBloques = tamanio / (1024 * 1024);
 	if(tamanio % (1024 * 1024) == 0)
 		new->cantidadBloques++;

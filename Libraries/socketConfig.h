@@ -101,9 +101,11 @@ typedef struct {
 
 typedef struct {
 	char* ip;
+	int puertoDataNode;
 	int puertoWorker;
 	int tamanio;
 	char* nombreNodo;
+	int puertoDataNode;
 } t_paquete_datanode_info_list;
 
 

@@ -22,7 +22,7 @@ int main(void) {
 	char* fileLog;
 	fileLog = "DataNodeLogs.txt";
 
-	logger = log_create(fileLog, "DataNode Logs", 0, 1);
+	logger = log_create(fileLog, "DataNode Logs", 1, 1);
 	log_trace(logger, "Inicializando proceso DataNode. \n");
 
 	dataNode_configuracion configuracion = get_configuracion();
@@ -45,8 +45,10 @@ int main(void) {
 	realizar_handshake(fileSystemSocket, cop_handshake_datanode);
 	t_paquete_datanode_info_list* paquete = malloc(sizeof(t_paquete_datanode_info_list));
 	char*ip=configuracion.IP_NODO;
+	int puerto=atoi(configuracion.PUERTO_DATANODE);
 	paquete->ip= malloc(strlen(ip)+1);
 	strcpy(paquete->ip,ip);
+	paquete->puertoDataNode=puerto;
 	paquete->puertoWorker = atoi(configuracion.PUERTO_WORKER);
 	paquete->tamanio = sb.st_size;
 
@@ -57,11 +59,13 @@ int main(void) {
 	int longitudNombre = strlen(paquete->nombreNodo )+1;
 	int desplazamiento=0;
 
-	void* buffer = malloc( longitudIp+ sizeof(int) + sizeof(int)+sizeof(int) + sizeof(int) + longitudNombre);
+	void* buffer = malloc( longitudIp+ sizeof(int) + sizeof(int)+sizeof(int) + sizeof(int) + longitudNombre + sizeof(int));
 	memcpy(buffer, &longitudIp, sizeof(int));
 	desplazamiento+= sizeof(int);
 	memcpy(buffer+desplazamiento, paquete->ip, longitudIp);
 	desplazamiento+= longitudIp;
+	memcpy(buffer+desplazamiento, &paquete->puertoDataNode, sizeof(int));
+	desplazamiento+=sizeof(int);
 	memcpy(buffer+ desplazamiento, &paquete->puertoWorker, sizeof(int));
 	desplazamiento+= sizeof(int);
 	memcpy(buffer+ desplazamiento, &paquete->tamanio, sizeof(int));
@@ -73,7 +77,6 @@ int main(void) {
 
 	enviar(fileSystemSocket, cop_datanode_info,desplazamiento, buffer);
 
-	//todo mati e, aca hacer enviar
 	while(1){
 		t_paquete* paquete=recibir(fileSystemSocket);
 		switch (paquete-> codigo_operacion){
