@@ -275,6 +275,7 @@ int main(void) {
 					void* buffer = malloc(sizeof(int) + sizeof(int) + sizeof(int) + longitudNombre + sizeof(int) + tamanioTotalBloques + sizeof(int)+ tamaniototalNodos);
 					memcpy(buffer + desplazamiento, &longitudNombre, sizeof(int));
 					desplazamiento += sizeof(int);
+
 					memcpy(buffer + desplazamiento, archivoxnodo->pathArchivo, longitudNombre);
 					desplazamiento += longitudNombre;
 
@@ -302,7 +303,6 @@ int main(void) {
 						desplazamiento += longitudNombreNodo;
 
 						int longitudIP = strlen(((t_nodoxbloques*) elemento)->ip) + 1;
-
 						memcpy(buffer + desplazamiento,	&longitudIP,sizeof(int));
 						desplazamiento += sizeof(int);
 
