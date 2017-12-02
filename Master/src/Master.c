@@ -23,10 +23,16 @@ char* SCRIPT_REDUC;
 char* ARCHIVO_ORIGEN;
 char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
-	char* scriptTransf = argv[0];
-	char* scriptReduc = argv[1];
-    char* archivoOrigen = argv[2];
-	char* archivoDestino = argv[3];
+	char* scriptTransf = "transformador.py";
+	char* scriptReduc = "reductor.py";
+    char* archivoOrigen = "yamafs://base/nombres.csv";
+	char* archivoDestino = "yamafs://nombres.csv";
+
+
+//	char* scriptTransf = argv[0];
+//	char* scriptReduc = argv[1];
+//    char* archivoOrigen = argv[2];
+//	char* archivoDestino = argv[3];
 
 	SCRIPT_TRANSF=scriptTransf;
 	SCRIPT_REDUC=scriptReduc;
@@ -34,7 +40,7 @@ int main(int argc, char** argv) {
 	PATH_ARCHIVO_ORIGEN= str_replace(ARCHIVO_ORIGEN, "yamafs://", "");
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
-	logger = log_create(fileLog, "Master Logs", 0, 1);
+	logger = log_create(fileLog, "Master Logs", 1, 0);
 	log_trace(logger, "Inicializando proceso Master");
 
 	master_configuracion configuracion = get_configuracion();
@@ -44,7 +50,7 @@ int main(int argc, char** argv) {
 	yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);
 	//Master avisa a yama sobre que archivo del FS necesita ejecutar
-	enviar(yamaSocket,cop_master_archivo_a_transformar,sizeof(char*)*strlen(archivoOrigen),archivoOrigen);
+	enviar(yamaSocket,cop_master_archivo_a_transformar,strlen(archivoOrigen)+1,archivoOrigen);
 	log_trace(logger, "Recibi datos de Yama");
 	t_paquete* paqueteRecibido = recibir(yamaSocket);
 	if(paqueteRecibido->codigo_operacion == -1){
