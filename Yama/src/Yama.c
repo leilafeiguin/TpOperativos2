@@ -28,7 +28,7 @@ int main(void) {
 	fileLog = "YamaLogs.txt";
 	tabla_estados= list_create();
 	printf("Inicializando proceso Yama\n");
-	logger = log_create(fileLog, "Yama Logs", 0, 0);
+	logger = log_create(fileLog, "Yama Logs", 1, 0);
 	log_trace(logger, "Inicializando proceso Yama");
     configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
@@ -98,6 +98,7 @@ int main(void) {
 		}else{
 			fd_max = listener;
 		}
+		socketFS = fileSystemSocket;
 		realizar_handshake(fileSystemSocket, cop_handshake_yama);
 		//Falta pedir la info de los workers conectados todo mati e aca hay que hacer un recibir
 		//Que pasa si le rechazan la conexion.
@@ -124,6 +125,7 @@ int main(void) {
 							t_paquete* paqueteRecibido = recibir(socketActual);
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
+
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
 								int* master= malloc(sizeof(int));
 								*master = socketActual;
@@ -136,6 +138,7 @@ int main(void) {
 							break;
 							case cop_yama_info_fs:
 							{
+								socketFS = socketActual;
 								t_tabla_planificacion* tabla= malloc(sizeof(t_tabla_planificacion));
 								list_add(tablas_planificacion, tabla);
 								tabla->workers = list_create();
@@ -172,9 +175,9 @@ int main(void) {
 								int cantidadElementosNodos = 0;
 								memcpy(&cantidadElementosNodos ,paqueteRecibido->data + desplazamiento,sizeof(int));
 								desplazamiento+= sizeof(int);
-
+								t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
+								nodoBloques->bloques = list_create();
 								for(i=0;i<cantidadElementosNodos;i++){
-									t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
 									int longitudNombreNodo = 0;
 									memcpy(&longitudNombreNodo, paqueteRecibido->data + desplazamiento, sizeof(int));
 									desplazamiento+=sizeof(int);
@@ -194,7 +197,7 @@ int main(void) {
 
 									memcpy(&nodoBloques->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
-									desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
+									//desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
 
 									//cantidad elementos lista bloques (t_infobloque)
 									int cantidadElementos = 0;
@@ -288,15 +291,15 @@ int main(void) {
 								}
 								list_iterate(archivoNodo->workersAsignados, datosWorker);
 								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
-								socketFS = socketActual;
 							}
 							break;
 							case cop_master_archivo_a_transformar:
 							{
 								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
-								char* pathArchivo=(char*)paqueteRecibido->data;
-								enviar(fileSystemSocket,cop_yama_info_fs,sizeof(char*)*strlen(pathArchivo),pathArchivo);
+								char* pathArchivo= malloc(paqueteRecibido->tamanio);
+								memcpy(pathArchivo, paqueteRecibido->data, paqueteRecibido->tamanio);
+								enviar(socketFS,cop_yama_info_fs,strlen(pathArchivo),pathArchivo);
 							}
 							break;
 							case cop_master_estados_workers:
@@ -966,6 +969,7 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		return string_equals_ignore_case(((t_clock*)tabla->clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
 	}
 	t_nodoxbloques* nodoWorker=list_find(archivo->nodos, buscarNodoWorker);
+	nodoWorker->bloques = list_create();
 
 	bool existeBloqueEnWorker(void* elem){
 		return numeroBloque == ((t_infobloque*)elem)->bloqueRelativo;
