@@ -28,8 +28,9 @@ int main(void) {
 	fileLog = "FileSystemLogs.txt";
 	fclose(fopen(fileLog, "w"));
 
-	logger = log_create(fileLog, "FileSystem Logs", 0, 0);
+	logger = log_create(fileLog, "FileSystem Logs", 1, 0);
 	log_trace(logger, "Inicializando proceso FileSystem");
+
 
 	fileSystem_configuracion configuracion = get_configuracion();
 	log_trace(logger, "Archivo de configuracion levantado");
@@ -121,8 +122,7 @@ int main(void) {
 			}
 		}
 
-			//enviar(socketActual, cop_datanode_info, sizeof(char*) t_datanode_info, );
-			//todo mati e armar un paquete con t_datanode_info_list lista de t_nodos y enviarlo
+
 			break;
 
 		case cop_handshake_datanode: {
@@ -143,6 +143,9 @@ int main(void) {
 
 			memcpy(infoNodo->ip, paqueteRecibido->data + desplazamiento, longitudIp);
 			desplazamiento += longitudIp;
+
+			memcpy(&infoNodo->puertoDataNode,paqueteRecibido->data + desplazamiento, sizeof(int));
+			desplazamiento+=sizeof(int);
 
 			memcpy(&infoNodo->puertoWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
 			desplazamiento += sizeof(int);
@@ -183,11 +186,12 @@ int main(void) {
 				memcpy(unNodo->ip, infoNodo->ip, strlen(infoNodo->ip)+1);
 				unNodo->socket = socketNuevo;
 				unNodo->puertoWorker = infoNodo->puertoWorker;
+				unNodo->puertoDataNode = infoNodo->puertoDataNode;
 				cargarBitmapDesdeArchivo(unNodo);
 			}else{
 				t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap,
 						socketNuevo, infoNodo->ip, infoNodo->puertoWorker,
-						infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)));
+						infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)), infoNodo->puertoDataNode);
 				list_add(fileSystem.ListaNodos, unNodo);
 			}
 		}
@@ -268,7 +272,7 @@ int main(void) {
 					int desplazamiento = 0;
 					int longitudNombre = strlen(pathArchivo) + 1;
 
-					void* buffer = malloc(sizeof(int) + longitudNombre + tamanioTotalBloques + tamaniototalNodos);
+					void* buffer = malloc(sizeof(int) + sizeof(int) + sizeof(int) + longitudNombre + sizeof(int) + tamanioTotalBloques + sizeof(int)+ tamaniototalNodos);
 					memcpy(buffer + desplazamiento, &longitudNombre, sizeof(int));
 					desplazamiento += sizeof(int);
 					memcpy(buffer + desplazamiento, archivoxnodo->pathArchivo, longitudNombre);
@@ -331,6 +335,8 @@ int main(void) {
 				} else {
 					//todo handlear error
 				}
+			}
+				break;
 			case cop_yama_finalizado:
 			{
 				int longitudNombre;
@@ -373,7 +379,7 @@ int main(void) {
 				free(buffer);
 				free(nombreArchivo);
 			}
-			}
+
 				break;
 			case -1:
 			{
@@ -520,6 +526,10 @@ int main(void) {
 				unBloqueAux->copia1 = malloc(sizeof(ubicacionBloque));
 				unBloqueAux->copia1->nroNodo = nodo1->nroNodo;
 				unBloqueAux->copia1->nroBloque = respuesta->bloque1;
+				unBloqueAux->copia1->ip = malloc(strlen(nodo1->ip)+1);
+				unBloqueAux->copia1->ip = string_duplicate(nodo1->ip);
+				unBloqueAux->copia1->puerto = nodo1->puertoDataNode;
+
 				nodo1->libre--;
 				if (nodo1->libre == 0)
 					nodo1->ocupado = true;
@@ -529,6 +539,9 @@ int main(void) {
 				unBloqueAux->copia2 = malloc(sizeof(ubicacionBloque));
 				unBloqueAux->copia2->nroNodo = nodo2->nroNodo;
 				unBloqueAux->copia2->nroBloque = respuesta->bloque2;
+				unBloqueAux->copia2->ip = malloc(strlen(nodo2->ip)+1);
+				unBloqueAux->copia2->ip = string_duplicate(nodo2->ip);
+				unBloqueAux->copia2->puerto = nodo2->puertoDataNode;
 
 				nodo2->libre--;
 				if (nodo2->libre == 0)
@@ -1571,7 +1584,7 @@ int main(void) {
 								if(tamanio % (1024 * 1024) != 0)
 									unNodoAux->cantidadBloques++;
 							}else{
-								t_nodo* unNodo = nodo_create(nodos[i], false, NULL,-2, "ipWorker", -1,tamanio, libre);
+								t_nodo* unNodo = nodo_create(nodos[i], false, NULL,-2, "ipWorker", -1,tamanio, libre, -1);
 								list_add(fileSystem.ListaNodos,unNodo);
 							}
 						}
