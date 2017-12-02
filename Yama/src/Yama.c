@@ -765,7 +765,7 @@ int main(void) {
 								}
 								break;
 								case cop_yama_almacenado:
-								{//todo mati E HACE LOS MALLOCS
+								{
 									int longitudNombre;
 									char* nombreArchivo;
 									char* archivo;
@@ -778,6 +778,7 @@ int main(void) {
 
 									memcpy(&longitudNombre, paqueteRecibido->data + desplazamiento ,sizeof(int));
 									desplazamiento+=sizeof(int);
+									nombreArchivo = malloc(longitudNombre);
 
 									memcpy(nombreArchivo,paqueteRecibido->data + desplazamiento,longitudNombre);
 									desplazamiento+=longitudNombre;
@@ -870,7 +871,8 @@ int main(void) {
 
 									memcpy(buffer+desplazamiento, &cantMaxEnParalelo, sizeof(int));
 									desplazamiento =+ sizeof(int);
-									//ENVIAR A SOCKET
+
+									enviar(socket, cop_yama_metricas, desplazamiento, buffer);
 								}
 							}
 						}
