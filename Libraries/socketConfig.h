@@ -105,7 +105,6 @@ typedef struct {
 	int puertoWorker;
 	int tamanio;
 	char* nombreNodo;
-	int puertoDataNode;
 } t_paquete_datanode_info_list;
 
 
