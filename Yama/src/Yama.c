@@ -20,7 +20,7 @@
 t_list* tabla_estados;
 yama_configuracion configuracion;
 t_log* logger;
-t_list* masters ;
+t_list* masters; //t_socket_archivo
 int main(void) {
 	masters= list_create();
 	int socketFS;
@@ -125,12 +125,10 @@ int main(void) {
 							t_paquete* paqueteRecibido = recibir(socketActual);
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
-
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
-								int* master= malloc(sizeof(int));
-								*master = socketActual;
-								list_add(masters, master);
-
+								t_socket_archivo* socketArchivo = malloc(sizeof(t_socket_archivo));
+								socketArchivo->socket = socketActual;
+								list_add(masters, socketArchivo);
 							break;
 							case cop_archivo_programa:
 								enviar(fileSystemSocket, cop_archivo_programa,paqueteRecibido->tamanio ,paqueteRecibido->data);
@@ -164,133 +162,150 @@ int main(void) {
 								memcpy(&cantidadElementosBloques ,paqueteRecibido->data + desplazamiento,sizeof(int));
 								desplazamiento+= sizeof(int);
 
-								for(i=0;i<cantidadElementosBloques;i++){
-									int* bloque = malloc(sizeof(int));
-									memcpy(bloque, paqueteRecibido->data + desplazamiento, sizeof(int));
-									desplazamiento+= sizeof(int);
-									list_add(archivoNodo->bloquesRelativos, bloque);
-								}
-
-								//Lista nodos (t_nodoxbloques)
-								int cantidadElementosNodos = 0;
-								memcpy(&cantidadElementosNodos ,paqueteRecibido->data + desplazamiento,sizeof(int));
-								desplazamiento+= sizeof(int);
-								t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
-								nodoBloques->bloques = list_create();
-								for(i=0;i<cantidadElementosNodos;i++){
-									int longitudNombreNodo = 0;
-									memcpy(&longitudNombreNodo, paqueteRecibido->data + desplazamiento, sizeof(int));
-									desplazamiento+=sizeof(int);
-
-									char* idNodo= malloc(longitudNombreNodo);
-									memcpy(idNodo ,paqueteRecibido->data + desplazamiento,longitudNombreNodo);
-									desplazamiento+= longitudNombreNodo;
-									nodoBloques->idNodo = idNodo;
-
-									int longitudIp;
-									memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
-									desplazamiento += sizeof(int);
-
-									nodoBloques->ip =  malloc(longitudIp);
-									memcpy(nodoBloques->ip, paqueteRecibido->data + desplazamiento, longitudIp);
-									desplazamiento += longitudIp;
-
-									memcpy(&nodoBloques->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
-									desplazamiento += sizeof(int);
-									//desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
-
-									//cantidad elementos lista bloques (t_infobloque)
-									int cantidadElementos = 0;
-									memcpy(&cantidadElementos ,paqueteRecibido->data + desplazamiento,sizeof(int));
-									desplazamiento+= sizeof(int);
-									for(i=0;i<cantidadElementos;i++){
-										t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
-										int bloqueAbsoluto = 0;
-										memcpy(&bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
-										desplazamiento+=sizeof(int);
-										infoBloque->bloqueAbsoluto = bloqueAbsoluto;
-
-										int bloqueRelativo = 0;
-										memcpy(&bloqueRelativo, paqueteRecibido->data + desplazamiento, sizeof(int));
-										desplazamiento+=sizeof(int);
-										infoBloque->bloqueRelativo = bloqueRelativo;
-
-										int finBloque = 0;
-										memcpy(&finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
-										desplazamiento+=sizeof(int);
-										infoBloque->finBloque = finBloque;
-										list_add(nodoBloques->bloques, infoBloque);
+								if(cantidadElementosBloques == -1){
+									//no encontro el archivo
+									bool esElArchivo(void* elem){
+										return string_equals_ignore_case(((t_socket_archivo*)elem)->archivo,archivoNodo->pathArchivo);
 									}
-									list_add(archivoNodo->nodos  ,nodoBloques);
-								}
+									t_socket_archivo* socketArchivo = list_find(masters, esElArchivo);
 
-								void armarListaWorker(void* elem){
-									t_nodoxbloques* nodoxbloque = ((t_nodoxbloques*)elem);
-									t_clock* clock= malloc(sizeof(t_clock));
-									clock->disponibilidad = configuracion.DISPONIBILIDAD_BASE;
-									clock->worker_id = string_duplicate(nodoxbloque->idNodo);
-									clock->ip = string_duplicate(nodoxbloque->ip);
-									clock->puerto = nodoxbloque->puerto;
-									clock->bloques = nodoxbloque->bloques;
-									list_add(tabla->workers, clock );
-								}
-
-								list_iterate(archivoNodo->nodos, armarListaWorker);
-								t_estados* estadosxjob=malloc(sizeof(t_estados));
-								estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
-								estadosxjob->socketMaster = socketActual;
-								tabla->archivoNodo=archivoNodo;
-								//Evalua y planifica en base al archivo que tiene que transaformar
-								void planificarBloques(void* bloque){
-									int* nroBloque = (int*)bloque;
-									planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob, NULL);
-									usleep(configuracion.RETARDO_PLANIFICACION);
-								}
-								list_add(tabla_estados, estadosxjob);
-								list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
-								time(&estadosxjob->tiempoInicio);
-								//Devuelve lista con los workers
-								//Ahora lo debe sacar de archivoNodo workersAsignados
-								int cantidadBloquesTotales =list_size(archivoNodo->bloquesRelativos);
-								int cantidadWorkers = list_size(archivoNodo->workersAsignados);
-								desplazamiento=0;
-								void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+sizeof(int)+sizeof(int))+cantidadBloquesTotales*(sizeof(int) + sizeof(int)+15));
-								memcpy(buffer, &cantidadWorkers, sizeof(int)); //int que dice cuantos nodos hay en la lista
-								desplazamiento+=sizeof(int);
-								void datosWorker(void* worker){
-									//por cada nodo mando IP (15)
-									memcpy(buffer+desplazamiento, ((t_clock*)worker)->ip, 15);
-									desplazamiento+=15;
-
-									//puerto (4)
-									memcpy(buffer+desplazamiento, &((t_clock*)worker)->puerto,sizeof(int));
-									desplazamiento+=sizeof(int);
-
-
-									int cantidadBloques=list_size(((t_clock*)worker)->bloques);
-									memcpy(buffer+desplazamiento,&cantidadBloques ,sizeof(int));
-									desplazamiento+=sizeof(int);
-
-									void datosBloques(void* bloque){
-										//por cada bloque a pedir a cada worker mando
-										t_infobloque* infobloque=((t_infobloque*)bloque);
-										//int bloque absoluto (donde esta dentro del nodo)
-										memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
-										desplazamiento+=sizeof(int);
-
-										//int fin de bloque
-										memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
-										desplazamiento+=sizeof(int);
-
-										char* dirTemp=generarDirectorioTemporal();
-										//directorio temporal (11)
-										memcpy(buffer+desplazamiento,  dirTemp, 11);
-										desplazamiento+=11;
+									//list_remove(tablas_planificacion, tabla); encontrar tabla y removerla
+									list_destroy(tabla->workers);
+									list_destroy(archivoNodo->bloquesRelativos);
+									list_destroy(archivoNodo->nodos);
+									list_destroy(archivoNodo->workersAsignados);
+									free(archivoNodo);
+									enviar(socketArchivo->socket,-1,NULL,NULL);
+								}else{
+									for(i=0;i<cantidadElementosBloques;i++){
+										int* bloque = malloc(sizeof(int));
+										memcpy(bloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento+= sizeof(int);
+										list_add(archivoNodo->bloquesRelativos, bloque);
 									}
-									list_iterate(((t_clock*)worker)->bloques, datosBloques);
+
+									//Lista nodos (t_nodoxbloques)
+									int cantidadElementosNodos = 0;
+									memcpy(&cantidadElementosNodos ,paqueteRecibido->data + desplazamiento,sizeof(int));
+									desplazamiento+= sizeof(int);
+									t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
+									nodoBloques->bloques = list_create();
+									for(i=0;i<cantidadElementosNodos;i++){
+										int longitudNombreNodo = 0;
+										memcpy(&longitudNombreNodo, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento+=sizeof(int);
+
+										char* idNodo= malloc(longitudNombreNodo);
+										memcpy(idNodo ,paqueteRecibido->data + desplazamiento,longitudNombreNodo);
+										desplazamiento+= longitudNombreNodo;
+										nodoBloques->idNodo = idNodo;
+
+										int longitudIp;
+										memcpy(&longitudIp, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento += sizeof(int);
+
+										nodoBloques->ip =  malloc(longitudIp);
+										memcpy(nodoBloques->ip, paqueteRecibido->data + desplazamiento, longitudIp);
+										desplazamiento += longitudIp;
+
+										memcpy(&nodoBloques->puerto, paqueteRecibido->data + desplazamiento, sizeof(int));
+										desplazamiento += sizeof(int);
+										//desplazamiento += sizeof(int);//me vuelvo a desplazar por el tamanio ya que lo ignoro
+
+										//cantidad elementos lista bloques (t_infobloque)
+										int cantidadElementos = 0;
+										memcpy(&cantidadElementos ,paqueteRecibido->data + desplazamiento,sizeof(int));
+										desplazamiento+= sizeof(int);
+										for(i=0;i<cantidadElementos;i++){
+											t_infobloque* infoBloque = malloc(sizeof(t_infobloque));
+											int bloqueAbsoluto = 0;
+											memcpy(&bloqueAbsoluto, paqueteRecibido->data + desplazamiento, sizeof(int));
+											desplazamiento+=sizeof(int);
+											infoBloque->bloqueAbsoluto = bloqueAbsoluto;
+
+											int bloqueRelativo = 0;
+											memcpy(&bloqueRelativo, paqueteRecibido->data + desplazamiento, sizeof(int));
+											desplazamiento+=sizeof(int);
+											infoBloque->bloqueRelativo = bloqueRelativo;
+
+											int finBloque = 0;
+											memcpy(&finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
+											desplazamiento+=sizeof(int);
+											infoBloque->finBloque = finBloque;
+											list_add(nodoBloques->bloques, infoBloque);
+										}
+										list_add(archivoNodo->nodos  ,nodoBloques);
+									}
+
+									void armarListaWorker(void* elem){
+										t_nodoxbloques* nodoxbloque = ((t_nodoxbloques*)elem);
+										t_clock* clock= malloc(sizeof(t_clock));
+										clock->disponibilidad = configuracion.DISPONIBILIDAD_BASE;
+										clock->worker_id = string_duplicate(nodoxbloque->idNodo);
+										clock->ip = string_duplicate(nodoxbloque->ip);
+										clock->puerto = nodoxbloque->puerto;
+										clock->bloques = nodoxbloque->bloques;
+										list_add(tabla->workers, clock );
+									}
+
+									list_iterate(archivoNodo->nodos, armarListaWorker);
+									t_estados* estadosxjob=malloc(sizeof(t_estados));
+									estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
+									estadosxjob->socketMaster = socketActual;
+									tabla->archivoNodo=archivoNodo;
+									//Evalua y planifica en base al archivo que tiene que transaformar
+									void planificarBloques(void* bloque){
+										int* nroBloque = (int*)bloque;
+										planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob, NULL);
+										usleep(configuracion.RETARDO_PLANIFICACION);
+									}
+									list_add(tabla_estados, estadosxjob);
+									list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
+									time(&estadosxjob->tiempoInicio);
+									//Devuelve lista con los workers
+									//Ahora lo debe sacar de archivoNodo workersAsignados
+									int cantidadBloquesTotales =list_size(archivoNodo->bloquesRelativos);
+									int cantidadWorkers = list_size(archivoNodo->workersAsignados);
+									desplazamiento=0;
+									void* buffer= malloc(sizeof(int) + cantidadWorkers*(15+sizeof(int)+sizeof(int))+cantidadBloquesTotales*(sizeof(int) + sizeof(int)+15));
+									memcpy(buffer, &cantidadWorkers, sizeof(int)); //int que dice cuantos nodos hay en la lista
+									desplazamiento+=sizeof(int);
+									void datosWorker(void* worker){
+										//por cada nodo mando IP (15)
+										memcpy(buffer+desplazamiento, ((t_clock*)worker)->ip, 15);
+										desplazamiento+=15;
+
+										//puerto (4)
+										memcpy(buffer+desplazamiento, &((t_clock*)worker)->puerto,sizeof(int));
+										desplazamiento+=sizeof(int);
+
+
+										int cantidadBloques=list_size(((t_clock*)worker)->bloques);
+										memcpy(buffer+desplazamiento,&cantidadBloques ,sizeof(int));
+										desplazamiento+=sizeof(int);
+
+										void datosBloques(void* bloque){
+											//por cada bloque a pedir a cada worker mando
+											t_infobloque* infobloque=((t_infobloque*)bloque);
+											//int bloque absoluto (donde esta dentro del nodo)
+											memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));//todo ver seba como refactorizamos esto
+											desplazamiento+=sizeof(int);
+
+											//int fin de bloque
+											memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
+											desplazamiento+=sizeof(int);
+
+											char* dirTemp=generarDirectorioTemporal();
+											//directorio temporal (11)
+											memcpy(buffer+desplazamiento,  dirTemp, 11);
+											desplazamiento+=11;
+										}
+										list_iterate(((t_clock*)worker)->bloques, datosBloques);
+									}
+									list_iterate(archivoNodo->workersAsignados, datosWorker);
+									//aca buscar el socket que le corresponde a ese archivo y enviar a ese socket (vamos a asumir que no puede haber dos master trabajando sobre el mismo archivo al mismo tiempo)
+									enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 								}
-								list_iterate(archivoNodo->workersAsignados, datosWorker);
-								enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
 							}
 							break;
 							case cop_master_archivo_a_transformar:
@@ -299,7 +314,14 @@ int main(void) {
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo= malloc(paqueteRecibido->tamanio);
 								memcpy(pathArchivo, paqueteRecibido->data, paqueteRecibido->tamanio);
-								enviar(socketFS,cop_yama_info_fs,strlen(pathArchivo),pathArchivo);
+								enviar(socketFS,cop_yama_info_fs,strlen(pathArchivo)+1,pathArchivo);
+
+								void setearArchivo(void* elem){
+									if(((t_socket_archivo*)elem)->socket == socketActual){
+										((t_socket_archivo*)elem)->archivo = pathArchivo;
+									}
+								}
+								list_iterate(masters, setearArchivo);
 							}
 							break;
 							case cop_master_estados_workers:
@@ -733,6 +755,7 @@ int main(void) {
 												((t_job*)elem)->estado = error;
 												tabla=((t_job*)elem)->planificacion;
 											}
+											//todo leila aca chequear que jobs finalizados sea distinto de null
 											list_iterate(jobsFinalizados->contenido, marcarComoError);
 
 											void eliminarJobsDelMaster(void* elem){

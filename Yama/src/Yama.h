@@ -55,6 +55,10 @@ typedef struct t_estados{
 	time_t tiempoInicio;
 } t_estados;
 
+typedef struct t_socket_archivo{
+	int socket;
+	char* archivo;
+}t_socket_archivo;
 
 
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Yama/configYama.cfg";
