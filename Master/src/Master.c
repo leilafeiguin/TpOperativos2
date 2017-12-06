@@ -25,8 +25,8 @@ char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
 	char* scriptTransf = "transformador.py";
 	char* scriptReduc = "reductor.py";
-    char* archivoOrigen = "yamafs://base/nombres.csv";
-	char* archivoDestino = "yamafs://nombres.csv";
+    char* archivoOrigen = "yamafs://hola.txt";
+	char* archivoDestino = "yamafs://hellou.csv";
 
 
 //	char* scriptTransf = argv[0];
@@ -56,6 +56,9 @@ int main(int argc, char** argv) {
 	if(paqueteRecibido->codigo_operacion == -1){
 		log_trace(logger,"Se cayo Yama, finaliza Master.\n");
 		exit(-1);
+	}else if(paqueteRecibido->codigo_operacion == -2){
+		log_trace(logger,"El path ingresado no existe en el FS.\n");
+		exit(-2);
 	}else if(paqueteRecibido->codigo_operacion == cop_yama_lista_de_workers){
 		t_archivoxnodo* archivoNodo= malloc(sizeof(t_archivoxnodo));
 		archivoNodo->bloquesRelativos =  list_create();

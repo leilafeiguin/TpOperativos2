@@ -138,7 +138,7 @@ int main(void) {
 							{
 								socketFS = socketActual;
 								t_tabla_planificacion* tabla= malloc(sizeof(t_tabla_planificacion));
-								list_add(tablas_planificacion, tabla);
+
 								tabla->workers = list_create();
 
 								//Deserializacion
@@ -162,21 +162,22 @@ int main(void) {
 								memcpy(&cantidadElementosBloques ,paqueteRecibido->data + desplazamiento,sizeof(int));
 								desplazamiento+= sizeof(int);
 
-								if(cantidadElementosBloques == -1){
+								bool esElArchivo(void* elem){
+									return string_equals_ignore_case(((t_socket_archivo*)elem)->archivo,archivoNodo->pathArchivo);
+								}
+								t_socket_archivo* socketArchivo = list_find(masters, esElArchivo);
+								if(cantidadElementosBloques == -2){
 									//no encontro el archivo
-									bool esElArchivo(void* elem){
-										return string_equals_ignore_case(((t_socket_archivo*)elem)->archivo,archivoNodo->pathArchivo);
-									}
-									t_socket_archivo* socketArchivo = list_find(masters, esElArchivo);
-
-									//list_remove(tablas_planificacion, tabla); encontrar tabla y removerla
 									list_destroy(tabla->workers);
 									list_destroy(archivoNodo->bloquesRelativos);
 									list_destroy(archivoNodo->nodos);
 									list_destroy(archivoNodo->workersAsignados);
 									free(archivoNodo);
-									enviar(socketArchivo->socket,-1,NULL,NULL);
+									free(tabla->archivo);
+									free(tabla);
+									enviar(socketArchivo->socket,-2,NULL,NULL);
 								}else{
+									list_add(tablas_planificacion, tabla);
 									for(i=0;i<cantidadElementosBloques;i++){
 										int* bloque = malloc(sizeof(int));
 										memcpy(bloque, paqueteRecibido->data + desplazamiento, sizeof(int));
@@ -244,7 +245,7 @@ int main(void) {
 										clock->worker_id = string_duplicate(nodoxbloque->idNodo);
 										clock->ip = string_duplicate(nodoxbloque->ip);
 										clock->puerto = nodoxbloque->puerto;
-										clock->bloques = nodoxbloque->bloques;
+									 	clock->bloques = list_create();
 										list_add(tabla->workers, clock );
 									}
 
@@ -252,12 +253,14 @@ int main(void) {
 									t_estados* estadosxjob=malloc(sizeof(t_estados));
 									estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
 									estadosxjob->socketMaster = socketActual;
+									estadosxjob->contenido = list_create();
 									tabla->archivoNodo=archivoNodo;
+									tabla->clock_actual = tabla->workers->head;
 									//Evalua y planifica en base al archivo que tiene que transaformar
 									void planificarBloques(void* bloque){
 										int* nroBloque = (int*)bloque;
 										planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob, NULL);
-										usleep(configuracion.RETARDO_PLANIFICACION);
+										sleep(configuracion.RETARDO_PLANIFICACION);
 									}
 									list_add(tabla_estados, estadosxjob);
 									list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
@@ -279,7 +282,6 @@ int main(void) {
 										memcpy(buffer+desplazamiento, &((t_clock*)worker)->puerto,sizeof(int));
 										desplazamiento+=sizeof(int);
 
-
 										int cantidadBloques=list_size(((t_clock*)worker)->bloques);
 										memcpy(buffer+desplazamiento,&cantidadBloques ,sizeof(int));
 										desplazamiento+=sizeof(int);
@@ -296,15 +298,13 @@ int main(void) {
 											desplazamiento+=sizeof(int);
 
 											char* dirTemp=generarDirectorioTemporal();
-											//directorio temporal (11)
-											memcpy(buffer+desplazamiento,  dirTemp, 11);
-											desplazamiento+=11;
+											memcpy(buffer+desplazamiento,  dirTemp, strlen(dirTemp)+1);
+											desplazamiento+=strlen(dirTemp)+1;
 										}
 										list_iterate(((t_clock*)worker)->bloques, datosBloques);
 									}
 									list_iterate(archivoNodo->workersAsignados, datosWorker);
-									//aca buscar el socket que le corresponde a ese archivo y enviar a ese socket (vamos a asumir que no puede haber dos master trabajando sobre el mismo archivo al mismo tiempo)
-									enviar(socketActual,cop_yama_lista_de_workers,desplazamiento,buffer);
+									enviar(socketArchivo->socket,cop_yama_lista_de_workers,desplazamiento,buffer);
 								}
 							}
 							break;
@@ -318,10 +318,12 @@ int main(void) {
 
 								void setearArchivo(void* elem){
 									if(((t_socket_archivo*)elem)->socket == socketActual){
-										((t_socket_archivo*)elem)->archivo = pathArchivo;
+										((t_socket_archivo*)elem)->archivo = str_replace(pathArchivo, "yamafs://", "");
 									}
 								}
+
 								list_iterate(masters, setearArchivo);
+								free(pathArchivo);
 							}
 							break;
 							case cop_master_estados_workers:
@@ -739,10 +741,22 @@ int main(void) {
 										printf("Se cayo FS, finaliza Yama.\n");
 										exit(-1);
 									}else {
+
 										bool buscarXSocket(void* elem){
-											return *((int*)elem) == socketActual;
+											return ((t_socket_archivo*)elem)->socket == socketActual;
 										}
 										if(list_any_satisfy(masters, buscarXSocket)){
+
+											bool buscarXSocket(void* elem){
+												return ((t_socket_archivo*)elem)->socket == socketActual;
+											}
+
+											void destruir_socket_archivo(void* elem){
+												free(((t_socket_archivo*)elem)->archivo);
+												free(elem);
+											}
+
+											list_remove_and_destroy_by_condition(masters, buscarXSocket,destruir_socket_archivo);
 											printf("Se cayo un Master. \n");
 											t_tabla_planificacion* tabla;
 
@@ -755,34 +769,49 @@ int main(void) {
 												((t_job*)elem)->estado = error;
 												tabla=((t_job*)elem)->planificacion;
 											}
-											//todo leila aca chequear que jobs finalizados sea distinto de null
-											list_iterate(jobsFinalizados->contenido, marcarComoError);
 
-											void eliminarJobsDelMaster(void* elem){
-												t_clock* clock = (t_clock*)elem;
-												free(clock->ip);
-												free(clock->worker_id);
-												void destruirBloques(void* elemAux){
-													free(((t_infobloque*)elemAux)->dirTemporal);
-													free(((t_infobloque*)elemAux));
+											if(jobsFinalizados != NULL){
+												list_iterate(jobsFinalizados->contenido, marcarComoError);
+
+												void eliminarJobsDelMaster(void* elem){
+
+													t_clock* clock = (t_clock*)elem;
+													free(clock->ip);
+													free(clock->worker_id);
+
+													void destruirBloques(void* elemAux){
+														free(((t_infobloque*)elemAux)->dirTemporal);
+														free(((t_infobloque*)elemAux));
+													}
+
+													list_destroy_and_destroy_elements(clock->bloques, destruirBloques);
+													free(clock);
 												}
-												list_destroy_and_destroy_elements(clock->bloques, destruirBloques);
-												free(clock);
+
+												list_destroy_and_destroy_elements(tabla->workers, eliminarJobsDelMaster);
+												free(tabla->archivo);
+
+												void destruirBloques(void* elem){
+													free(elem);
+												}
+
+												list_destroy_and_destroy_elements((tabla->archivoNodo->bloquesRelativos), destruirBloques);
+												free(tabla->archivoNodo->pathArchivo);
+
+												void destruirNodos (void* elem){
+													free(((t_infobloque*)elem)->dirTemporal);
+													free((t_infobloque*)elem);
+												}
+
+												list_destroy_and_destroy_elements(tabla->archivoNodo->nodos, destruirNodos);
+												free(tabla->archivoNodo);
+												free(tabla);
+
 											}
-											list_destroy_and_destroy_elements(tabla->workers, eliminarJobsDelMaster);
-											free(tabla->archivo);
-											void destruirBloques(void* elem){
-												free(elem);
-											}
-											list_destroy_and_destroy_elements((tabla->archivoNodo->bloquesRelativos), destruirBloques);
-											free(tabla->archivoNodo->pathArchivo);
-											void destruirNodos (void* elem){
-												free(((t_infobloque*)elem)->dirTemporal);
-												free((t_infobloque*)elem);
-											}
-											list_destroy_and_destroy_elements(tabla->archivoNodo->nodos, destruirNodos);
-											free(tabla->archivoNodo);
-											free(tabla);
+
+											close(socketActual);
+											FD_CLR(socketActual, &master);
+
 										}
 									}
 								}
@@ -816,6 +845,16 @@ int main(void) {
 									t_estados* estados = list_find(tabla_estados, buscarXArchivoYMaster);
 									time_t tiempoFinal=time(NULL);
 
+									bool buscarXSocket(void* elem){
+										return ((t_socket_archivo*)elem)->socket == socketActual;
+									}
+
+									void destruir_socket_archivo(void* elem){
+										free(((t_socket_archivo*)elem)->archivo);
+										free(elem);
+									}
+
+									list_remove_and_destroy_by_condition(masters, buscarXSocket,destruir_socket_archivo);
 									//Tiempo total de Ejecución del Job.
 									double tiempoTotal = difftime(tiempoFinal, estados->tiempoInicio);
 
@@ -994,7 +1033,7 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 		return string_equals_ignore_case(((t_clock*)tabla->clock_actual->data)->worker_id , ((t_nodoxbloques*)elem)->idNodo);
 	}
 	t_nodoxbloques* nodoWorker=list_find(archivo->nodos, buscarNodoWorker);
-	nodoWorker->bloques = list_create();
+
 
 	bool existeBloqueEnWorker(void* elem){
 		return numeroBloque == ((t_infobloque*)elem)->bloqueRelativo;

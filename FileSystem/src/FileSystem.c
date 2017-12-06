@@ -334,6 +334,19 @@ int main(void) {
 					enviar(socketYama, cop_yama_info_fs, desplazamiento, buffer);
 				} else {
 					//todo handlear error
+					void* buffer= malloc(sizeof(int) + strlen(pathArchivo)+1 + sizeof(int));
+					int desplazamiento=0;
+					int cantidadElementosBloques= -2;
+					int tamanioNombre=strlen(pathArchivo)+1;
+					memcpy(buffer + desplazamiento,&tamanioNombre, sizeof(int));
+					desplazamiento += sizeof(int);
+
+					memcpy(buffer + desplazamiento, pathArchivo,  strlen(pathArchivo)+1);
+					desplazamiento +=  strlen(pathArchivo)+1;
+
+					memcpy(buffer + desplazamiento, &cantidadElementosBloques, sizeof(int));
+					desplazamiento += sizeof(int);
+					enviar(socketYama, cop_yama_info_fs, desplazamiento, buffer);
 				}
 			}
 				break;

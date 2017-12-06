@@ -159,12 +159,15 @@ t_paquete* recibir(un_socket socket_para_recibir) {
 	recv(socket_para_recibir, &paquete_recibido->tamanio, sizeof(int),
 	MSG_WAITALL);
 
-	void * informacion_recibida = malloc(paquete_recibido->tamanio);
+	if(paquete_recibido->tamanio > 0)
+	{
+		void * informacion_recibida = malloc(paquete_recibido->tamanio);
 
-	recv(socket_para_recibir, informacion_recibida, paquete_recibido->tamanio,
-	MSG_WAITALL);
+			recv(socket_para_recibir, informacion_recibida, paquete_recibido->tamanio,
+			MSG_WAITALL);
 
-	paquete_recibido->data = informacion_recibida;
+			paquete_recibido->data = informacion_recibida;
+	}
 
 	return paquete_recibido;
 }
