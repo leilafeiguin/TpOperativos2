@@ -53,11 +53,7 @@ int main(void) {
 	fileSystem.tamanio = 0;
 
 	cargarDirectoriosDesdeArchivo();
-	DIR* dir = opendir("/metadata/archivos/");
-	if (dir){
-		cargarArchivos();
-		closedir(dir);
-	}
+
 	// ----------------------------------------------
 	// ----------------------------------------------
 	// ----------------------------------------------
@@ -129,7 +125,6 @@ int main(void) {
 			esperar_handshake(socketNuevo, paqueteRecibido, cop_handshake_datanode);
 			log_trace(logger, "Se conecto un nodo\n");
 			cargarArchivoTablaNodos();
-			cargarArchivos();
 
 			t_paquete* paqueteRecibido = recibir(socketNuevo);
 			//deserializa
@@ -215,6 +210,11 @@ int main(void) {
 		}
 	}
 
+	DIR* dir = opendir("/metadata/archivos/");
+	if (dir){
+		cargarArchivos();
+		closedir(dir);
+	}
 		//CONEXIONES
 		while (1) {
 			t_paquete* paqueteRecibido = recibir(socketYama);
@@ -1785,6 +1785,12 @@ int main(void) {
 					memcpy(copia1->nroNodo,auxNNodo , strlen(auxNNodo)+1);
 					memcpy(&copia1->nroBloque, &numeroBloque, sizeof(int));
 					unBloque->copia1 = copia1;
+					bool buscarPorNodo(void* elem){
+						return string_equals_ignore_case(((t_nodo*)elem)->nroNodo,copia1->nroNodo);
+					}
+					t_nodo* unNodo = list_find(fileSystem.ListaNodos,(void*)buscarPorNodo);
+					copia1->ip = string_duplicate(unNodo->ip);
+					copia1->puerto = unNodo->puertoDataNode;
 					free(auxNNodo);
 					free(auxNBloque);
 					free(line);
@@ -1806,6 +1812,12 @@ int main(void) {
 					memcpy(copia2->nroNodo,auxNNodo,strlen(auxNNodo)+1);
 					memcpy(&copia2->nroBloque, &numeroBloque, sizeof(int));
 					unBloque->copia2 = copia2;
+					bool buscarPorNodo(void* elem){
+						return string_equals_ignore_case(((t_nodo*)elem)->nroNodo,copia1->nroNodo);
+					}
+					t_nodo* unNodo = list_find(fileSystem.ListaNodos,(void*)buscarPorNodo);
+					copia2->ip = string_duplicate(unNodo->ip);
+					copia2->puerto = unNodo->puertoDataNode;
 					free(auxNNodo);
 					free(auxNBloque);
 					free(line);
