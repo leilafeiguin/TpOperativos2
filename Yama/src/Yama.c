@@ -189,9 +189,10 @@ int main(void) {
 									int cantidadElementosNodos = 0;
 									memcpy(&cantidadElementosNodos ,paqueteRecibido->data + desplazamiento,sizeof(int));
 									desplazamiento+= sizeof(int);
-									t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
-									nodoBloques->bloques = list_create();
+
 									for(i=0;i<cantidadElementosNodos;i++){
+										t_nodoxbloques* nodoBloques = malloc(sizeof(t_nodoxbloques));
+										nodoBloques->bloques = list_create();
 										int longitudNombreNodo = 0;
 										memcpy(&longitudNombreNodo, paqueteRecibido->data + desplazamiento, sizeof(int));
 										desplazamiento+=sizeof(int);
@@ -260,7 +261,7 @@ int main(void) {
 									void planificarBloques(void* bloque){
 										int* nroBloque = (int*)bloque;
 										planificarBloque(tabla , *nroBloque, archivoNodo,estadosxjob, NULL);
-										sleep(configuracion.RETARDO_PLANIFICACION);
+										usleep(configuracion.RETARDO_PLANIFICACION * 1000);
 									}
 									list_add(tabla_estados, estadosxjob);
 									list_iterate(archivoNodo->bloquesRelativos, planificarBloques);
@@ -1089,6 +1090,8 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 	}
 	else{ //el worker apuntado por el clock actual no posee ese bloque
 		t_link_element* elementoActual= tabla->clock_actual->next;
+		if(elementoActual == NULL)
+			elementoActual = tabla->workers->head;
 		t_link_element* elementoOriginal = tabla->clock_actual;
 		bool encontro=false;
 		while(!encontro)
