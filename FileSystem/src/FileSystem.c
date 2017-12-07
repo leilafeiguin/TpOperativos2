@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <dirent.h>
-
+#include <ftw.h>
 t_log* logger;
 
 int main(void) {
@@ -160,18 +160,6 @@ int main(void) {
 			memcpy(infoNodo->nombreNodo, paqueteRecibido->data + desplazamiento, longitudNombre);
 			desplazamiento += longitudNombre;
 
-			int cantidad = (infoNodo->tamanio / (1024 * 1024)) / 8;
-			if ((infoNodo->tamanio / (1024 * 1024)) % 8 != 0)
-				cantidad++;
-
-			char data[cantidad];
-			t_bitarray* unBitmap;
-			int i = 0;
-			for (; i < cantidad; i++) {
-				data[i] = 0b00000000;
-			}
-
-			unBitmap = bitarray_create(data, cantidad);
 
 			bool esElNodo(t_nodo* nodo){
 				if(strcmp(nodo->nroNodo,infoNodo->nombreNodo)==0){
@@ -189,6 +177,19 @@ int main(void) {
 				unNodo->puertoDataNode = infoNodo->puertoDataNode;
 				cargarBitmapDesdeArchivo(unNodo);
 			}else{
+				int cantidad = (infoNodo->tamanio / (1024 * 1024)) / 8;
+				if ((infoNodo->tamanio / (1024 * 1024)) % 8 != 0)
+					cantidad++;
+
+				char data[cantidad];
+				t_bitarray* unBitmap;
+				int i = 0;
+				for (; i < cantidad; i++) {
+					data[i] = 0b00000000;
+				}
+
+				unBitmap = bitarray_create(data, cantidad);
+
 				t_nodo* unNodo = nodo_create(infoNodo->nombreNodo, false, unBitmap,
 						socketNuevo, infoNodo->ip, infoNodo->puertoWorker,
 						infoNodo->tamanio, (infoNodo->tamanio / (1024 * 1024)), infoNodo->puertoDataNode);
@@ -823,7 +824,16 @@ int main(void) {
 		void liberar(void* elem) {
 			free(elem);
 		}
-		list_destroy_and_destroy_elements(fileSystem.ListaNodos, liberar);
+		//list_destroy_and_destroy_elements(fileSystem.ListaNodos, liberar);
+		void limpiarBitmapNodo(t_nodo* unNodo){
+			size_t tam = unNodo->bitmap->size;
+			int i=0;
+			for(;i<tam;i++){
+				bitarray_set_bit(unNodo->bitmap,i);
+			}
+			return;
+		}
+		list_iterate(fileSystem.ListaNodos,(void*) limpiarBitmapNodo);
 		list_destroy_and_destroy_elements(fileSystem.listaArchivos, liberar);
 		t_list* nodos = list_create();
 		fileSystem.ListaNodos = nodos;
@@ -1002,7 +1012,8 @@ int main(void) {
 		}
 		t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 		if (archivoEncontrado == NULL) {
-			fprintf("El path %s no se encuentra en el FS\n", path);
+			printf("El archivo no se encuentra en el FS\n");
+			log_trace(logger, "El archivo no se encuentra en el FS\n");
 			return;
 		}
 		void* buffer = malloc(archivoEncontrado->tamanio);
@@ -1055,6 +1066,7 @@ int main(void) {
 		fclose(fp);
 		char* comando =string_from_format("md5sum %s", pathArchivo);
 		system(comando);
+		free(buffer);
 	}
 
 	void cat(char* path) {
@@ -1213,7 +1225,7 @@ int main(void) {
 				continue;
 			} else {
 				add_history(linea);
-				char** parametros;
+				char** parametros=NULL;
 				int lineaLength = strlen(linea);
 				char *lineaCopia = (char*) calloc(lineaLength + 1,
 						sizeof(char));
@@ -1567,7 +1579,7 @@ int main(void) {
 						free(line);
 						line = malloc(200);
 						i = 0;
-						int tamanio;
+						int tamanio=0;
 						int libre;
 						for(;i<cantidadNodos;i++){
 							//Total
@@ -1615,13 +1627,14 @@ int main(void) {
 	void actualizarArchivoTablaNodos() {
 		crear_subcarpeta("metadata");
 		FILE * file = fopen("metadata/nodos.bin", "w");
-		if (file != NULL) {
+		int cantidadNodos;
+		cantidadNodos = list_size(fileSystem.ListaNodos);
+
+		if (file != NULL && cantidadNodos > 0) {
 			int libreTotal;
 			libreTotal = 0;
 			int tamanioTotal;
 			tamanioTotal = 0;
-			int cantidadNodos;
-			cantidadNodos = list_size(fileSystem.ListaNodos);
 			int libresPorNodo[cantidadNodos];
 			int tamanioPorNodo[cantidadNodos];
 			char* nodos[cantidadNodos];
@@ -1653,6 +1666,15 @@ int main(void) {
 	void actualizarTablaArchivos() {
 		//limpiar todas las metadata
 		int i = 0;
+		char* ubicacionCarpeta = string_from_format("metadata/archivos/");
+		int limpiarArchivos(const char *fpath, const struct stat *sb,
+	             int tflag){
+			if(tflag == FTW_F)
+				remove(fpath);
+
+			return 0;
+		}
+		ftw(ubicacionCarpeta,limpiarArchivos, 20);
 		int tamanio = list_size(fileSystem.listaArchivos);
 		for (; i < tamanio; i++) {
 			actualizarArchivo(list_get(fileSystem.listaArchivos, i));
@@ -1901,7 +1923,7 @@ int main(void) {
 		int i = 0;
 		int indicePadre = 0;
 		t_directory* directorioActual = NULL;
-		for (; i < cantidadDirectorios - 1; i++) {
+		for (; i < cantidadDirectorios; i++) {
 			if (directorios[i] == NULL)
 				break;
 			directorioActual = buscarDirectorio(indicePadre, directorios[i]);
