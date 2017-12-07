@@ -333,7 +333,6 @@ int main(void) {
 					list_iterate(archivoxnodo->nodos, copiarABufferNodos);
 					enviar(socketYama, cop_yama_info_fs, desplazamiento, buffer);
 				} else {
-					//todo handlear error
 					void* buffer= malloc(sizeof(int) + strlen(pathArchivo)+1 + sizeof(int));
 					int desplazamiento=0;
 					int cantidadElementosBloques= -2;
