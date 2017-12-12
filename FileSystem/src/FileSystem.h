@@ -44,6 +44,7 @@ typedef struct ubicacionBloque {
 	int nroBloque; //en nodo
 	char* ip;
 	int puerto;
+	int puertoWorker;
 } ubicacionBloque;
 
 typedef struct t_bloque {

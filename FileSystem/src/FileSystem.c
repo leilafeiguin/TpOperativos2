@@ -310,7 +310,7 @@ int main(void) {
 						memcpy(buffer + desplazamiento,	(((t_nodoxbloques*) elemento)->ip),longitudIP);
 						desplazamiento += longitudIP;
 
-						memcpy(buffer + desplazamiento,	&((t_nodoxbloques*) elemento)->puerto,sizeof(int));
+						memcpy(buffer + desplazamiento,	&((t_nodoxbloques*) elemento)->puertoWorker,sizeof(int));
 						desplazamiento += sizeof(int);
 
 						int cantidadelementos = list_size(((t_nodoxbloques*) elemento)->bloques);
@@ -418,6 +418,7 @@ int main(void) {
 			nodo->idNodo = copia->nroNodo;
 			nodo->ip = string_duplicate(copia->ip);
 			nodo->puerto = copia->puerto;
+			nodo->puertoWorker = copia->puertoWorker;
 			list_add(archivoxnodo->nodos, nodo);
 		}
 		t_infobloque* infobloque = malloc(sizeof(t_infobloque));
@@ -542,6 +543,7 @@ int main(void) {
 				unBloqueAux->copia1->ip = malloc(strlen(nodo1->ip)+1);
 				unBloqueAux->copia1->ip = string_duplicate(nodo1->ip);
 				unBloqueAux->copia1->puerto = nodo1->puertoDataNode;
+				unBloqueAux->copia1->puertoWorker = nodo1->puertoWorker;
 
 				nodo1->libre--;
 				if (nodo1->libre == 0)
@@ -555,6 +557,7 @@ int main(void) {
 				unBloqueAux->copia2->ip = malloc(strlen(nodo2->ip)+1);
 				unBloqueAux->copia2->ip = string_duplicate(nodo2->ip);
 				unBloqueAux->copia2->puerto = nodo2->puertoDataNode;
+				unBloqueAux->copia2->puertoWorker = nodo2->puertoWorker;
 
 				nodo2->libre--;
 				if (nodo2->libre == 0)
