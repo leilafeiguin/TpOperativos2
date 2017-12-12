@@ -350,29 +350,34 @@ void hiloWorker(void* parametros){
 	}
 	struct stat st_script;
 	stat(SCRIPT_TRANSF, &st_script);
-	void* bufferScript = malloc (st_script.st_size);
+	void* bufferScript = malloc (st_script.st_size+1);
 	int MAX_LINE=4096;
 	char singleline[MAX_LINE];
 	while(fgets(singleline, MAX_LINE, fileIN) != NULL){
 		strcat(bufferScript, singleline);
 	}
 	int cantElementos = list_size(worker->bloques);
+
 	//Leer el archivo de script que corresponda segun la etapa (transformacion o reduccion)
 	//Hacer un strlen+1 del buffer donde tenemos el contenido del archivo
 	void* buffer= malloc(sizeof(int) + cantElementos * (sizeof(int)+ strlen(bufferScript)+1 + sizeof(int)+ 11+ sizeof(int)));
+
+	memcpy(buffer+desplazamiento, &cantElementos, sizeof(int));
+	desplazamiento+=sizeof(int);
 	void infoBloque(void* bloque){
 		t_infobloque* infobloque=((t_infobloque*)bloque);
-		struct stat st;
-		memcpy(buffer+desplazamiento, &st.st_size, sizeof(int));
+
+		int longitudScript=strlen(bufferScript)+1;
+		memcpy(buffer+desplazamiento, &longitudScript, sizeof(int));
 		desplazamiento+=sizeof(int);
 
-		memcpy(buffer+desplazamiento, bufferScript, strlen(bufferScript)+1);
-		desplazamiento+=strlen(bufferScript)+1;
+		memcpy(buffer+desplazamiento, bufferScript, longitudScript);
+		desplazamiento+=longitudScript;
 
 		memcpy(buffer+desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));
 		desplazamiento+=sizeof(int);
 
-		memcpy(buffer+desplazamiento, &infobloque->dirTemporal, 11);
+		memcpy(buffer+desplazamiento, infobloque->dirTemporal, 11);
 		desplazamiento+=11;
 
 		memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));

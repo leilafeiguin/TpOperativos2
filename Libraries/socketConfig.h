@@ -130,6 +130,7 @@ typedef struct t_nodoxbloques {
 	t_list* bloques; //t_infobloque
 	char* ip;
 	int puerto;
+	int puertoWorker;
 }t_nodoxbloques;
 
 typedef struct t_infobloque
