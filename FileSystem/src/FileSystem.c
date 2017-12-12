@@ -409,7 +409,7 @@ int main(void) {
 		t_nodoxbloques* nodo;
 
 		bool buscarNodo(void* elem) {
-			return string_equals_ignore_case(((t_nodoxbloques*) elem)->idNodo, bloque->copia1->nroNodo);
+			return string_equals_ignore_case(((t_nodoxbloques*) elem)->idNodo, copia->nroNodo);
 		}
 		nodo = list_find(archivoxnodo->nodos, buscarNodo);
 		if (nodo == NULL) {
@@ -423,7 +423,7 @@ int main(void) {
 		t_infobloque* infobloque = malloc(sizeof(t_infobloque));
 		infobloque->bloqueRelativo = bloque->nroBloque;
 		infobloque->finBloque = bloque->finBloque;
-		infobloque->bloqueAbsoluto = bloque->copia1->nroBloque;
+		infobloque->bloqueAbsoluto = copia->nroBloque;
 		list_add(nodo->bloques, infobloque);
 	}
 
@@ -567,6 +567,13 @@ int main(void) {
 			}
 			list_add(fileSystem.listaArchivos, nuevoArchivo);
 			free(path);
+			void eliminarBloquesPartidos(void* elem1){
+				t_bloque_particion* elem = (t_bloque_particion*)elem1;
+				free(elem->contenido);
+				free(elem);
+			}
+			list_destroy_and_destroy_elements(archivoPartido->bloquesPartidos,eliminarBloquesPartidos);
+			free(archivoPartido);
 			return true;
 		}
 	}
@@ -1362,13 +1369,14 @@ int main(void) {
 	}
 
 	t_nodo* buscar_nodo_libre(char* nodoAnterior) {
-		//todo hacer un random para que no asigne en el mismo orden
 		bool buscarLibre(void* elemento) {
 			return !((t_nodo*) elemento)->ocupado && (nodoAnterior == 0 || ((t_nodo*) elemento)->nroNodo != nodoAnterior);
 		}
 		t_list* nodosCandidatos=list_filter(fileSystem.ListaNodos, buscarLibre);
 		int i=rand() % list_size(nodosCandidatos);
-		return list_get(nodosCandidatos, i);
+		t_nodo* unNodo = list_get(nodosCandidatos, i);
+		list_destroy(nodosCandidatos);
+		return unNodo;
 	}
 
 	int buscarBloque(t_nodo* nodo) {
@@ -1408,6 +1416,9 @@ int main(void) {
 		memcpy(buffer + desplazamiento, bloque->datos_bloque, 1024 * 1024); //datos->bloque
 		desplazamiento += 1024 * 1024;
 		enviar(nodo->socket, cop_datanode_setbloque, desplazamiento, buffer);
+		free(buffer);
+		free(bloque->datos_bloque);
+		free(bloque);
 	}
 
 	t_nodoasignado* escribir_bloque(void* bloque) {
@@ -1441,6 +1452,7 @@ int main(void) {
 		enviar_bloque_a_escribir(numBloque, buffer, nodolibre, bloque_partido->ultimoByteValido);
 		respuesta->bloque2 = numBloque;
 		respuesta->nodo2 = string_duplicate(nodolibre->nroNodo);
+		free(buffer);
 		return respuesta;
 	}
 
@@ -1505,9 +1517,7 @@ int main(void) {
 	}
 
 	void cargarBitmapDesdeArchivo(t_nodo* unNodo){
-		char* aux = malloc(200);
-		memset(aux, '\0', 200);
-		aux = string_from_format("metadata/bitmaps/%s.dat",unNodo->nroNodo);
+		char* aux = string_from_format("metadata/bitmaps/%s.dat",unNodo->nroNodo);
 		FILE * file = fopen(aux, "r");
 		if (file != NULL) {
 			int cantidad = (unNodo->tamanio / (1024 * 1024)) / 8;
@@ -1526,9 +1536,7 @@ int main(void) {
 	void actualizarBitmap(t_nodo* unNodo) {
 		crear_subcarpeta("metadata");
 		crear_subcarpeta("metadata/bitmaps/");
-		char* aux = malloc(200);
-		memset(aux, '\0', 200);
-		aux = string_from_format("metadata/bitmaps/%s.dat",unNodo->nroNodo);
+		char* aux = string_from_format("metadata/bitmaps/%s.dat",unNodo->nroNodo);
 		FILE * file = fopen(aux, "w");
 		if (file != NULL) {
 			fwrite(unNodo->bitmap->bitarray, strlen(unNodo->bitmap->bitarray), 1, file);
