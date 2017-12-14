@@ -130,7 +130,7 @@ int main(void) {
 	un_socket socketConexion=aceptar_conexion(socketServer);
 	if(socketConexion >0)
 	{
-		printf("Antes de fork/n");
+		printf("Antes de fork\n");
 		int pid=fork();
 			switch(pid)
 			{
@@ -139,7 +139,7 @@ int main(void) {
 					break;
 				case 0: // Cuando pid es cero quiere decir que es el proceso hijo
 				{
-					printf("Termine Fork/n");
+					printf("Termine Fork\n");
 					t_paquete* paquete_recibido = recibir(socketConexion);
 					if(paquete_recibido->codigo_operacion == cop_handshake_master){
 						esperar_handshake(socketConexion, paquete_recibido, cop_handshake_master);
@@ -187,7 +187,7 @@ int main(void) {
 										primeraVez=false;
 									}
 
-									printf("Escribiendo bloque en temporal /n");
+									printf("Escribiendo bloque en temporal \n");
 									char* bloque=obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque);
 									char* pathFileBloque= generarDirectorioTemporal("./bloque/");
 
@@ -197,7 +197,7 @@ int main(void) {
 									fclose(fileBloque);
 
 									transformacion(paquete_transformacion->script, pathFileBloque, paquete_transformacion->archivo_temporal);
-									printf("Transforme la concha de la lora/n");
+									printf("Transforme\n");
 								}
 
 								fclose(archivoPaqueteTransformacion);
@@ -437,8 +437,12 @@ char *randstring(size_t length) {
 char* obtenerBloque(int numeroBloque, int tamanioBloque){
 	char* bloque= malloc(tamanioBloque);
 	int posicion = (numeroBloque *1024*1024);
-	memcpy (bloque, archivo + posicion, tamanioBloque);
-	return bloque;
+	memcpy (bloque,archivo + posicion, tamanioBloque);
+	int aux = ftell(strrchr(bloque,'\n'))+1;
+	char* bloqueBien = malloc(aux);
+	memcpy(bloqueBien, bloque, aux);
+	free(bloque);
+	return bloqueBien;
 }
 
 void transformacion(char* script, char* bloque, char* destino){
