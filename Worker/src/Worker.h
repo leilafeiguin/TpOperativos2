@@ -41,4 +41,5 @@ char* obtenerBloque(int numeroBloque, int tamanioBloque);
 char* generarDirectorioTemporal();
 
 char *randstring(size_t length);
-
+void vaciarCarpeta(char*);
+void crear_subcarpeta(char*);

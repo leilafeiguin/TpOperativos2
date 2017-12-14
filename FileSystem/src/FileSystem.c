@@ -210,11 +210,8 @@ int main(void) {
 		}
 	}
 
-	DIR* dir = opendir("/metadata/archivos/");
-	if (dir){
-		cargarArchivos();
-		closedir(dir);
-	}
+	cargarArchivos();
+
 		//CONEXIONES
 		while (1) {
 			t_paquete* paqueteRecibido = recibir(socketYama);
