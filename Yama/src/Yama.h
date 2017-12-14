@@ -2,6 +2,7 @@
 #include <commons/log.h>
 #include <time.h>
 #include <commons/collections/list.h>
+#define MAX_LEN 128
 
 //ESTRUCTURA ARCHIVO CONFIGURACION
 typedef struct yama_configuracion {
@@ -76,6 +77,9 @@ yama_configuracion get_configuracion() {
 	return configuracion;
 }
 
+void print_image(FILE *fptr);
+void imprimir(char*);
+
 void procesar_job(int job, t_job datos);
 
 void sig_handler(int);
@@ -103,3 +107,5 @@ int CalcularWLWorker(t_clock* worker);
 char *randstring(size_t length);
 
 char *str_replace(char *orig, char *rep, char *with);
+
+

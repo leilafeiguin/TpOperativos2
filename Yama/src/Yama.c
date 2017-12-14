@@ -22,6 +22,7 @@ yama_configuracion configuracion;
 t_log* logger;
 t_list* masters; //t_socket_archivo
 int main(void) {
+	imprimir("image.txt");
 	masters= list_create();
 	int socketFS;
 	char* fileLog;
@@ -1156,4 +1157,28 @@ int CalcularWLMax(t_tabla_planificacion* tabla){
 
 int CalcularWLWorker(t_clock* worker){
 	return list_size(worker->bloques);
+}
+
+void imprimir(char* filename){
+	FILE *fptr = NULL;
+
+	if((fptr = fopen(filename,"r")) == NULL)
+	{
+		fprintf(stderr,"error opening %s\n",filename);
+		return;
+	}
+
+	print_image(fptr);
+
+	fclose(fptr);
+
+	return;
+}
+
+void print_image(FILE *fptr)
+{
+	char read_string[MAX_LEN];
+
+	while(fgets(read_string,sizeof(read_string),fptr) != NULL)
+		printf("%s",read_string);
 }

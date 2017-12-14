@@ -38,3 +38,7 @@ worker_configuracion get_configuracion() {
 bool apareo (char* paths [], char* nombre_ordenado);
 void transformacion(char* , char*, char*);
 char* obtenerBloque(int numeroBloque, int tamanioBloque);
+char* generarDirectorioTemporal();
+
+char *randstring(size_t length);
+

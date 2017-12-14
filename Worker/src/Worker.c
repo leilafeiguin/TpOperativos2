@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <time.h>
 
 #define MAX_LINE 4096
 t_log* logger;
@@ -113,12 +114,13 @@ int main(void) {
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
 	fstat(fd, &sb);
 	archivo= mmap(NULL,sb.st_size,PROT_READ,  MAP_SHARED,fd,0); //PROT_READ ??
-	un_socket socketServer=socket_escucha("192.168.0.50", configuracion.PUERTO_WORKER);
+	un_socket socketServer=socket_escucha(configuracion.IP_NODO, configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
 	while(1){
 	un_socket socketConexion=aceptar_conexion(socketServer);
 	if(socketConexion >0)
 	{
+		printf("Antes de fork/n");
 		int pid=fork();
 			switch(pid)
 			{
@@ -127,10 +129,12 @@ int main(void) {
 					break;
 				case 0: // Cuando pid es cero quiere decir que es el proceso hijo
 				{
+					printf("Termine Fork/n");
 					t_paquete* paquete_recibido = recibir(socketConexion);
 					if(paquete_recibido->codigo_operacion == cop_handshake_master){
 						esperar_handshake(socketConexion, paquete_recibido, cop_handshake_master);
 						paquete_recibido = recibir(socketConexion);
+
 						switch(paquete_recibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_worker_transformacion:
 							{
@@ -139,6 +143,12 @@ int main(void) {
 								memcpy(&cantidadElementos, paquete_recibido->data, sizeof(int));
 								desplazamiento += sizeof(int);
 								int i;
+								char* fileTemporal=generarDirectorioTemporal( "./script/");
+								char* fileScript=string_from_format("%s%s" , fileTemporal, ".txt");
+								FILE *archivoPaqueteTransformacion = fopen(fileScript, "w");
+								bool primeraVez=true;
+								chmod(fileScript, 777);
+
 								for(i=0;i<cantidadElementos;i++){
 									t_transf* paquete_transformacion = malloc(sizeof(t_transf));
 									memcpy(&paquete_transformacion->cant_script, paquete_recibido->data+desplazamiento, sizeof(int));
@@ -157,15 +167,34 @@ int main(void) {
 									desplazamiento += paquete_transformacion->cant_archivo_temporal;
 
 									memcpy(&paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
+									desplazamiento += sizeof(int);
 
-									FILE *archivoPaqueteTransformacion = fopen("./archivoPaqueteTransformacion", "wb");
-									fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
-									chmod("./archivoPaqueteTransformacion", 001); //permiso de ejecucion para ese path
-									transformacion(paquete_transformacion->script, obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque), paquete_transformacion->archivo_temporal);
-									char* mensaje = malloc(3);
-									mensaje = "ok";
-									enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);
+
+									if(primeraVez)
+									{
+										fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
+										fflush(archivoPaqueteTransformacion);
+										primeraVez=false;
+									}
+
+									printf("Escribiendo bloque en temporal /n");
+									char* bloque=obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque);
+									char* pathFileBloque= generarDirectorioTemporal("./bloque/");
+									pathFileBloque = string_from_format("%s%i", pathFileBloque,paquete_transformacion->bloq);
+									FILE * fileBloque = fopen(pathFileBloque, "w");
+									fprintf(fileBloque, "%s", bloque);
+									fclose(fileBloque);
+
+									transformacion(paquete_transformacion->script, pathFileBloque, paquete_transformacion->archivo_temporal);
+									printf("Transforme la concha de la lora/n");
 								}
+
+								fclose(archivoPaqueteTransformacion);
+
+								char* mensaje = malloc(3);
+								mensaje = "ok";
+								enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);
+
 							}
 							break;
 							case cop_worker_reduccionLocal:
@@ -365,6 +394,35 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+char* generarDirectorioTemporal(char* carpeta){
+	char* dirTemp= string_new();
+	string_append(&dirTemp, carpeta);
+	string_append(&dirTemp, randstring(5));//todo buscar una funcion que te genere X cantidad de caracteres aleatorios
+	return dirTemp;
+}
+
+char *randstring(size_t length) {
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
+    char *randomString = NULL;
+    if (length){
+    	srand(tm.tm_sec);
+        randomString = malloc(sizeof(char) * (length +1));
+        if (randomString){
+        	int n;
+            for ( n = 0;n < length;n++) {
+                int key = rand() % (int)(sizeof(charset) -1);
+                randomString[n] = charset[key];
+            }
+            randomString[length] = '\0';
+        }
+    }
+    return randomString;
+}
+
+
+
 char* obtenerBloque(int numeroBloque, int tamanioBloque){
 	char* bloque= malloc(tamanioBloque);
 	int posicion = (numeroBloque *1024*1024);
@@ -373,6 +431,6 @@ char* obtenerBloque(int numeroBloque, int tamanioBloque){
 }
 
 void transformacion(char* script, char* bloque, char* destino){
-	char* func =string_from_format("echo %s | %s > %s ", bloque, script, destino);
+	char* func = string_from_format("cat %s | %s | sort -d > %s ", bloque, script, destino);
 	system(func);
 }
