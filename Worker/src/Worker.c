@@ -98,7 +98,7 @@ bool apareo (char* paths [], char* nombre_ordenado){
 void* archivo;
 
 int main(void) {
-	imprimir("image.txt");
+	imprimir("/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Libraries/worker.txt");
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
 	logger = log_create(fileLog, "Worker Logs", 0, 0);

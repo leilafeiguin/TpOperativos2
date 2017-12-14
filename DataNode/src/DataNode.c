@@ -19,7 +19,7 @@
 void* archivo;
 t_log* logger;
 int main(void) {
-	imprimir("image.txt");
+	imprimir("/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Libraries/datanode.txt");
 
 	char* fileLog;
 	fileLog = "DataNodeLogs.txt";

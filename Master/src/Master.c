@@ -23,7 +23,7 @@ char* SCRIPT_REDUC;
 char* ARCHIVO_ORIGEN;
 char* PATH_ARCHIVO_ORIGEN;
 int main(int argc, char** argv) {
-	imprimir("image.txt");
+	imprimir("/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Libraries/master.txt");
 
 	char* scriptTransf = "transformador.py";
 	char* scriptReduc = "reductor.py";

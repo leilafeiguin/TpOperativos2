@@ -23,7 +23,7 @@
 t_log* logger;
 
 int main(void) {
-	imprimir("image.txt");
+	imprimir("/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Libraries/fs.txt");
 	//Logger
 	char* fileLog;
 	fileLog = "FileSystemLogs.txt";
