@@ -22,6 +22,7 @@
 #include <commons/config.h>
 #include <unistd.h>
 #include <commons/collections/list.h>
+#define MAX_LEN 128
 
 
 //0 - 9 Handhsake
@@ -232,6 +233,9 @@ bool comprobar_archivo(char* path);
  *
  */
 char* obtener_mi_ip();
+
+void print_image(FILE *fptr);
+void imprimir(char*);
 
 void leer_bloque_datanode(int numeroBloque, void* bloqueAleer);
 
