@@ -1159,26 +1159,4 @@ int CalcularWLWorker(t_clock* worker){
 	return list_size(worker->bloques);
 }
 
-void imprimir(char* filename){
-	FILE *fptr = NULL;
 
-	if((fptr = fopen(filename,"r")) == NULL)
-	{
-		fprintf(stderr,"error opening %s\n",filename);
-		return;
-	}
-
-	print_image(fptr);
-
-	fclose(fptr);
-
-	return;
-}
-
-void print_image(FILE *fptr)
-{
-	char read_string[MAX_LEN];
-
-	while(fgets(read_string,sizeof(read_string),fptr) != NULL)
-		printf("%s",read_string);
-}

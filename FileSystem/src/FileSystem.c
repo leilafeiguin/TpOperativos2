@@ -23,6 +23,7 @@
 t_log* logger;
 
 int main(void) {
+	imprimir("image.txt");
 	//Logger
 	char* fileLog;
 	fileLog = "FileSystemLogs.txt";
