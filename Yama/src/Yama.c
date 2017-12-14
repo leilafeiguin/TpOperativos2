@@ -30,9 +30,9 @@ int main(void) {
 	tabla_estados= list_create();
 	printf("Inicializando proceso Yama\n");
 	logger = log_create(fileLog, "Yama Logs", 1, 0);
-	log_trace(logger, "Inicializando proceso Yama");
+	log_trace(logger, "Inicializando proceso Yama\n");
     configuracion = get_configuracion();
-	log_trace(logger, "Archivo de configuracion levantado");
+	log_trace(logger, "Archivo de configuracion levantado\n");
 	t_list* tablas_planificacion= list_create();
 	fd_set master;    // master file descriptor list
 	fd_set read_fds;  // temp file descriptor list for select()
@@ -54,7 +54,7 @@ int main(void) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	if ((rv = getaddrinfo(NULL, "9999", &hints, &ai)) != 0) {
+	if ((rv = getaddrinfo(NULL, configuracion.PUERTO_YAMA, &hints, &ai)) != 0) {
 		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
 		exit(1);
 	}
@@ -119,7 +119,7 @@ int main(void) {
 							if (newfd > fd_max) {    //Update el Maximo
 								fd_max = newfd;
 							}
-							log_trace(logger, "Yama recibio una nueva conexion");
+							log_trace(logger, "Recibi una nueva conexion");
 							free(handshake);
 						//No es una nueva conexion -> Recibo el paquete
 						} else {
@@ -127,6 +127,7 @@ int main(void) {
 							switch(paqueteRecibido->codigo_operacion){ //revisar validaciones de habilitados
 							case cop_handshake_master:
 								esperar_handshake(socketActual, paqueteRecibido, cop_handshake_master);
+								log_trace(logger, "Realice handshake con Master.\n");
 								t_socket_archivo* socketArchivo = malloc(sizeof(t_socket_archivo));
 								socketArchivo->socket = socketActual;
 								list_add(masters, socketArchivo);
@@ -137,6 +138,7 @@ int main(void) {
 							break;
 							case cop_yama_info_fs:
 							{
+								log_trace(logger, "Recibi info de FS.\n");
 								socketFS = socketActual;
 								t_tabla_planificacion* tabla= malloc(sizeof(t_tabla_planificacion));
 
@@ -236,9 +238,12 @@ int main(void) {
 											memcpy(&finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
 											desplazamiento+=sizeof(int);
 											infoBloque->finBloque = finBloque;
+											if(cantidadElementos == j-1){
+												infoBloque->finBloque--;
+											}
 											list_add(nodoBloques->bloques, infoBloque);
 										}
-										list_add(archivoNodo->nodos  ,nodoBloques);
+										list_add(archivoNodo->nodos, nodoBloques);
 									}
 
 									void armarListaWorker(void* elem){
@@ -533,6 +538,7 @@ int main(void) {
 								break;
 							case cop_master_estado_reduccion_local:
 							{
+								log_trace(logger, "Recibi de Master estado de Reduccion local.\n");
 								//Recibo de Master
 								int longitudIdWorker;
 								char* workerId;
@@ -709,6 +715,7 @@ int main(void) {
 								break;
 							case cop_master_finalizado:
 							{
+								log_trace(logger, "Master finalizado.\n");
 								int cantidadArchivo;
 								void* nombreArchivo;
 								int tamanioArchivo;
@@ -1035,6 +1042,8 @@ void sig_handler(int signo){
 }
 
 void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob, char* workerIdCaido){
+	char* consolelog =string_from_format("%s%i", "Planifica bloque numero ", numeroBloque);
+	log_trace(logger, consolelog);
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;
 	if(workerIdCaido != NULL){

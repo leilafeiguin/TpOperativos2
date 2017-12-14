@@ -394,7 +394,7 @@ void hiloWorker(void* parametros){
 	t_paquete* paqueteRecibido = recibir(workerSocket);
 	char* mensaje = "";
 	t_estado_master estado ;
-	if(paqueteRecibido->data == NULL){
+	if(paqueteRecibido->codigo_operacion == -1){
 		log_trace(logger, "Se desconecto el nodo /n");
 		mensaje= "ERROR: se desconecto el nodo";
 		estado=error;

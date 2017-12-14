@@ -11,6 +11,7 @@ typedef struct yama_configuracion {
 	int RETARDO_PLANIFICACION;
 	char* ALGORITMO_BALANCEO;
 	int DISPONIBILIDAD_BASE;
+	char* PUERTO_YAMA;
 } yama_configuracion;
 
 typedef enum t_etapa {
@@ -74,6 +75,7 @@ yama_configuracion get_configuracion() {
 	configuracion.RETARDO_PLANIFICACION = get_campo_config_int(archivo_configuracion, "RETARDO_PLANIFICACION");
 	configuracion.ALGORITMO_BALANCEO = get_campo_config_string(archivo_configuracion, "ALGORITMO_BALANCEO");
 	configuracion.DISPONIBILIDAD_BASE = get_campo_config_int(archivo_configuracion, "DISPONIBILIDAD_BASE");
+	configuracion.PUERTO_YAMA = get_campo_config_string(archivo_configuracion, "PUERTO_YAMA");
 	return configuracion;
 }
 
