@@ -54,7 +54,7 @@ int main(void) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	if ((rv = getaddrinfo(NULL, "9999", &hints, &ai)) != 0) {
+	if ((rv = getaddrinfo(NULL, configuracion.PUERTO_YAMA, &hints, &ai)) != 0) {
 		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
 		exit(1);
 	}
@@ -236,9 +236,12 @@ int main(void) {
 											memcpy(&finBloque, paqueteRecibido->data + desplazamiento, sizeof(int));
 											desplazamiento+=sizeof(int);
 											infoBloque->finBloque = finBloque;
+											if(cantidadElementos == j-1){
+												infoBloque->finBloque--;
+											}
 											list_add(nodoBloques->bloques, infoBloque);
 										}
-										list_add(archivoNodo->nodos  ,nodoBloques);
+										list_add(archivoNodo->nodos, nodoBloques);
 									}
 
 									void armarListaWorker(void* elem){
