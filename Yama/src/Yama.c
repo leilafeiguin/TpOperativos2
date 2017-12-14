@@ -1001,8 +1001,8 @@ char *str_replace(char *orig, char *rep, char *with) {
 	}
 
 char* generarDirectorioTemporal(){
-	char* dirTemp= malloc(11);
-	string_append(&dirTemp, "/tmp/");
+	char* dirTemp=string_new();
+	string_append(&dirTemp, "./tm/");
 	string_append(&dirTemp, randstring(5));//todo buscar una funcion que te genere X cantidad de caracteres aleatorios
 	return dirTemp;
 }
