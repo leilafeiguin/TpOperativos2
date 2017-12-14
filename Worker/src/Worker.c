@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <time.h>
+#include <dirent.h>
 
 #define MAX_LINE 4096
 t_log* logger;
@@ -110,6 +111,14 @@ int main(void) {
 		ftruncate(fileno(fd), 20*1024*1024);
 		fclose(fd);
 	}
+	//Se limpian los directorios
+	crear_subcarpeta("./bloque");
+	crear_subcarpeta("./script");
+	crear_subcarpeta("./tm");
+	vaciarCarpeta("./bloque");
+	vaciarCarpeta("./script");
+	vaciarCarpeta("./tm");
+
 	//Se abre data bin en modo read
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
 	fstat(fd, &sb);
@@ -180,6 +189,7 @@ int main(void) {
 									printf("Escribiendo bloque en temporal /n");
 									char* bloque=obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque);
 									char* pathFileBloque= generarDirectorioTemporal("./bloque/");
+
 									pathFileBloque = string_from_format("%s%i", pathFileBloque,paquete_transformacion->bloq);
 									FILE * fileBloque = fopen(pathFileBloque, "w");
 									fprintf(fileBloque, "%s", bloque);
@@ -433,4 +443,23 @@ char* obtenerBloque(int numeroBloque, int tamanioBloque){
 void transformacion(char* script, char* bloque, char* destino){
 	char* func = string_from_format("cat %s | %s | sort -d > %s ", bloque, script, destino);
 	system(func);
+}
+
+void crear_subcarpeta(char* nombre) {
+	struct stat st = { 0 };
+	if (stat(nombre, &st) == -1) {
+		mkdir(nombre, 0700);
+	}
+}
+
+void vaciarCarpeta(char* ruta){
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir (ruta)) != NULL) {
+		while ((ent = readdir (dir)) != NULL) {
+			char* file = string_from_format("%s/%s",ruta,ent->d_name);
+			remove(file);
+	  }
+	  closedir (dir);
+	}
 }
