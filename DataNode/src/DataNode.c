@@ -19,6 +19,8 @@
 void* archivo;
 t_log* logger;
 int main(void) {
+	imprimir("image.txt");
+
 	char* fileLog;
 	fileLog = "DataNodeLogs.txt";
 
