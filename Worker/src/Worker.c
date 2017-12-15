@@ -102,10 +102,9 @@ int main(void) {
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
-	log_trace(logger, "Inicializando proceso Worker\n");
-	log_trace(logger, "Inicializando proceso Worker");
+	log_trace(logger, "Inicializando proceso Worker. \n");
 	worker_configuracion configuracion = get_configuracion();
-	log_trace(logger, "Archivo de configuracion levantado");
+	log_trace(logger, "Archivo de configuracion levantado. \n");
 	struct stat sb;
 	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
@@ -156,8 +155,9 @@ int main(void) {
 								desplazamiento += sizeof(int);
 								int i;
 								char* fileTemporal=generarDirectorioTemporal( "./script/");
-								char* fileScript=string_from_format("%s%s" , fileTemporal, ".txt");
-								FILE *archivoPaqueteTransformacion = fopen(fileScript, "w");
+								char* fileScript=string_from_format("%s%s" , fileTemporal, ".py");
+								mode_t mode = S_IXOTH | S_IWOTH | S_IROTH;
+								int fileBloque = open(fileScript, O_RDWR | O_CREAT | O_SYNC, mode);
 								bool primeraVez=true;
 								chmod(fileScript, 777);
 
@@ -165,27 +165,26 @@ int main(void) {
 									t_transf* paquete_transformacion = malloc(sizeof(t_transf));
 									memcpy(&paquete_transformacion->cant_script, paquete_recibido->data+desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
-
 									paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
 									memcpy(paquete_transformacion->script, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_script);
 									desplazamiento += paquete_transformacion->cant_script;
-
 									memcpy(&paquete_transformacion->bloq, paquete_recibido->data + desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
 									paquete_transformacion->cant_archivo_temporal = 11;
 									paquete_transformacion->archivo_temporal = malloc(paquete_transformacion->cant_archivo_temporal);
-
 									memcpy(paquete_transformacion->archivo_temporal, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_archivo_temporal);
 									desplazamiento += paquete_transformacion->cant_archivo_temporal;
-
 									memcpy(&paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
 
-
 									if(primeraVez)
 									{
-										fprintf(archivoPaqueteTransformacion,"%s", paquete_transformacion->script);
-										fflush(archivoPaqueteTransformacion);
+										paquete_transformacion->cant_script--;
+										ftruncate(fileBloque,paquete_transformacion->cant_script);
+										char* bloqueTemp= mmap(NULL,paquete_transformacion->cant_script,PROT_READ | PROT_WRITE,  MAP_SHARED,fileBloque,0);
+										memcpy(bloqueTemp,paquete_transformacion->script,paquete_transformacion->cant_script);
+										msync(bloqueTemp,paquete_transformacion->cant_script,MS_SYNC);
+										close(fileBloque);
 										primeraVez=false;
 									}
 
@@ -195,29 +194,23 @@ int main(void) {
 									char* pathFileBloque= generarDirectorioTemporal("./bloque/");
 									printf("genero dir temp \n");
 									pathFileBloque = string_from_format("%s%i", pathFileBloque,paquete_transformacion->bloq);
-
-									int fileBloque = open(pathFileBloque, O_RDWR | O_CREAT | O_SYNC);
+									int fileBloque = open(pathFileBloque, O_RDWR | O_CREAT | O_SYNC, mode);
 									ftruncate(fileBloque,retornoBloque->tamanio);
-									printf("2 \n");
-									char* bloqueTemp= mmap(NULL,retornoBloque->tamanio,PROT_READ | PROT_WRITE,  MAP_SHARED,fileBloque,0);
-									printf("3 \n");
+
+									char* bloqueTemp= mmap(NULL,retornoBloque->tamanio,PROT_READ | PROT_WRITE | PROT_EXEC,  MAP_SHARED,fileBloque,0);
 									memcpy(bloqueTemp,retornoBloque->bloque,retornoBloque->tamanio);
-									printf("4 \n");
-									msync(bloqueTemp,1024*1024,MS_SYNC);
-									printf("5 \n");
+									msync(bloqueTemp,retornoBloque->tamanio,MS_SYNC);
+									close(fileBloque);
+									chmod(pathFileBloque,777);
+									char* script = string_from_format("./%s",paquete_transformacion->script);
+									printf("%s\n",paquete_transformacion->archivo_temporal);
+									transformacion(script, pathFileBloque, paquete_transformacion->archivo_temporal);//paquete_transformacion->archivo_temporal);
 
-
-									//munmap(bloqueTemp,paquete_transformacion->cant_ocupada_bloque);
-									transformacion(paquete_transformacion->script, pathFileBloque, paquete_transformacion->archivo_temporal);
 									printf("Transforme\n");
 								}
-
-								fclose(archivoPaqueteTransformacion);
-
 								char* mensaje = malloc(3);
 								mensaje = "ok";
 								enviar(socketConexion, cop_master_estado_transformacion , 3, mensaje);
-
 							}
 							break;
 							case cop_worker_reduccionLocal:
@@ -449,7 +442,7 @@ char *randstring(size_t length) {
 
 t_retorno_bloque* obtenerBloque(int numeroBloque, int tamanioBloque){
 	t_retorno_bloque* retornoBloque = malloc(sizeof(t_retorno_bloque));
-	printf("1 obtener bloque \n");
+	printf("%i - %i\n",numeroBloque,tamanioBloque);
 	char* bloque= malloc(tamanioBloque);
 	int posicion = (numeroBloque *1024*1024);
 	memcpy (bloque,archivo + posicion, tamanioBloque);

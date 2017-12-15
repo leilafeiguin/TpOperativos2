@@ -119,7 +119,7 @@ int main(void) {
 							if (newfd > fd_max) {    //Update el Maximo
 								fd_max = newfd;
 							}
-							log_trace(logger, "Recibi una nueva conexion");
+							log_trace(logger, "Recibi una nueva conexion. \n");
 							free(handshake);
 						//No es una nueva conexion -> Recibo el paquete
 						} else {
@@ -330,7 +330,7 @@ int main(void) {
 							break;
 							case cop_master_archivo_a_transformar:
 							{
-								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo");
+								log_trace(logger, "Recibi nuevo pedido de transformacion de un Master sobre X archivo. \n");
 								//Debe pedir al FS la composicion de bloques del archivo (por nodo)
 								char* pathArchivo= malloc(paqueteRecibido->tamanio);
 								memcpy(pathArchivo, paqueteRecibido->data, paqueteRecibido->tamanio);
@@ -348,7 +348,7 @@ int main(void) {
 							break;
 							case cop_master_estados_workers:
 							{
-								log_trace(logger, "Recibi estado de conexion de worker para proceso X");
+								log_trace(logger, "Recibi estado de conexion de worker para proceso X. \n");
 								int desplazamiento = 0;
 								int longitudIdWorker = 0;
 
@@ -1034,15 +1034,15 @@ char *randstring(size_t length) {
 void sig_handler(int signo){
     if (signo == SIGUSR1){
         printf("Se recibio SIGUSR1\n");
-    	log_trace(logger, "Se recibio SIGUSR1");
+    	log_trace(logger, "Se recibio SIGUSR1 \n");
     	configuracion = get_configuracion();
-    	printf("Se cargo nuevamente el archivo de configuracion\n");
-    	log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
+    	//printf("Se cargo nuevamente el archivo de configuracion\n");
+    	log_trace(logger, "Se cargo nuevamente el archivo de configuracion \n");
     }
 }
 
 void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivoxnodo* archivo, t_estados* estadoxjob, char* workerIdCaido){
-	char* consolelog =string_from_format("%s%i", "Planifica bloque numero ", numeroBloque);
+	char* consolelog =string_from_format("%s%i", "Planifica bloque numero", numeroBloque);
 	log_trace(logger, consolelog);
 	int* numBloqueParaLista = malloc(sizeof(int));
 	*numBloqueParaLista=numeroBloque;

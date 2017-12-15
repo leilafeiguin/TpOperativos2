@@ -43,17 +43,17 @@ int main(int argc, char** argv) {
 	char* fileLog;
 	fileLog = "MasterLogs.txt";
 	logger = log_create(fileLog, "Master Logs", 1, 0);
-	log_trace(logger, "Inicializando proceso Master");
+	log_trace(logger, "Inicializando proceso Master \n");
 
 	master_configuracion configuracion = get_configuracion();
-	log_trace(logger, "Archivo de configuracion levantado");
+	log_trace(logger, "Archivo de configuracion levantado. \n");
 
 	//Se conecta al YAMA
 	yamaSocket = conectar_a(configuracion.IP_YAMA,configuracion.PUERTO_YAMA);
 	realizar_handshake(yamaSocket, cop_handshake_master);
 	//Master avisa a yama sobre que archivo del FS necesita ejecutar
 	enviar(yamaSocket,cop_master_archivo_a_transformar,strlen(archivoOrigen)+1,archivoOrigen);
-	log_trace(logger, "Recibi datos de Yama");
+	log_trace(logger, "Recibi datos de Yama \n");
 	while(1)
 	{
 		t_paquete* paqueteRecibido = recibir(yamaSocket);
@@ -395,7 +395,7 @@ void hiloWorker(void* parametros){
 	char* mensaje = "";
 	t_estado_master estado ;
 	if(paqueteRecibido->codigo_operacion == -1){
-		log_trace(logger, "Se desconecto el nodo /n");
+		log_trace(logger, "Se desconecto el nodo .\n");
 		mensaje= "ERROR: se desconecto el nodo";
 		estado=error;
 	}
