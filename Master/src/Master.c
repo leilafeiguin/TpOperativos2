@@ -429,7 +429,7 @@ void hiloWorker(void* parametros){
 
 	memcpy(estadoWorker+desplazamiento2, mensaje , longitudMensaje);
 	desplazamiento2 += longitudMensaje;
-
+	printf("Envio a yama estado del worker %s", worker->worker_id);
 	enviar(yamaSocket, cop_master_estados_workers,desplazamiento2,estadoWorker);
 	free(estadoWorker);
 }
