@@ -875,8 +875,8 @@ int main(void) {
 			t_nodo* nodoOrigen = buscar_nodo(ubicacionOrigen->nroNodo);
 			if(string_equals_ignore_case(ubicacionOrigen->nroNodo, nombreNodo) || (string_equals_ignore_case(bloque->copia2->nroNodo,nombreNodo))){
 				//error
-				log_trace(logger, "Erorr, ya existe esa copia ./n");
-				printf("Erorr, ya existe esa copia ./n");
+				log_trace(logger, "Error, ya existe esa copia .\n");
+				printf("Erorr, ya existe esa copia .\n");
 			}
 			void* contenido = getbloque(ubicacionOrigen->nroBloque, nodoOrigen);
 			int numBloqueDestino = buscarBloque(nodoDestino);
@@ -1724,7 +1724,7 @@ int main(void) {
 		ssize_t read;
 		fp = fopen(path, "r");
 		if (fp == NULL){
-			log_trace(logger, "No se pudo recuperar el estado anterior del archivo");
+			log_trace(logger, "No se pudo recuperar el estado anterior del archivo .\n");
 			exit(EXIT_FAILURE);
 		}
 		int i = 0;
@@ -1891,13 +1891,11 @@ int main(void) {
 			//imprimir nombre, tamanio y tipo de archivo
 			void imprimirInfoBloque(void* elem) {
 				t_bloque* bloque = (t_bloque*) elem;
-				log_trace(logger, "Bloque numero %i  ---- Fin Bloque %lu\n", bloque->nroBloque, bloque->finBloque);
 				printf("Bloque numero %i  ---- Fin Bloque %lu\n", bloque->nroBloque, bloque->finBloque);
 				//imprimir numero bloque y fin bloque
 
 				if (bloque->copia1 != NULL) {
 					//imprimir numero bloque y nodo
-					log_trace(logger, "       Copia 1- Nodo %s  - Numero Bloque %i \n", bloque->copia1->nroNodo, bloque->copia1->nroBloque);
 					printf("       Copia 1- Nodo %s  - Numero Bloque %i \n", bloque->copia1->nroNodo, bloque->copia1->nroBloque);
 				} else {
 					log_trace(logger, "       Copia 1 - NO EXISTE!\n");
