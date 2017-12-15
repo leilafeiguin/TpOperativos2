@@ -102,10 +102,9 @@ int main(void) {
 	char* fileLog;
 	fileLog = "WorkerLogs.txt";
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
-	log_trace(logger, "Inicializando proceso Worker\n");
-	log_trace(logger, "Inicializando proceso Worker");
+	log_trace(logger, "Inicializando proceso Worker. \n");
 	worker_configuracion configuracion = get_configuracion();
-	log_trace(logger, "Archivo de configuracion levantado");
+	log_trace(logger, "Archivo de configuracion levantado. \n");
 	struct stat sb;
 	if(access(configuracion.RUTA_DATABIN, F_OK) == -1) {
 		FILE* fd=fopen(configuracion.RUTA_DATABIN, "a+");
@@ -166,22 +165,17 @@ int main(void) {
 									t_transf* paquete_transformacion = malloc(sizeof(t_transf));
 									memcpy(&paquete_transformacion->cant_script, paquete_recibido->data+desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
-
 									paquete_transformacion->script = malloc(paquete_transformacion->cant_script);
 									memcpy(paquete_transformacion->script, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_script);
 									desplazamiento += paquete_transformacion->cant_script;
-
 									memcpy(&paquete_transformacion->bloq, paquete_recibido->data + desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
 									paquete_transformacion->cant_archivo_temporal = 11;
 									paquete_transformacion->archivo_temporal = malloc(paquete_transformacion->cant_archivo_temporal);
-
 									memcpy(paquete_transformacion->archivo_temporal, paquete_recibido->data + desplazamiento, paquete_transformacion->cant_archivo_temporal);
 									desplazamiento += paquete_transformacion->cant_archivo_temporal;
-
 									memcpy(&paquete_transformacion->cant_ocupada_bloque, paquete_recibido->data + desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
-
 
 									if(primeraVez)
 									{
@@ -202,6 +196,7 @@ int main(void) {
 									pathFileBloque = string_from_format("%s%i", pathFileBloque,paquete_transformacion->bloq);
 									int fileBloque = open(pathFileBloque, O_RDWR | O_CREAT | O_SYNC, mode);
 									ftruncate(fileBloque,retornoBloque->tamanio);
+
 									char* bloqueTemp= mmap(NULL,retornoBloque->tamanio,PROT_READ | PROT_WRITE | PROT_EXEC,  MAP_SHARED,fileBloque,0);
 									memcpy(bloqueTemp,retornoBloque->bloque,retornoBloque->tamanio);
 									msync(bloqueTemp,retornoBloque->tamanio,MS_SYNC);
@@ -210,6 +205,7 @@ int main(void) {
 									char* script = string_from_format("./%s",paquete_transformacion->script);
 									printf("%s\n",paquete_transformacion->archivo_temporal);
 									transformacion(script, pathFileBloque, paquete_transformacion->archivo_temporal);//paquete_transformacion->archivo_temporal);
+
 									printf("Transforme\n");
 								}
 								char* mensaje = malloc(3);
