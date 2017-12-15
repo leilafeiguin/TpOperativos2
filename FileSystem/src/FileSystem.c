@@ -118,10 +118,7 @@ int main(void) {
 				close(socketNuevo);
 			}
 		}
-
-
 			break;
-
 		case cop_handshake_datanode: {
 			esperar_handshake(socketNuevo, paqueteRecibido, cop_handshake_datanode);
 			log_trace(logger, "Se conecto un nodo\n");
@@ -192,7 +189,6 @@ int main(void) {
 				list_add(fileSystem.ListaNodos, unNodo);
 			}
 		}
-			//falta agregar otras estructuras administrativas
 			break;
 		case -1: {
 			if (socketNuevo == socketYama) {
@@ -297,20 +293,15 @@ int main(void) {
 						int longitudNombreNodo = strlen(((t_nodoxbloques*) elemento)->idNodo) + 1;
 						memcpy(buffer + desplazamiento,	&longitudNombreNodo,sizeof(int));
 						desplazamiento += sizeof(int);
-
 						memcpy(buffer + desplazamiento,	((t_nodoxbloques*) elemento)->idNodo,longitudNombreNodo);
 						desplazamiento += longitudNombreNodo;
-
 						int longitudIP = strlen(((t_nodoxbloques*) elemento)->ip) + 1;
 						memcpy(buffer + desplazamiento,	&longitudIP,sizeof(int));
 						desplazamiento += sizeof(int);
-
 						memcpy(buffer + desplazamiento,	(((t_nodoxbloques*) elemento)->ip),longitudIP);
 						desplazamiento += longitudIP;
-
 						memcpy(buffer + desplazamiento,	&((t_nodoxbloques*) elemento)->puertoWorker,sizeof(int));
 						desplazamiento += sizeof(int);
-
 						int cantidadelementos = list_size(((t_nodoxbloques*) elemento)->bloques);
 						memcpy(buffer + desplazamiento, &cantidadelementos, sizeof(int));
 						desplazamiento += sizeof(int);
@@ -319,10 +310,8 @@ int main(void) {
 							t_infobloque* infobloque = ((t_infobloque*) nodobloq);
 							memcpy(buffer + desplazamiento, &infobloque->bloqueAbsoluto, sizeof(int));
 							desplazamiento += sizeof(int);
-
 							memcpy(buffer + desplazamiento, &infobloque->bloqueRelativo, sizeof(int));
 							desplazamiento += sizeof(int);
-
 							memcpy(buffer + desplazamiento, &infobloque->finBloque, sizeof(int));
 							desplazamiento += sizeof(int);
 						}
@@ -338,10 +327,8 @@ int main(void) {
 					int tamanioNombre=strlen(pathArchivo)+1;
 					memcpy(buffer + desplazamiento,&tamanioNombre, sizeof(int));
 					desplazamiento += sizeof(int);
-
 					memcpy(buffer + desplazamiento, pathArchivo,  strlen(pathArchivo)+1);
 					desplazamiento +=  strlen(pathArchivo)+1;
-
 					memcpy(buffer + desplazamiento, &cantidadElementosBloques, sizeof(int));
 					desplazamiento += sizeof(int);
 					enviar(socketYama, cop_yama_info_fs, desplazamiento, buffer);
@@ -434,8 +421,8 @@ int main(void) {
 		}
 		t_archivo* archivoEncontrado = list_find(fileSystem.listaArchivos, buscarArchivoPorPath);
 		if (archivoEncontrado == NULL) {
-			log_trace(logger, "El path %s no se encuentra en el FS\n", origen);
-			printf("El path %s no se encuentra en el FS\n");
+			log_trace(logger, "El path %s no se encuentra en el FS. \n", origen);
+			printf("El path %s no se encuentra en el FS. \n");
 			return;
 		}
 		FILE* fd = fopen(destino, "w");

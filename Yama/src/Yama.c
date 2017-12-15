@@ -1036,7 +1036,7 @@ void sig_handler(int signo){
         printf("Se recibio SIGUSR1\n");
     	log_trace(logger, "Se recibio SIGUSR1");
     	configuracion = get_configuracion();
-    	printf("Se cargo nuevamente el archivo de configuracion\n");
+    	//printf("Se cargo nuevamente el archivo de configuracion\n");
     	log_trace(logger, "Se cargo nuevamente el archivo de configuracion");
     }
 }
