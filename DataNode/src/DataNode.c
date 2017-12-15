@@ -100,6 +100,7 @@ int main(void) {
 				memcpy(&numeroBloque, paquete->data, sizeof(int));
 				desplazamiento += sizeof(int);
 				void* bloqueArecibir =malloc(1024*1024);
+				memset(bloqueArecibir, '\0', 1024*1024);
 				memcpy(bloqueArecibir, paquete->data + desplazamiento, 1024*1024);
 				escribir_bloque_datanode (numeroBloque, bloqueArecibir);
 				free(bloqueArecibir);

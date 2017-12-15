@@ -121,9 +121,11 @@ int main(void) {
 	vaciarCarpeta("./tm");
 
 	//Se abre data bin en modo read
-	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY);
+	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY, S_IWUSR);
 	fstat(fd, &sb);
 	archivo= mmap(NULL,sb.st_size,PROT_READ,  MAP_SHARED,fd,0); //PROT_READ ??
+
+
 	un_socket socketServer=socket_escucha(configuracion.IP_NODO, configuracion.PUERTO_WORKER);
 	listen(socketServer, 999);
 	while(1){
@@ -188,14 +190,24 @@ int main(void) {
 									}
 
 									printf("Escribiendo bloque en temporal \n");
-									char* bloque=obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque);
+									t_retorno_bloque* retornoBloque = obtenerBloque(paquete_transformacion->bloq, paquete_transformacion->cant_ocupada_bloque);
+									printf("obtuvo el bloque  \n");
 									char* pathFileBloque= generarDirectorioTemporal("./bloque/");
-
+									printf("genero dir temp \n");
 									pathFileBloque = string_from_format("%s%i", pathFileBloque,paquete_transformacion->bloq);
-									FILE * fileBloque = fopen(pathFileBloque, "w");
-									fprintf(fileBloque, "%s", bloque);
-									fclose(fileBloque);
 
+									int fileBloque = open(pathFileBloque, O_RDWR | O_CREAT | O_SYNC);
+									ftruncate(fileBloque,retornoBloque->tamanio);
+									printf("2 \n");
+									char* bloqueTemp= mmap(NULL,retornoBloque->tamanio,PROT_READ | PROT_WRITE,  MAP_SHARED,fileBloque,0);
+									printf("3 \n");
+									memcpy(bloqueTemp,retornoBloque->bloque,retornoBloque->tamanio);
+									printf("4 \n");
+									msync(bloqueTemp,1024*1024,MS_SYNC);
+									printf("5 \n");
+
+
+									//munmap(bloqueTemp,paquete_transformacion->cant_ocupada_bloque);
 									transformacion(paquete_transformacion->script, pathFileBloque, paquete_transformacion->archivo_temporal);
 									printf("Transforme\n");
 								}
@@ -434,15 +446,23 @@ char *randstring(size_t length) {
 
 
 
-char* obtenerBloque(int numeroBloque, int tamanioBloque){
+
+t_retorno_bloque* obtenerBloque(int numeroBloque, int tamanioBloque){
+	t_retorno_bloque* retornoBloque = malloc(sizeof(t_retorno_bloque));
+	printf("1 obtener bloque \n");
 	char* bloque= malloc(tamanioBloque);
 	int posicion = (numeroBloque *1024*1024);
 	memcpy (bloque,archivo + posicion, tamanioBloque);
-	int aux = ftell(strrchr(bloque,'\n'))+1;
+	printf("2 obtener bloque \n");
+ 	int aux = strrchr(bloque,'\n')-bloque;
+	printf("Tam = %i \n",aux);
 	char* bloqueBien = malloc(aux);
 	memcpy(bloqueBien, bloque, aux);
+	printf("4 obtener bloque \n");
 	free(bloque);
-	return bloqueBien;
+	retornoBloque->bloque = bloqueBien;
+	retornoBloque->tamanio = aux;
+	return retornoBloque;
 }
 
 void transformacion(char* script, char* bloque, char* destino){

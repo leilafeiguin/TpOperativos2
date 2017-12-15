@@ -19,6 +19,11 @@ typedef struct t_archivoRG{
 	char* id;
 }t_archivoRG;
 
+typedef struct t_retorno_bloque{
+	char* bloque;
+	int tamanio;
+}t_retorno_bloque;
+
 const char* path = "/home/utnso/Desktop/tp-2017-2c-Todo-ATR/DataNode/configNodo.cfg";
 
 worker_configuracion get_configuracion() {
@@ -37,7 +42,7 @@ worker_configuracion get_configuracion() {
 
 bool apareo (char* paths [], char* nombre_ordenado);
 void transformacion(char* , char*, char*);
-char* obtenerBloque(int numeroBloque, int tamanioBloque);
+t_retorno_bloque* obtenerBloque(int numeroBloque, int tamanioBloque);
 char* generarDirectorioTemporal();
 
 char *randstring(size_t length);
