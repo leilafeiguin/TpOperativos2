@@ -28,7 +28,7 @@ int main(void) {
 	log_trace(logger, "Inicializando proceso DataNode. \n");
 
 	dataNode_configuracion configuracion = get_configuracion();
-	log_trace(logger, "Archivo de configuracion levantado");
+	log_trace(logger, "Archivo de configuracion levantado. \n");
 
 	//MMAP
 	struct stat sb;

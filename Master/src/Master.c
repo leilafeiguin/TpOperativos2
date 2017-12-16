@@ -133,6 +133,7 @@ int main(int argc, char** argv) {
 			}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_local){
 				t_hilo_reduccion_local* hilo_reduc_local = malloc(sizeof(t_hilo_reduccion_local));
 				hilo_reduc_local->yamaSocket = yamaSocket;
+				hilo_reduc_local->listaTemp = list_create();
 				int longitudIdWorker;
 				int cantidadDeElementos;
 				int longitudIp = 0;
@@ -166,7 +167,7 @@ int main(int argc, char** argv) {
 				int cantidadTempDestino = 0;
 				memcpy(&cantidadTempDestino, paqueteRecibido->data + desplazamiento, sizeof(int));
 				desplazamiento+= sizeof(int);
-				hilo_reduc_local->tempDestino =malloc(cantidadTempDestino);
+				hilo_reduc_local->tempDestino =malloc(cantidadTempDestino+1);
 
 				memcpy(hilo_reduc_local->tempDestino, paqueteRecibido->data + desplazamiento, cantidadTempDestino);
 				desplazamiento+= cantidadTempDestino;
@@ -174,12 +175,14 @@ int main(int argc, char** argv) {
 				memcpy(&longitudIdWorker, paqueteRecibido->data + desplazamiento, sizeof(int));
 				desplazamiento +=sizeof(int);
 
+				hilo_reduc_local->idWorker = malloc(longitudIdWorker+1);
 				memcpy(hilo_reduc_local->idWorker, paqueteRecibido->data +desplazamiento, longitudIdWorker);
 				desplazamiento +=longitudIdWorker;
-
-				pthread_create(NULL,NULL,hilo_reduccion_local,hilo_reduc_local);
+				pthread_t pth_reduc;
+				pthread_create(&pth_reduc,NULL,hilo_reduccion_local,hilo_reduc_local);
 			}else if(paqueteRecibido->codigo_operacion == cop_yama_inicio_reduccion_global){
-				pthread_create(NULL,NULL, hiloReduccionGlobal, paqueteRecibido);
+				pthread_t pth_glob;
+				pthread_create(&pth_glob,NULL, hiloReduccionGlobal, paqueteRecibido);
 			}
 	}
 
@@ -414,8 +417,8 @@ void hiloWorker(void* parametros){
 		estado=finalizado;
 	}
 	int desplazamiento2 = 0;
-	int longitudIdWorker = strlen(worker->worker_id);
-	int longitudIdArchivo = strlen(ARCHIVO_ORIGEN) + 1;
+	int longitudIdWorker = strlen(worker->worker_id) +1;
+	int longitudIdArchivo = strlen(PATH_ARCHIVO_ORIGEN) + 1;
 	int longitudMensaje = strlen(mensaje) + 1;
 	void* estadoWorker= malloc(sizeof(int) + longitudIdWorker + sizeof(int) + longitudIdArchivo + sizeof(t_estado_master) + sizeof(int) + longitudMensaje );
 
@@ -428,7 +431,7 @@ void hiloWorker(void* parametros){
 	memcpy(estadoWorker+desplazamiento2, &longitudIdArchivo, sizeof(int));
 	desplazamiento2 += sizeof(int);
 
-	memcpy(estadoWorker+desplazamiento2, ARCHIVO_ORIGEN, longitudIdArchivo);
+	memcpy(estadoWorker+desplazamiento2, PATH_ARCHIVO_ORIGEN, longitudIdArchivo);
 	desplazamiento2 += longitudIdArchivo;
 
 	memcpy(estadoWorker+desplazamiento2, &estado, sizeof(t_estado_master));
@@ -447,7 +450,8 @@ void hiloWorker(void* parametros){
 void hilo_reduccion_local(void* parametros){
 	t_hilo_reduccion_local* estructura = (t_hilo_reduccion_local*) parametros;
 	un_socket socketWorker;
-	socketWorker = conectar_a(estructura->ip, string_from_format("%i",estructura->puerto));
+	char* puertoWorker = string_from_format("%i",estructura->puerto);
+	socketWorker = conectar_a(estructura->ip, puertoWorker);
 	int desplazamiento = 0;
 	int suma= 0;
 	void sumadorElementos(t_serializacionTemporal* Elem){
@@ -456,7 +460,24 @@ void hilo_reduccion_local(void* parametros){
 	}
 	list_iterate(estructura->listaTemp, (void*)sumadorElementos);
 	int cantidadDeElementos = list_size(estructura->listaTemp);
-	int tamanioData = suma + cantidadDeElementos*sizeof(int)+ sizeof(int)+ sizeof(int) + strlen(estructura->tempDestino)+1;
+	FILE *fileIN;
+	fileIN = fopen(SCRIPT_REDUC, "rb");
+	if(!fileIN){
+		log_trace(logger, "No se puede abrir el archivo.\n");
+		exit(-1);
+	}
+	struct stat st_script;
+	stat(SCRIPT_REDUC, &st_script);
+	void* bufferScript = malloc (st_script.st_size+1);
+	int MAX_LINE=4096;
+	char singleline[MAX_LINE];
+	while(fgets(singleline, MAX_LINE, fileIN) != NULL){
+		strcat(bufferScript, singleline);
+	}
+
+	int longitudScript=strlen(bufferScript)+1;
+
+	int tamanioData = sizeof(int)+suma + (cantidadDeElementos*sizeof(int))+sizeof(int) + strlen(estructura->tempDestino) +sizeof(int)+strlen(estructura->idWorker)+sizeof(int)+longitudScript;
 	char*buffer = malloc(tamanioData);
 	memcpy(buffer,&cantidadDeElementos,sizeof(int));
 	desplazamiento +=sizeof(int);
@@ -466,15 +487,32 @@ void hilo_reduccion_local(void* parametros){
 		memcpy(buffer+desplazamiento, &aux,sizeof(int));
 		desplazamiento += sizeof(int);
 
-		memcpy(buffer+desplazamiento, ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->temporal,aux+1);
+		memcpy(buffer+desplazamiento, ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->temporal,aux);
 		desplazamiento +=aux;
 	}
-	int cantidadTempDestino = strlen(estructura->tempDestino)+1;
+	int cantidadTempDestino = strlen(estructura->tempDestino);
 	memcpy(buffer+desplazamiento,&cantidadTempDestino,sizeof(int));
 	desplazamiento +=sizeof(int);
 
 	memcpy(buffer+desplazamiento,estructura->tempDestino,cantidadTempDestino);
+	desplazamiento +=cantidadTempDestino;
+
+	int longitudIdWorker2 = strlen(estructura->idWorker);
+	memcpy(buffer+desplazamiento, &longitudIdWorker2, sizeof(int));
+	desplazamiento += sizeof(int);
+
+	memcpy(buffer+desplazamiento, estructura->idWorker, longitudIdWorker2);
+	desplazamiento += longitudIdWorker2;
+
+	memcpy(buffer+desplazamiento, &longitudScript, sizeof(int));
+	desplazamiento+=sizeof(int);
+
+	memcpy(buffer+desplazamiento, bufferScript, longitudScript);
+	desplazamiento+=longitudScript;
+
 	enviar(socketWorker, cop_worker_reduccionLocal,tamanioData,buffer);
+
+
 	free(buffer);
 	t_paquete* paqueteRecibido;
 	paqueteRecibido = recibir(socketWorker);
@@ -546,6 +584,7 @@ void hilo_reduccion_local(void* parametros){
 	free(worker_id);
 	free(archivo);
 	free(mensaje);
+	free(puertoWorker);
 }
 
 size_t cantidadCaracterEnString(const char *str, char token)
