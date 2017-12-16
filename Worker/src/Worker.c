@@ -15,88 +15,6 @@
 
 #define MAX_LINE 4096
 t_log* logger;
-//---------------------------------FUNCIONES---------------------------------------------
-unsigned long int lineCountFile(const char *filename){
-    FILE *fp = fopen(filename, "r");
-    unsigned long int linecount = 0;
-    int c;
-    if(fp == NULL){
-    	log_trace(logger, "No se puede abrir el archivo.\n");
-        fclose(fp);
-        return 0;
-    }
-    while((c=fgetc(fp)) != EOF ){
-        if(c == '\n')
-            linecount++;
-    }
-    fclose(fp);
-    return linecount;
-}
-
-void sortfile(char **array, int linecount){
-    int i, j;
-    char t[MAX_LINE];
-    for(i=1;i<linecount;i++){
-        for(j=1;j<linecount;j++){
-            if(strcmp(array[j-1], array[j]) > 0){
-                strcpy(t, array[j-1]);
-                strcpy(array[j-1], array[j]);
-                strcpy(array[j], t);
-            }
-        }
-    }
-}
-
-
-bool apareo (char* paths [], char* nombre_ordenado){
-	int cantPaths = sizeof(paths) / sizeof(paths[0]) + 1;
-	int i = 0;
-	unsigned long int linecountGlobal;
-	for(i=0;i<cantPaths;i++){
-		linecountGlobal = linecountGlobal + lineCountFile(paths[i]) + 1;
-	}
-	char **arrayGlobal = (char**)malloc(linecountGlobal * sizeof(char*));
-	for(i=0; i<cantPaths; i++){
-		FILE *fileIN;
-		fileIN = fopen(paths[i], "rb");
-		if(!fileIN){
-			log_trace(logger, "No se puede abrir el archivo.\n");
-			return false;
-		}
-		unsigned long int linecount = lineCountFile(paths[i]);
-		linecount += 1;
-		char **array = (char**)malloc(linecount * sizeof(char*));
-		char singleline[MAX_LINE];
-		int i = 0;
-		while(fgets(singleline, MAX_LINE, fileIN) != NULL){
-			array[i] = (char*) malloc (MAX_LINE * sizeof(char));
-			singleline[MAX_LINE] = '\0';
-			strcpy(array[i], singleline);
-			i++;
-		}
-		strcat(array[linecount - 1], "\n");
-		if(arrayGlobal[0] == NULL){
-			memcpy(arrayGlobal, array, linecount * sizeof(char*));
-		}else{
-			memcpy(arrayGlobal+linecount, array, linecount * sizeof(char*));
-		}
-		fclose(fileIN);
-	}
-	sortfile(arrayGlobal, linecountGlobal);
-	FILE *archivoOrdenado = fopen(nombre_ordenado, "wb");
-	if(!archivoOrdenado){
-		log_trace(logger, "No se puede abrir el archivo.\n");
-		return false;
-	}
-	for(i=0; i<linecountGlobal; i++){
-		fprintf(archivoOrdenado,"%s", arrayGlobal[i]);
-	}
-	fclose(archivoOrdenado);
-	for(i=0; i<linecountGlobal; i++){
-		free(arrayGlobal[i]);
-	}
-	return true;
-}
 
 void* archivo;
 
@@ -118,9 +36,11 @@ int main(void) {
 	crear_subcarpeta("./bloque");
 	crear_subcarpeta("./script");
 	crear_subcarpeta("./tm");
+	crear_subcarpeta("./reduc");
 	vaciarCarpeta("./bloque");
 	vaciarCarpeta("./script");
 	vaciarCarpeta("./tm");
+	vaciarCarpeta("./reduc");
 
 	//Se abre data bin en modo read
 	int fd=open(configuracion.RUTA_DATABIN, O_RDONLY, S_IWUSR);
@@ -224,10 +144,11 @@ int main(void) {
 								case cop_worker_reduccionLocal:
 								{
 									int cantElementos;
-									int desplazamiento;
+									int desplazamiento=0;
 									int i = 0;
 									int longitudIdWorker;
 									char* worker_id;
+									int tamScriptReduc;
 
 									memcpy(&cantElementos, paquete_recibido->data, sizeof(int));
 									desplazamiento += sizeof(int);
@@ -237,9 +158,9 @@ int main(void) {
 										int tamanioElemento;
 										memcpy(&tamanioElemento, paquete_recibido->data + desplazamiento, sizeof(int));
 										desplazamiento += sizeof(int);
-										archivosAReducir[i] = malloc(tamanioElemento + 1);
+										archivosAReducir[i] = malloc(tamanioElemento);
 
-										memcpy(archivosAReducir[i], paquete_recibido->data + desplazamiento, tamanioElemento + 1); //tamanaio ele + 1 ??
+										memcpy(archivosAReducir[i], paquete_recibido->data + desplazamiento, tamanioElemento); //tamanaio ele + 1 ??
 										desplazamiento += tamanioElemento;
 									}
 									int tamanio_archivo_reducido;
@@ -247,7 +168,7 @@ int main(void) {
 									desplazamiento += sizeof(int);
 
 									char* archivo_reducido = malloc(tamanio_archivo_reducido);
-									memcpy(archivo_reducido, paquete_recibido->data + desplazamiento, tamanio_archivo_reducido + 1);
+									memcpy(archivo_reducido, paquete_recibido->data + desplazamiento, tamanio_archivo_reducido);
 									desplazamiento +=tamanio_archivo_reducido;
 
 									memcpy(&longitudIdWorker,paquete_recibido->data+desplazamiento,sizeof(int));
@@ -257,7 +178,33 @@ int main(void) {
 									memcpy(worker_id,paquete_recibido->data + desplazamiento, longitudIdWorker);
 									desplazamiento+=longitudIdWorker;
 
-									bool resultado = apareo(archivosAReducir, archivo_reducido);
+									memcpy(&tamScriptReduc,paquete_recibido->data + desplazamiento,sizeof(int));
+									desplazamiento+=sizeof(int);
+
+									char* scriptReduc = malloc(tamScriptReduc);
+									memcpy(scriptReduc,paquete_recibido->data + desplazamiento,tamScriptReduc);
+									desplazamiento+=tamScriptReduc;
+									char* reducidoTemporal = generarDirectorioTemporal( "./reduc/");
+									printf("Estoy por aparear");
+									bool resultado = apareo(archivosAReducir, reducidoTemporal);
+									printf("Ya pase el apareo");
+									char* reductorTemporal=generarDirectorioTemporal( "./script/");
+									char* fileScript=string_from_format("%s%s" , reductorTemporal, ".py");
+									mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR| S_IRGRP | S_IWGRP | S_IXGRP |S_IXOTH | S_IWOTH | S_IROTH;
+									int filereduc = open(fileScript, O_RDWR | O_CREAT | O_SYNC, mode);
+									ftruncate(filereduc,tamScriptReduc);
+									char* scriptTemp= mmap(NULL,tamScriptReduc,PROT_READ | PROT_WRITE  | PROT_EXEC,  MAP_SHARED,filereduc,0);
+									memcpy(scriptTemp,scriptReduc,tamScriptReduc);
+									msync(scriptTemp,tamScriptReduc,MS_SYNC);
+									munmap(scriptTemp,tamScriptReduc);
+									printf("%i\n",close(filereduc));
+									system(string_from_format("chmod +x %s", fileScript));
+									system(string_from_format("chmod +x %s", reducidoTemporal));
+									printf("Voy a reducir");
+									char* func = string_from_format("cat %s | %s > %s", reducidoTemporal,fileScript ,archivo_reducido);
+									system(func);
+									printf("Ya reduje");
+
 									int longitudIp = strlen(configuracion.IP_NODO);
 									char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool)+sizeof(int)+longitudIdWorker);
 									desplazamiento = 0;
@@ -501,3 +448,85 @@ void vaciarCarpeta(char* ruta){
 	  closedir (dir);
 	}
 }
+
+unsigned long int lineCountFile(const char *filename){
+    FILE *fp = fopen(filename, "r");
+    unsigned long int linecount = 0;
+    int c;
+    if(fp == NULL){
+    	log_trace(logger, "No se puede abrir el archivo.\n");
+        fclose(fp);
+        return 0;
+    }
+    while((c=fgetc(fp)) != EOF ){
+        if(c == '\n')
+            linecount++;
+    }
+    fclose(fp);
+    return linecount;
+}
+
+void sortfile(char **array, int linecount){
+    int i, j;
+    char t[MAX_LINE];
+    for(i=1;i<linecount;i++){
+        for(j=1;j<linecount;j++){
+            if(strcmp(array[j-1], array[j]) > 0){
+                strcpy(t, array[j-1]);
+                strcpy(array[j-1], array[j]);
+                strcpy(array[j], t);
+            }
+        }
+    }
+}
+
+
+bool apareo (char* paths [], char* nombre_ordenado){
+	int cantPaths = sizeof(paths) / sizeof(paths[0]) + 1;
+	int i = 0;
+	unsigned long int linecountGlobal;
+	for(i=0;i<cantPaths;i++){
+		linecountGlobal = linecountGlobal + lineCountFile(paths[i]) + 1;
+	}
+	char **arrayGlobal = (char**)malloc(linecountGlobal * sizeof(char*));
+	for(i=0; i<cantPaths; i++){
+		FILE *fileIN;
+		fileIN = fopen(paths[i], "rb");
+		if(!fileIN){
+			log_trace(logger, "No se puede abrir el archivo.\n");
+			return false;
+		}
+		unsigned long int linecount = lineCountFile(paths[i]);
+		linecount += 1;
+		char **array = (char**)malloc(linecount * sizeof(char*));
+		char singleline[MAX_LINE];
+		int i = 0;
+		while(fgets(singleline, MAX_LINE, fileIN) != NULL){
+			array[i] = (char*) malloc (MAX_LINE * sizeof(char));
+			singleline[MAX_LINE] = '\0';
+			strcpy(array[i], singleline);
+			i++;
+		}
+		strcat(array[linecount - 1], "\n");
+		if(arrayGlobal[0] == NULL){
+			memcpy(arrayGlobal, array, linecount * sizeof(char*));
+		}else{
+			memcpy(arrayGlobal+linecount, array, linecount * sizeof(char*));
+		}
+		fclose(fileIN);
+	}
+	FILE *archivoOrdenado = fopen(nombre_ordenado, "wb");
+	if(!archivoOrdenado){
+		log_trace(logger, "No se puede abrir el archivo.\n");
+		return false;
+	}
+	for(i=0; i<linecountGlobal; i++){
+		fprintf(archivoOrdenado,"%s", arrayGlobal[i]);
+	}
+	fclose(archivoOrdenado);
+	for(i=0; i<linecountGlobal; i++){
+		free(arrayGlobal[i]);
+	}
+	return true;
+}
+
