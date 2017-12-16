@@ -76,6 +76,16 @@ int main(int argc, char** argv) {
 					t_clock* worker = malloc(sizeof(t_clock));
 
 					worker->bloques = list_create();
+
+					int longitudWorkerId;
+					memcpy(&longitudWorkerId, paqueteRecibido->data + desplazamiento, sizeof(int));
+					desplazamiento+= sizeof(int);
+
+					worker->worker_id = malloc(longitudWorkerId);
+
+					memcpy(worker->worker_id, paqueteRecibido->data + desplazamiento, longitudWorkerId);
+					desplazamiento+= longitudWorkerId;
+
 					int longitudIP;
 					memcpy(&longitudIP, paqueteRecibido->data + desplazamiento, sizeof(int));
 					desplazamiento+= sizeof(int);

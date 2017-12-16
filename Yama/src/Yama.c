@@ -281,7 +281,7 @@ int main(void) {
 
 									int tamanioWorkers=0;
 									void calcularTamanioWorkers(void* elem){
-										 tamanioWorkers += (sizeof(int) + strlen(((t_clock*)elem)->ip)  + sizeof(int) + sizeof(int));
+										 tamanioWorkers += (sizeof(int) + strlen(((t_clock*)elem)->worker_id) +sizeof(int) + strlen(((t_clock*)elem)->ip)  + sizeof(int) + sizeof(int));
 									}
 
 									list_iterate(archivoNodo->workersAsignados, calcularTamanioWorkers);
@@ -290,6 +290,14 @@ int main(void) {
 									memcpy(buffer, &cantidadWorkers, sizeof(int)); //int que dice cuantos nodos hay en la lista
 									desplazamiento+=sizeof(int);
 									void datosWorker(void* worker){
+
+										int longitudWorkerId =strlen(((t_clock*)worker)->worker_id)+1;
+										memcpy(buffer+desplazamiento, &longitudWorkerId ,sizeof(int));
+										desplazamiento+=sizeof(int);
+										//por cada nodo mando IP (15)
+										memcpy(buffer+desplazamiento, ((t_clock*)worker)->worker_id,longitudWorkerId );
+										desplazamiento+=longitudWorkerId;
+
 
 										int longitudIP=strlen(((t_clock*)worker)->ip)+1;
 										memcpy(buffer+desplazamiento, &longitudIP ,sizeof(int));
@@ -1015,7 +1023,7 @@ char* generarDirectorioTemporal(){
 }
 
 char *randstring(size_t length) {
-    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     char *randomString = NULL;
     if (length){
         randomString = malloc(sizeof(char) * (length +1));
