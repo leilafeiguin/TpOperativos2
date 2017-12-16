@@ -40,7 +40,7 @@ worker_configuracion get_configuracion() {
 	return configuracion;
 }
 
-bool apareo (char* paths [], char* nombre_ordenado);
+bool apareo (char* paths [], int,char* nombre_ordenado);
 void transformacion(char* , char*, char*);
 t_retorno_bloque* obtenerBloque(int numeroBloque, int tamanioBloque);
 char* generarDirectorioTemporal();

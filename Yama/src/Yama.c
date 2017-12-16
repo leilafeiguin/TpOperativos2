@@ -325,8 +325,18 @@ int main(void) {
 											memcpy(buffer+desplazamiento, &infobloque->finBloque, sizeof(int));
 											desplazamiento+=sizeof(int);
 
-											char* dirTemp=generarDirectorioTemporal();
-											memcpy(buffer+desplazamiento,  dirTemp, 11);
+
+											bool find(void* elem){
+												return ((t_estados*)elem)->socketMaster == socketArchivo->socket;
+											}
+											t_estados* elEstado = list_find(tabla_estados,find);
+
+											bool find1(void* elem){
+												return ((t_job*)elem)->bloque == infobloque->bloqueRelativo;
+											}
+											t_job* esJob = list_find(elEstado->contenido,find1);
+
+											memcpy(buffer+desplazamiento, esJob->temporalTransformacion, 11);
 											desplazamiento+=11;
 										}
 										list_iterate(((t_clock*)worker)->bloques, datosBloques);
@@ -453,7 +463,7 @@ int main(void) {
 											t_clock* worker = (t_clock*) elem;
 											t_request_reduccion_local* request = malloc(sizeof(t_request_reduccion_local));
 											request->temporalesTransformacion = list_create();
-											request->temporalReduccionLocal = string_from_format("/tmp/%i-%s-%s", socketActual, str_replace(idArchivo, "/","-"), randstring(5));
+											request->temporalReduccionLocal = string_from_format("/tm/%i-%s-%s", socketActual, str_replace(idArchivo, "/","-"), randstring(5));
 
 											void armarRequest(void* elem){
 												t_job* job=(t_job*)elem;
@@ -515,7 +525,7 @@ int main(void) {
 
 											memcpy(bufferRequest +desplazamientoRequest,idWorker,longitudIdWorker);
 											desplazamientoRequest+= longitudIdWorker;
-
+											printf("Envio datos para comienzo reduc local \n");
 											enviar(socketActual,cop_yama_inicio_reduccion_local,desplazamientoRequest,bufferRequest);
 											free(bufferRequest);
 										}

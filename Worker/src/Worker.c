@@ -21,6 +21,7 @@ void* archivo;
 int main(void) {
 	imprimir("/home/utnso/Desktop/tp-2017-2c-Todo-ATR/Libraries/worker.txt");
 	char* fileLog;
+
 	fileLog = "WorkerLogs.txt";
 	logger = log_create(fileLog, "Worker Logs", 0, 0);
 	log_trace(logger, "Inicializando proceso Worker. \n");
@@ -143,6 +144,7 @@ int main(void) {
 								break;
 								case cop_worker_reduccionLocal:
 								{
+									printf("Comienzo reduc local \n");
 									int cantElementos;
 									int desplazamiento=0;
 									int i = 0;
@@ -154,8 +156,8 @@ int main(void) {
 									desplazamiento += sizeof(int);
 
 									char* archivosAReducir[cantElementos];
-									for(; i < sizeof(archivosAReducir);i++) {
-										int tamanioElemento;
+									for(; i < cantElementos;i++) {
+										int tamanioElemento=0;
 										memcpy(&tamanioElemento, paquete_recibido->data + desplazamiento, sizeof(int));
 										desplazamiento += sizeof(int);
 										archivosAReducir[i] = malloc(tamanioElemento);
@@ -163,6 +165,7 @@ int main(void) {
 										memcpy(archivosAReducir[i], paquete_recibido->data + desplazamiento, tamanioElemento); //tamanaio ele + 1 ??
 										desplazamiento += tamanioElemento;
 									}
+
 									int tamanio_archivo_reducido;
 									memcpy(&tamanio_archivo_reducido, paquete_recibido->data + desplazamiento, sizeof(int));
 									desplazamiento += sizeof(int);
@@ -185,11 +188,13 @@ int main(void) {
 									memcpy(scriptReduc,paquete_recibido->data + desplazamiento,tamScriptReduc);
 									desplazamiento+=tamScriptReduc;
 									char* reducidoTemporal = generarDirectorioTemporal( "./reduc/");
-									printf("Estoy por aparear");
-									bool resultado = apareo(archivosAReducir, reducidoTemporal);
-									printf("Ya pase el apareo");
+									printf("Estoy por aparear \n");
+									bool resultado = apareo(archivosAReducir,cantElementos ,reducidoTemporal);
+
+									printf("Ya pase el apareo \n");
 									char* reductorTemporal=generarDirectorioTemporal( "./script/");
 									char* fileScript=string_from_format("%s%s" , reductorTemporal, ".py");
+									printf("%s",fileScript);
 									mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR| S_IRGRP | S_IWGRP | S_IXGRP |S_IXOTH | S_IWOTH | S_IROTH;
 									int filereduc = open(fileScript, O_RDWR | O_CREAT | O_SYNC, mode);
 									ftruncate(filereduc,tamScriptReduc);
@@ -200,10 +205,10 @@ int main(void) {
 									printf("%i\n",close(filereduc));
 									system(string_from_format("chmod +x %s", fileScript));
 									system(string_from_format("chmod +x %s", reducidoTemporal));
-									printf("Voy a reducir");
-									char* func = string_from_format("cat %s | %s > %s", reducidoTemporal,fileScript ,archivo_reducido);
+									printf("Voy a reducir \n");
+									char* func = string_from_format("cat %s | %s > .%s", reducidoTemporal,"./reductor.py" ,archivo_reducido);
 									system(func);
-									printf("Ya reduje");
+									printf("Ya reduje \n");
 
 									int longitudIp = strlen(configuracion.IP_NODO);
 									char* buffer = malloc(longitudIp + sizeof(int) + sizeof(int) + sizeof(bool)+sizeof(int)+longitudIdWorker);
@@ -303,7 +308,7 @@ int main(void) {
 										archivosAReucirPosta[i] = malloc(strlen(list_get(archivosAReucir,i))+1);
 										archivosAReucirPosta[i] = list_get(archivosAReucir,i);
 									}
-									bool resultado = apareo(archivosAReucirPosta,archFin);
+									bool resultado = apareo(archivosAReucirPosta,cantidadArchivos,archFin);
 									if(resultado){
 										desplazamiento = 0;
 										FILE* fp = fopen(archFin,"r");
@@ -481,52 +486,16 @@ void sortfile(char **array, int linecount){
 }
 
 
-bool apareo (char* paths [], char* nombre_ordenado){
-	int cantPaths = sizeof(paths) / sizeof(paths[0]) + 1;
-	int i = 0;
-	unsigned long int linecountGlobal;
-	for(i=0;i<cantPaths;i++){
-		linecountGlobal = linecountGlobal + lineCountFile(paths[i]) + 1;
+bool apareo (char* paths [], int cantElems,char* nombre_ordenado){
+	int i =0;
+	char* nom=malloc(MAX_LINE);
+	for(;i<cantElems;i++){
+		strcat(nom,paths[i]);
+		strcat(nom, " ");
 	}
-	char **arrayGlobal = (char**)malloc(linecountGlobal * sizeof(char*));
-	for(i=0; i<cantPaths; i++){
-		FILE *fileIN;
-		fileIN = fopen(paths[i], "rb");
-		if(!fileIN){
-			log_trace(logger, "No se puede abrir el archivo.\n");
-			return false;
-		}
-		unsigned long int linecount = lineCountFile(paths[i]);
-		linecount += 1;
-		char **array = (char**)malloc(linecount * sizeof(char*));
-		char singleline[MAX_LINE];
-		int i = 0;
-		while(fgets(singleline, MAX_LINE, fileIN) != NULL){
-			array[i] = (char*) malloc (MAX_LINE * sizeof(char));
-			singleline[MAX_LINE] = '\0';
-			strcpy(array[i], singleline);
-			i++;
-		}
-		strcat(array[linecount - 1], "\n");
-		if(arrayGlobal[0] == NULL){
-			memcpy(arrayGlobal, array, linecount * sizeof(char*));
-		}else{
-			memcpy(arrayGlobal+linecount, array, linecount * sizeof(char*));
-		}
-		fclose(fileIN);
-	}
-	FILE *archivoOrdenado = fopen(nombre_ordenado, "wb");
-	if(!archivoOrdenado){
-		log_trace(logger, "No se puede abrir el archivo.\n");
-		return false;
-	}
-	for(i=0; i<linecountGlobal; i++){
-		fprintf(archivoOrdenado,"%s", arrayGlobal[i]);
-	}
-	fclose(archivoOrdenado);
-	for(i=0; i<linecountGlobal; i++){
-		free(arrayGlobal[i]);
-	}
+	char* func = string_from_format("cat %s> %s", nom, nombre_ordenado);
+	printf("%s",func);
+	system(func);
 	return true;
 }
 

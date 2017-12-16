@@ -160,6 +160,7 @@ void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio,
 	memcpy(buffer + sizeof(int), &tamanio, sizeof(int));
 	memcpy(buffer + 2 * sizeof(int), data, tamanio);
 
+
 	send(socket_para_enviar, buffer, tamanio_paquete, MSG_WAITALL);
 
 	free(buffer);

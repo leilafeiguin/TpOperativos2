@@ -1,26 +1,15 @@
 #! /usr/bin/python2
 import sys
 
-acumulator = 0
-old_key = None
+def getRegistro(linea):
+	if len(linea) > 0:
+         if(len(linea.split(',')[0]) > 0 and len(linea.split(',')[1]) > 0):
+         	 try:
+         	     registro = linea.split(',')[0].strip().lstrip() + "," + linea.split(',')[1] + "\n"
+         	     sys.stdout.write(registro)
+         	 except Exception:
+         	     pass
 
-for token in sys.stdin.readlines():
-
-    if(len(token.split(',')[0]) > 0):
-        word = token.split(',')[0]
-        try:
-            repetitions = int(token.split(',')[1])
-        except Exception:
-            repetitions = 0
-
-        if old_key is None:
-             old_key = word
-
-        if old_key != word:
-            sys.stdout.write(old_key + "," + str(acumulator) + "\n")
-            acumulator = 0
-            old_key = word
-
-        acumulator += repetitions
-
-sys.stdout.write(old_key + "," + str(acumulator) + "\n")
+contenido = sys.stdin.read()
+data = contenido.split('\n')
+map(getRegistro, data)

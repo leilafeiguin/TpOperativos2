@@ -371,6 +371,7 @@ void hiloWorker(void* parametros){
 	while(fgets(singleline, MAX_LINE, fileIN) != NULL){
 		strcat(bufferScript, singleline);
 	}
+	fclose(fileIN);
 	int cantElementos = list_size(worker->bloques);
 
 	//Leer el archivo de script que corresponda segun la etapa (transformacion o reduccion)
@@ -442,24 +443,27 @@ void hiloWorker(void* parametros){
 
 	memcpy(estadoWorker+desplazamiento2, mensaje , longitudMensaje);
 	desplazamiento2 += longitudMensaje;
-	printf("Envio a yama estado del worker %s", worker->worker_id);
+	printf("Envio a yama estado del worker %s \n", worker->worker_id);
 	enviar(yamaSocket, cop_master_estados_workers,desplazamiento2,estadoWorker);
 	free(estadoWorker);
 }
 
 void hilo_reduccion_local(void* parametros){
+	printf("Comienzo reduc local \n");
 	t_hilo_reduccion_local* estructura = (t_hilo_reduccion_local*) parametros;
 	un_socket socketWorker;
 	char* puertoWorker = string_from_format("%i",estructura->puerto);
 	socketWorker = conectar_a(estructura->ip, puertoWorker);
+	realizar_handshake(socketWorker, cop_handshake_master);
 	int desplazamiento = 0;
 	int suma= 0;
 	void sumadorElementos(t_serializacionTemporal* Elem){
-		suma += Elem->cantidadTemporal;
+		suma = suma + strlen(Elem->temporal) + 1;
 		return;
 	}
 	list_iterate(estructura->listaTemp, (void*)sumadorElementos);
 	int cantidadDeElementos = list_size(estructura->listaTemp);
+
 	FILE *fileIN;
 	fileIN = fopen(SCRIPT_REDUC, "rb");
 	if(!fileIN){
@@ -468,36 +472,35 @@ void hilo_reduccion_local(void* parametros){
 	}
 	struct stat st_script;
 	stat(SCRIPT_REDUC, &st_script);
-	void* bufferScript = malloc (st_script.st_size+1);
+	void* bufferScript1 = malloc (st_script.st_size+1);
 	int MAX_LINE=4096;
 	char singleline[MAX_LINE];
 	while(fgets(singleline, MAX_LINE, fileIN) != NULL){
-		strcat(bufferScript, singleline);
+		strcat(bufferScript1, singleline);
 	}
+	int longitudScript = strlen(bufferScript1) + 1;
 
-	int longitudScript=strlen(bufferScript)+1;
-
-	int tamanioData = sizeof(int)+suma + (cantidadDeElementos*sizeof(int))+sizeof(int) + strlen(estructura->tempDestino) +sizeof(int)+strlen(estructura->idWorker)+sizeof(int)+longitudScript;
-	char*buffer = malloc(tamanioData);
-	memcpy(buffer,&cantidadDeElementos,sizeof(int));
+	int tamanioData = sizeof(int) + suma + (cantidadDeElementos*sizeof(int)) + sizeof(int) + strlen(estructura->tempDestino) + 1 +sizeof(int) + strlen(estructura->idWorker) + 1 + sizeof(int) + longitudScript;
+	char* buffer = malloc(tamanioData);
+	memcpy(buffer, &cantidadDeElementos, sizeof(int));
 	desplazamiento +=sizeof(int);
 	int i = 0;
 	for(;i<cantidadDeElementos;i++){
-		int aux = ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->cantidadTemporal;
-		memcpy(buffer+desplazamiento, &aux,sizeof(int));
+		int aux = strlen(((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->temporal)+1;
+		memcpy(buffer + desplazamiento, &aux , sizeof(int));
 		desplazamiento += sizeof(int);
 
-		memcpy(buffer+desplazamiento, ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->temporal,aux);
+		memcpy(buffer+desplazamiento, ((t_serializacionTemporal*)list_get(estructura->listaTemp,i))->temporal, aux);
 		desplazamiento +=aux;
 	}
-	int cantidadTempDestino = strlen(estructura->tempDestino);
-	memcpy(buffer+desplazamiento,&cantidadTempDestino,sizeof(int));
+	int cantidadTempDestino = strlen(estructura->tempDestino)+1;
+	memcpy(buffer + desplazamiento, &cantidadTempDestino, sizeof(int));
 	desplazamiento +=sizeof(int);
 
-	memcpy(buffer+desplazamiento,estructura->tempDestino,cantidadTempDestino);
+	memcpy(buffer + desplazamiento, estructura->tempDestino, cantidadTempDestino);
 	desplazamiento +=cantidadTempDestino;
 
-	int longitudIdWorker2 = strlen(estructura->idWorker);
+	int longitudIdWorker2 = strlen(estructura->idWorker)+1;
 	memcpy(buffer+desplazamiento, &longitudIdWorker2, sizeof(int));
 	desplazamiento += sizeof(int);
 
@@ -507,15 +510,14 @@ void hilo_reduccion_local(void* parametros){
 	memcpy(buffer+desplazamiento, &longitudScript, sizeof(int));
 	desplazamiento+=sizeof(int);
 
-	memcpy(buffer+desplazamiento, bufferScript, longitudScript);
+	memcpy(buffer+desplazamiento, bufferScript1, longitudScript);
 	desplazamiento+=longitudScript;
-
+	printf("%i\n",tamanioData);
 	enviar(socketWorker, cop_worker_reduccionLocal,tamanioData,buffer);
-
-
-	free(buffer);
+	printf("9\n");
 	t_paquete* paqueteRecibido;
 	paqueteRecibido = recibir(socketWorker);
+	printf("recibi respuesta de Master \n");
 	//Deserializacion
 	int longIp;
 	char*ipW;
@@ -579,6 +581,7 @@ void hilo_reduccion_local(void* parametros){
 	mensaje=malloc(longitudMensaje);
 	memcpy(buffer1+desplazamiento,mensaje,longitudMensaje);
 	desplazamiento += longitudMensaje;
+	printf("Envio respuesta de reduc local a Yama \n");
 	enviar(estructura->yamaSocket,cop_master_estado_reduccion_local,desplazamiento,buffer1);
 	free(buffer1);
 	free(worker_id);
