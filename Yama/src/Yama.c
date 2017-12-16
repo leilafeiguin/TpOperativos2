@@ -260,7 +260,7 @@ int main(void) {
 									list_iterate(archivoNodo->nodos, armarListaWorker);
 									t_estados* estadosxjob=malloc(sizeof(t_estados));
 									estadosxjob->archivo= string_duplicate(archivoNodo->pathArchivo);
-									estadosxjob->socketMaster = socketActual;
+									estadosxjob->socketMaster = socketArchivo->socket;
 									estadosxjob->contenido = list_create();
 									tabla->archivoNodo=archivoNodo;
 									tabla->clock_actual = tabla->workers->head;
@@ -281,7 +281,7 @@ int main(void) {
 
 									int tamanioWorkers=0;
 									void calcularTamanioWorkers(void* elem){
-										 tamanioWorkers += (sizeof(int) + strlen(((t_clock*)elem)->worker_id) +sizeof(int) + strlen(((t_clock*)elem)->ip)  + sizeof(int) + sizeof(int));
+										 tamanioWorkers += (sizeof(int) + strlen(((t_clock*)elem)->worker_id) +1 +sizeof(int) + strlen(((t_clock*)elem)->ip)  +1 + sizeof(int) + sizeof(int));
 									}
 
 									list_iterate(archivoNodo->workersAsignados, calcularTamanioWorkers);
@@ -398,16 +398,14 @@ int main(void) {
 								}
 								t_list* jobsModificados=list_filter(estado->contenido, buscarWorker);
 
+								t_etapa etapa= transformacion;
 								//Evaluar mensaje para saber si se cayeron nodos.
 								if(estadoWorker == finalizado){
 									t_list* nuevosJobs= list_create();
-									t_request_reduccion_local* request = malloc(sizeof(t_request_reduccion_local));
-									request->temporalesTransformacion = list_create();
-									request->temporalReduccionLocal = string_from_format("/tmp/%i-%s-%s", socketActual, str_replace(idArchivo, "/","-"), randstring(5));
+
 									void actualizarEstado(void* elem){
 										t_job* job=(t_job*)elem;
-										request->ip=job->ip;
-										request->puerto = job->puerto;
+
 										job->estado= finalizado;
 										t_job* nuevoJob=malloc(sizeof(t_job));
 										nuevoJob->bloque = job->bloque;
@@ -421,14 +419,15 @@ int main(void) {
 										time(&nuevoJob->tiempoInicio);
 										switch(job->etapa){
 											case transformacion:
+												etapa = transformacion;
 												nuevoJob->etapa = reduccionLocal;
-												nuevoJob->temporalReduccionLocal = string_duplicate(request->temporalReduccionLocal);
-												list_add(request->temporalesTransformacion, job->temporalTransformacion);
 												break;
 											case reduccionLocal:
+												etapa = reduccionLocal;
 												nuevoJob->etapa = reduccionGlobal;
 												break;
 											case reduccionGlobal:
+												etapa = reduccionGlobal;
 												nuevoJob->etapa = almacenamientoFinal;
 												break;
 											case almacenamientoFinal:
@@ -441,52 +440,90 @@ int main(void) {
 									list_iterate(jobsModificados, actualizarEstado);
 									list_add_all(nuevosJobs, estado->contenido);
 
-									//Serializar y enviar request
-									int cantidadElementosTemporales = list_size(request->temporalesTransformacion);
-									int longitudTemporales = 0;
-									for(i=0;i<cantidadElementosTemporales;i++){
-										longitudTemporales += strlen(list_get(request->temporalesTransformacion,i))+1;
-									}
-									int longitudIdWorker;
-									t_clock* worker;
-									int desplazamientoRequest = 0;
-									void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + sizeof(int) + strlen(request->temporalReduccionLocal)+1+sizeof(int)+strlen(worker->worker_id)+1);
-									//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
-									int longitudIp = strlen(request->ip)+1;
-									memcpy(bufferRequest, &longitudIp, sizeof(int));
-									desplazamientoRequest+=sizeof(int);
-
-									memcpy(bufferRequest, request->ip, longitudIp); //int que dice cuantos nodos hay en la lista
-									desplazamientoRequest+=longitudIp;
-
-									memcpy(bufferRequest, &request->puerto, sizeof(int));
-									desplazamientoRequest+=sizeof(int);
-
-									memcpy(bufferRequest, &cantidadElementosTemporales, sizeof(int));
-									desplazamientoRequest+= sizeof(int);
-
-									for(i=0;i<cantidadElementosTemporales;i++){
-										int longitudTemporal = strlen(list_get(request->temporalesTransformacion,i))+1;
-										char* temporal = malloc(longitudTemporal);
-										memcpy(bufferRequest, &longitudTemporal, sizeof(int));
-										memcpy(bufferRequest, temporal, sizeof(int));
-										desplazamientoRequest+=longitudTemporal;
+									t_tabla_planificacion* tabla= NULL;
+									bool quedoPendienteAlgo(void * elem){
+										t_job* job = (t_job*) elem;
+										tabla=job->planificacion;
+										return job->etapa == etapa && job->estado == enProceso;
 									}
 
-									int longitudTemporalReduccionLocal = strlen(request->temporalReduccionLocal)+1;
-									memcpy(bufferRequest, &longitudTemporalReduccionLocal, sizeof(int));
-									desplazamientoRequest+=sizeof(int);
+									if(!list_any_satisfy(estado->contenido, quedoPendienteAlgo)){
 
-									memcpy(bufferRequest, request->temporalReduccionLocal, longitudTemporalReduccionLocal); //int que dice cuantos nodos hay en la lista
-									desplazamientoRequest+=longitudTemporalReduccionLocal;
+										void enviarAMaster(void* elem){
+											t_clock* worker = (t_clock*) elem;
+											t_request_reduccion_local* request = malloc(sizeof(t_request_reduccion_local));
+											request->temporalesTransformacion = list_create();
+											request->temporalReduccionLocal = string_from_format("/tmp/%i-%s-%s", socketActual, str_replace(idArchivo, "/","-"), randstring(5));
 
-									memcpy(bufferRequest,&longitudIdWorker,sizeof(int));
-									desplazamiento+=sizeof(int);
+											void armarRequest(void* elem){
+												t_job* job=(t_job*)elem;
+												if(job->etapa == transformacion && job->estado == finalizado && string_equals_ignore_case(job->worker_id, worker->worker_id)){
+													request->ip=job->ip;
+													request->puerto = job->puerto;
+													list_add(request->temporalesTransformacion, job->temporalTransformacion);
+												}
 
-									memcpy(bufferRequest,worker->worker_id,longitudIdWorker);
-									desplazamiento+= longitudIdWorker;
+												if(job->etapa == reduccionLocal && string_equals_ignore_case(job->worker_id, worker->worker_id)){
+													job->temporalReduccionLocal = string_duplicate(request->temporalReduccionLocal);
+												}
+											}
 
-									enviar(socketActual,cop_yama_inicio_reduccion_local,desplazamiento,bufferRequest);
+											list_iterate(estado->contenido, armarRequest);
+
+											//Serializar y enviar request
+											int cantidadElementosTemporales = list_size(request->temporalesTransformacion);
+											int longitudTemporales = 0;
+											for(i=0;i<cantidadElementosTemporales;i++){
+												longitudTemporales += strlen(list_get(request->temporalesTransformacion,i))+1;
+											}
+
+
+											int desplazamientoRequest = 0;
+											void* bufferRequest = malloc(sizeof(int) + strlen(request->ip)+1 + sizeof(int) + sizeof(int) + longitudTemporales + (cantidadElementosTemporales*sizeof(int))+sizeof(int) + strlen(request->temporalReduccionLocal)+1+sizeof(int)+strlen(idWorker)+1);
+											//	longitudIp		ip						puerto		cantElementos	longitudTemporales	longitudTemp	temp
+											int longitudIp = strlen(request->ip)+1;
+											memcpy(bufferRequest + desplazamientoRequest, &longitudIp, sizeof(int));
+											desplazamientoRequest+=sizeof(int);
+
+											memcpy(bufferRequest +desplazamientoRequest, request->ip, longitudIp); //int que dice cuantos nodos hay en la lista
+											desplazamientoRequest+=longitudIp;
+
+											memcpy(bufferRequest + desplazamientoRequest, &request->puerto, sizeof(int));
+											desplazamientoRequest+=sizeof(int);
+
+											memcpy(bufferRequest +desplazamientoRequest, &cantidadElementosTemporales, sizeof(int));
+											desplazamientoRequest+= sizeof(int);
+
+											for(i=0;i<cantidadElementosTemporales;i++){
+												int longitudTemporal = strlen(list_get(request->temporalesTransformacion,i))+1;
+												char* temporal = list_get(request->temporalesTransformacion,i);
+												memcpy(bufferRequest  + desplazamientoRequest, &longitudTemporal, sizeof(int));
+												desplazamientoRequest += sizeof(int);
+												memcpy(bufferRequest+ desplazamientoRequest, temporal, longitudTemporal);
+												desplazamientoRequest+=longitudTemporal;
+											}
+
+											int longitudTemporalReduccionLocal = strlen(request->temporalReduccionLocal)+1;
+											memcpy(bufferRequest + desplazamientoRequest, &longitudTemporalReduccionLocal, sizeof(int));
+											desplazamientoRequest+=sizeof(int);
+
+											memcpy(bufferRequest + desplazamientoRequest, request->temporalReduccionLocal, longitudTemporalReduccionLocal); //int que dice cuantos nodos hay en la lista
+											desplazamientoRequest+=longitudTemporalReduccionLocal;
+
+											memcpy(bufferRequest + desplazamientoRequest,&longitudIdWorker,sizeof(int));
+											desplazamientoRequest+=sizeof(int);
+
+											memcpy(bufferRequest +desplazamientoRequest,idWorker,longitudIdWorker);
+											desplazamientoRequest+= longitudIdWorker;
+
+											enviar(socketActual,cop_yama_inicio_reduccion_local,desplazamientoRequest,bufferRequest);
+											free(bufferRequest);
+										}
+
+										list_iterate(tabla->workers, enviarAMaster);
+
+									}
+
 								}else{
 									t_job* primerJob= list_get(jobsModificados,0);
 									t_tabla_planificacion* tabla=primerJob->planificacion;
@@ -600,7 +637,7 @@ int main(void) {
 								bool estaTerminado(void* elem){
 									return ((t_job*)elem)->estado == finalizado;
 								}
-								if(list_all_satisfy(estadosReduccionLocal, estaTerminado)){
+								if(list_all_satisfy(estadosReduccionLocal, estaTerminado)){ // OJO MARCO ACA!!!
 									t_list* listaWorkerBloques = list_create(); //t_workerBloques
 									void llenarCantBloques(void* elem){
 										void llenarCantBloquesWorker(void* elemAux){
@@ -1079,6 +1116,7 @@ void planificarBloque(t_tabla_planificacion* tabla, int numeroBloque, t_archivox
 
 		worker->disponibilidad--;
 		t_job* jobBloque=malloc(sizeof(t_job));
+		jobBloque->planificacion = tabla;
 		jobBloque->bloque= *numeroBloque;
 		jobBloque->estado = enProceso;
 		jobBloque->etapa = transformacion;
